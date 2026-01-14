@@ -1,4 +1,21 @@
-// Données du site
+// ===== CONFIGURATION FIREBASE =====
+// IMPORTANT : Remplacez ces valeurs par votre propre configuration Firebase
+// Voir instructions ci-dessous pour obtenir votre configuration
+const firebaseConfig = {
+    apiKey: "VOTRE_API_KEY",
+    authDomain: "VOTRE_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://VOTRE_PROJECT_ID-default-rtdb.firebaseio.com",
+    projectId: "VOTRE_PROJECT_ID",
+    storageBucket: "VOTRE_PROJECT_ID.appspot.com",
+    messagingSenderId: "VOTRE_SENDER_ID",
+    appId: "VOTRE_APP_ID"
+};
+
+// Initialisation Firebase (sera chargé depuis le CDN)
+let db;
+let dbRef;
+
+// Données du site (structure par défaut)
 const DATA = {
     seasonalFruits: [
         { name: 'Pommes', icon: '🍎', description: 'Variétés locales croquantes', stock: 50 },
@@ -44,29 +61,170 @@ const DATA = {
     orders: []
 };
 
-// État de l'application
+// État de l'application (local à chaque utilisateur)
 const STATE = {
     cart: [],
-    adminLoggedIn: false
+    adminLoggedIn: false,
+    firebaseReady: false
 };
 
-// Mot de passe admin (en production, cela devrait être sécurisé côté serveur)
+// Mot de passe admin
 const ADMIN_PASSWORD = 'admin123';
+
+// ===== INITIALISATION FIREBASE =====
+function initializeFirebase() {
+    try {
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        dbRef = db.ref('paniers-du-jardin');
+        
+        STATE.firebaseReady = true;
+        console.log('✅ Firebase initialisé avec succès');
+        
+        // Charger les données depuis Firebase
+        loadDataFromFirebase();
+        
+        // Écouter les changements en temps réel
+        setupRealtimeListeners();
+        
+    } catch (error) {
+        console.error('❌ Erreur Firebase:', error);
+        console.log('⚠️ Mode hors ligne - utilisation du localStorage');
+        // Fallback sur localStorage si Firebase échoue
+        loadFromLocalStorage();
+    }
+}
+
+// ===== CHARGEMENT DES DONNÉES DEPUIS FIREBASE =====
+function loadDataFromFirebase() {
+    // Charger les paniers
+    dbRef.child('baskets').once('value', (snapshot) => {
+        if (snapshot.exists()) {
+            const baskets = snapshot.val();
+            // Mettre à jour les stocks uniquement
+            baskets.forEach(basket => {
+                const localBasket = DATA.baskets.find(b => b.id === basket.id);
+                if (localBasket) {
+                    localBasket.stock = basket.stock;
+                }
+            });
+            renderBaskets();
+        } else {
+            // Initialiser Firebase avec les données par défaut
+            initializeFirebaseData();
+        }
+    });
+    
+    // Charger les promotions
+    dbRef.child('promotions').once('value', (snapshot) => {
+        if (snapshot.exists()) {
+            DATA.promotions = snapshot.val() || [];
+            renderBaskets();
+        }
+    });
+    
+    // Charger les fruits de saison
+    dbRef.child('seasonalFruits').once('value', (snapshot) => {
+        if (snapshot.exists()) {
+            const fruits = snapshot.val();
+            fruits.forEach(fruit => {
+                const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
+                if (localFruit) {
+                    localFruit.stock = fruit.stock;
+                }
+            });
+            renderSeasonalFruits();
+        }
+    });
+    
+    // Charger les commandes
+    dbRef.child('orders').once('value', (snapshot) => {
+        if (snapshot.exists()) {
+            DATA.orders = snapshot.val() || [];
+        }
+    });
+    
+    // Charger le panier local (reste en localStorage pour chaque utilisateur)
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+        STATE.cart = JSON.parse(savedCart);
+        updateCartDisplay();
+    }
+}
+
+// ===== INITIALISER FIREBASE AVEC LES DONNÉES PAR DÉFAUT =====
+function initializeFirebaseData() {
+    dbRef.child('baskets').set(DATA.baskets);
+    dbRef.child('promotions').set(DATA.promotions);
+    dbRef.child('seasonalFruits').set(DATA.seasonalFruits);
+    dbRef.child('orders').set(DATA.orders);
+    console.log('✅ Données initiales enregistrées dans Firebase');
+}
+
+// ===== ÉCOUTE EN TEMPS RÉEL =====
+function setupRealtimeListeners() {
+    // Écouter les changements de stocks de paniers
+    dbRef.child('baskets').on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            const baskets = snapshot.val();
+            baskets.forEach(basket => {
+                const localBasket = DATA.baskets.find(b => b.id === basket.id);
+                if (localBasket) {
+                    localBasket.stock = basket.stock;
+                }
+            });
+            renderBaskets();
+        }
+    });
+    
+    // Écouter les changements de promotions
+    dbRef.child('promotions').on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            DATA.promotions = snapshot.val() || [];
+            renderBaskets();
+        }
+    });
+    
+    // Écouter les changements de stocks de fruits
+    dbRef.child('seasonalFruits').on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            const fruits = snapshot.val();
+            fruits.forEach(fruit => {
+                const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
+                if (localFruit) {
+                    localFruit.stock = fruit.stock;
+                }
+            });
+            renderSeasonalFruits();
+        }
+    });
+}
+
+// ===== SAUVEGARDE DANS FIREBASE =====
+function saveToFirebase(path, data) {
+    if (STATE.firebaseReady) {
+        dbRef.child(path).set(data)
+            .then(() => {
+                console.log(`✅ ${path} sauvegardé dans Firebase`);
+            })
+            .catch((error) => {
+                console.error(`❌ Erreur sauvegarde ${path}:`, error);
+            });
+    }
+}
 
 // ===== NAVIGATION =====
 function navigateTo(pageId) {
-    // Masquer toutes les pages
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');
     });
     
-    // Afficher la page demandée
     const targetPage = document.getElementById(pageId);
     if (targetPage) {
         targetPage.classList.add('active');
     }
     
-    // Mettre à jour les liens de navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
         if (link.getAttribute('href') === `#${pageId}`) {
@@ -74,11 +232,9 @@ function navigateTo(pageId) {
         }
     });
     
-    // Scroll vers le haut
     window.scrollTo(0, 0);
 }
 
-// Gestion des liens de navigation
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -88,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Initialiser la page
     initializePage();
 });
 
@@ -97,13 +252,22 @@ function initializePage() {
     renderSeasonalFruits();
     renderBaskets();
     updateCartDisplay();
-    loadFromLocalStorage();
+    
+    // Initialiser Firebase
+    if (typeof firebase !== 'undefined') {
+        initializeFirebase();
+    } else {
+        console.log('⚠️ Firebase non chargé - utilisation du localStorage');
+        loadFromLocalStorage();
+    }
 }
 
 function loadFromLocalStorage() {
     const savedCart = localStorage.getItem('cart');
     const savedPromotions = localStorage.getItem('promotions');
     const savedOrders = localStorage.getItem('orders');
+    const savedBaskets = localStorage.getItem('baskets');
+    const savedFruits = localStorage.getItem('seasonalFruits');
     
     if (savedCart) {
         STATE.cart = JSON.parse(savedCart);
@@ -118,12 +282,36 @@ function loadFromLocalStorage() {
     if (savedOrders) {
         DATA.orders = JSON.parse(savedOrders);
     }
+    
+    if (savedBaskets) {
+        const baskets = JSON.parse(savedBaskets);
+        baskets.forEach(basket => {
+            const localBasket = DATA.baskets.find(b => b.id === basket.id);
+            if (localBasket) {
+                localBasket.stock = basket.stock;
+            }
+        });
+        renderBaskets();
+    }
+    
+    if (savedFruits) {
+        const fruits = JSON.parse(savedFruits);
+        fruits.forEach(fruit => {
+            const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
+            if (localFruit) {
+                localFruit.stock = fruit.stock;
+            }
+        });
+        renderSeasonalFruits();
+    }
 }
 
 function saveToLocalStorage() {
     localStorage.setItem('cart', JSON.stringify(STATE.cart));
     localStorage.setItem('promotions', JSON.stringify(DATA.promotions));
     localStorage.setItem('orders', JSON.stringify(DATA.orders));
+    localStorage.setItem('baskets', JSON.stringify(DATA.baskets));
+    localStorage.setItem('seasonalFruits', JSON.stringify(DATA.seasonalFruits));
 }
 
 // ===== AFFICHAGE DES FRUITS DE SAISON =====
@@ -239,7 +427,6 @@ function addToCart(basketId) {
         return;
     }
     
-    // Vérifier si le panier est déjà dans le cart
     const existingItem = STATE.cart.find(item => item.id === basketId);
     
     if (existingItem) {
@@ -258,13 +445,11 @@ function addToCart(basketId) {
         });
     }
     
-    // Réinitialiser la quantité
     qtyElement.textContent = '1';
     
     updateCartDisplay();
-    saveToLocalStorage();
+    localStorage.setItem('cart', JSON.stringify(STATE.cart));
     
-    // Animation
     const cartButton = document.querySelector('.cart-button');
     cartButton.classList.add('pulse');
     setTimeout(() => cartButton.classList.remove('pulse'), 600);
@@ -273,7 +458,7 @@ function addToCart(basketId) {
 function removeFromCart(basketId) {
     STATE.cart = STATE.cart.filter(item => item.id !== basketId);
     updateCartDisplay();
-    saveToLocalStorage();
+    localStorage.setItem('cart', JSON.stringify(STATE.cart));
 }
 
 function updateCartDisplay() {
@@ -348,7 +533,6 @@ function closePaymentModal() {
     modal.classList.remove('active');
 }
 
-// Gestion du formulaire de paiement
 document.addEventListener('DOMContentLoaded', () => {
     const paymentForm = document.getElementById('paymentForm');
     
@@ -361,7 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function processPayment() {
-    // Simuler le traitement du paiement
     const orderId = `CMD-${Date.now()}`;
     const order = {
         id: orderId,
@@ -380,13 +563,20 @@ function processPayment() {
         }
     });
     
-    // Vider le panier
+    // Sauvegarder dans Firebase
+    if (STATE.firebaseReady) {
+        saveToFirebase('baskets', DATA.baskets);
+        saveToFirebase('orders', DATA.orders);
+    } else {
+        saveToLocalStorage();
+    }
+    
     STATE.cart = [];
     
-    saveToLocalStorage();
     renderBaskets();
     updateCartDisplay();
     closePaymentModal();
+    localStorage.setItem('cart', JSON.stringify(STATE.cart));
     
     alert(`✅ Commande validée !\n\nNuméro de commande : ${orderId}\nVous recevrez un email de confirmation.\n\nMerci de votre confiance !`);
 }
@@ -442,7 +632,14 @@ function updateStock(basketId) {
     const basket = DATA.baskets.find(b => b.id === basketId);
     if (basket) {
         basket.stock = newStock;
-        saveToLocalStorage();
+        
+        // Sauvegarder dans Firebase
+        if (STATE.firebaseReady) {
+            saveToFirebase('baskets', DATA.baskets);
+        } else {
+            saveToLocalStorage();
+        }
+        
         renderBaskets();
         renderStockManagement();
         alert('Stock mis à jour !');
@@ -480,13 +677,16 @@ function addPromotion() {
         return;
     }
     
-    // Supprimer l'ancienne promo si elle existe
     DATA.promotions = DATA.promotions.filter(p => p.basketId !== basketId);
-    
-    // Ajouter la nouvelle promo
     DATA.promotions.push({ basketId, discount });
     
-    saveToLocalStorage();
+    // Sauvegarder dans Firebase
+    if (STATE.firebaseReady) {
+        saveToFirebase('promotions', DATA.promotions);
+    } else {
+        saveToLocalStorage();
+    }
+    
     renderBaskets();
     renderPromotionsManagement();
     
@@ -495,7 +695,14 @@ function addPromotion() {
 
 function removePromotion(index) {
     DATA.promotions.splice(index, 1);
-    saveToLocalStorage();
+    
+    // Sauvegarder dans Firebase
+    if (STATE.firebaseReady) {
+        saveToFirebase('promotions', DATA.promotions);
+    } else {
+        saveToLocalStorage();
+    }
+    
     renderBaskets();
     renderPromotionsManagement();
 }
@@ -525,7 +732,6 @@ function renderOrdersList() {
 }
 
 // ===== ANIMATIONS ET EFFETS =====
-// Effet parallaxe sur les légumes flottants
 document.addEventListener('mousemove', (e) => {
     const vegetables = document.querySelectorAll('.floating-veg');
     
@@ -538,7 +744,6 @@ document.addEventListener('mousemove', (e) => {
     });
 });
 
-// Fermer le panier avec Escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const cartSidebar = document.getElementById('cartSidebar');
@@ -553,7 +758,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Animation au scroll
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
