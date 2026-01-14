@@ -1,19 +1,22 @@
-// ===== CONFIGURATION FIREBASE =====
-// IMPORTANT : Remplacez ces valeurs par votre propre configuration Firebase
-// Voir instructions ci-dessous pour obtenir votre configuration
+// ===== IMPORTS FIREBASE (chargés depuis le module principal) =====
+// Les imports sont gérés dans index.html avec type="module"
+
+// Configuration Firebase
 const firebaseConfig = {
-    apiKey: "VOTRE_API_KEY",
-    authDomain: "VOTRE_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://VOTRE_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "VOTRE_PROJECT_ID",
-    storageBucket: "VOTRE_PROJECT_ID.appspot.com",
-    messagingSenderId: "VOTRE_SENDER_ID",
-    appId: "VOTRE_APP_ID"
+    apiKey: "AIzaSyCFeVRcxq_YOc2EuNcMZExtZvyQn919wog",
+    authDomain: "sitecommercejardin-b348e.firebaseapp.com",
+    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.firebaseio.com", // À vérifier dans Firebase Console
+    projectId: "sitecommercejardin-b348e",
+    storageBucket: "sitecommercejardin-b348e.firebasestorage.app",
+    messagingSenderId: "468169255056",
+    appId: "1:468169255056:web:33ba4593dac84b41c6d015",
+    measurementId: "G-X8V2SGWXKQ"
 };
 
-// Initialisation Firebase (sera chargé depuis le CDN)
-let db;
-let dbRef;
+// Variables Firebase
+let app;
+let database;
+let analytics;
 
 // Données du site (structure par défaut)
 const DATA = {
@@ -72,37 +75,45 @@ const STATE = {
 const ADMIN_PASSWORD = 'admin123';
 
 // ===== INITIALISATION FIREBASE =====
-function initializeFirebase() {
+// Cette fonction sera appelée depuis le module principal
+window.initializeFirebaseApp = async function(firebaseApp, firebaseDatabase, firebaseAnalytics) {
     try {
         // Initialiser Firebase
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        dbRef = db.ref('paniers-du-jardin');
+        app = firebaseApp.initializeApp(firebaseConfig);
+        database = firebaseDatabase.getDatabase(app);
+        
+        // Analytics optionnel
+        if (firebaseAnalytics) {
+            analytics = firebaseAnalytics.getAnalytics(app);
+        }
         
         STATE.firebaseReady = true;
         console.log('✅ Firebase initialisé avec succès');
         
         // Charger les données depuis Firebase
-        loadDataFromFirebase();
+        await loadDataFromFirebase(firebaseDatabase);
         
         // Écouter les changements en temps réel
-        setupRealtimeListeners();
+        setupRealtimeListeners(firebaseDatabase);
         
     } catch (error) {
         console.error('❌ Erreur Firebase:', error);
         console.log('⚠️ Mode hors ligne - utilisation du localStorage');
-        // Fallback sur localStorage si Firebase échoue
         loadFromLocalStorage();
     }
-}
+};
 
 // ===== CHARGEMENT DES DONNÉES DEPUIS FIREBASE =====
-function loadDataFromFirebase() {
-    // Charger les paniers
-    dbRef.child('baskets').once('value', (snapshot) => {
-        if (snapshot.exists()) {
-            const baskets = snapshot.val();
-            // Mettre à jour les stocks uniquement
+async function loadDataFromFirebase(firebaseDatabase) {
+    const dbRef = firebaseDatabase.ref(database, 'paniers-du-jardin');
+    
+    try {
+        // Charger les paniers
+        const basketsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/baskets');
+        const basketsSnapshot = await firebaseDatabase.get(basketsRef);
+        
+        if (basketsSnapshot.exists()) {
+            const baskets = basketsSnapshot.val();
             baskets.forEach(basket => {
                 const localBasket = DATA.baskets.find(b => b.id === basket.id);
                 if (localBasket) {
@@ -112,22 +123,24 @@ function loadDataFromFirebase() {
             renderBaskets();
         } else {
             // Initialiser Firebase avec les données par défaut
-            initializeFirebaseData();
+            await initializeFirebaseData(firebaseDatabase);
         }
-    });
-    
-    // Charger les promotions
-    dbRef.child('promotions').once('value', (snapshot) => {
-        if (snapshot.exists()) {
-            DATA.promotions = snapshot.val() || [];
+        
+        // Charger les promotions
+        const promosRef = firebaseDatabase.ref(database, 'paniers-du-jardin/promotions');
+        const promosSnapshot = await firebaseDatabase.get(promosRef);
+        
+        if (promosSnapshot.exists()) {
+            DATA.promotions = promosSnapshot.val() || [];
             renderBaskets();
         }
-    });
-    
-    // Charger les fruits de saison
-    dbRef.child('seasonalFruits').once('value', (snapshot) => {
-        if (snapshot.exists()) {
-            const fruits = snapshot.val();
+        
+        // Charger les fruits de saison
+        const fruitsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/seasonalFruits');
+        const fruitsSnapshot = await firebaseDatabase.get(fruitsRef);
+        
+        if (fruitsSnapshot.exists()) {
+            const fruits = fruitsSnapshot.val();
             fruits.forEach(fruit => {
                 const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
                 if (localFruit) {
@@ -136,14 +149,19 @@ function loadDataFromFirebase() {
             });
             renderSeasonalFruits();
         }
-    });
-    
-    // Charger les commandes
-    dbRef.child('orders').once('value', (snapshot) => {
-        if (snapshot.exists()) {
-            DATA.orders = snapshot.val() || [];
+        
+        // Charger les commandes
+        const ordersRef = firebaseDatabase.ref(database, 'paniers-du-jardin/orders');
+        const ordersSnapshot = await firebaseDatabase.get(ordersRef);
+        
+        if (ordersSnapshot.exists()) {
+            DATA.orders = ordersSnapshot.val() || [];
         }
-    });
+        
+    } catch (error) {
+        console.error('❌ Erreur chargement données:', error);
+        loadFromLocalStorage();
+    }
     
     // Charger le panier local (reste en localStorage pour chaque utilisateur)
     const savedCart = localStorage.getItem('cart');
@@ -154,18 +172,23 @@ function loadDataFromFirebase() {
 }
 
 // ===== INITIALISER FIREBASE AVEC LES DONNÉES PAR DÉFAUT =====
-function initializeFirebaseData() {
-    dbRef.child('baskets').set(DATA.baskets);
-    dbRef.child('promotions').set(DATA.promotions);
-    dbRef.child('seasonalFruits').set(DATA.seasonalFruits);
-    dbRef.child('orders').set(DATA.orders);
-    console.log('✅ Données initiales enregistrées dans Firebase');
+async function initializeFirebaseData(firebaseDatabase) {
+    try {
+        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/baskets'), DATA.baskets);
+        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/promotions'), DATA.promotions);
+        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/seasonalFruits'), DATA.seasonalFruits);
+        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/orders'), DATA.orders);
+        console.log('✅ Données initiales enregistrées dans Firebase');
+    } catch (error) {
+        console.error('❌ Erreur initialisation données:', error);
+    }
 }
 
 // ===== ÉCOUTE EN TEMPS RÉEL =====
-function setupRealtimeListeners() {
+function setupRealtimeListeners(firebaseDatabase) {
     // Écouter les changements de stocks de paniers
-    dbRef.child('baskets').on('value', (snapshot) => {
+    const basketsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/baskets');
+    firebaseDatabase.onValue(basketsRef, (snapshot) => {
         if (snapshot.exists()) {
             const baskets = snapshot.val();
             baskets.forEach(basket => {
@@ -179,7 +202,8 @@ function setupRealtimeListeners() {
     });
     
     // Écouter les changements de promotions
-    dbRef.child('promotions').on('value', (snapshot) => {
+    const promosRef = firebaseDatabase.ref(database, 'paniers-du-jardin/promotions');
+    firebaseDatabase.onValue(promosRef, (snapshot) => {
         if (snapshot.exists()) {
             DATA.promotions = snapshot.val() || [];
             renderBaskets();
@@ -187,7 +211,8 @@ function setupRealtimeListeners() {
     });
     
     // Écouter les changements de stocks de fruits
-    dbRef.child('seasonalFruits').on('value', (snapshot) => {
+    const fruitsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/seasonalFruits');
+    firebaseDatabase.onValue(fruitsRef, (snapshot) => {
         if (snapshot.exists()) {
             const fruits = snapshot.val();
             fruits.forEach(fruit => {
@@ -202,15 +227,16 @@ function setupRealtimeListeners() {
 }
 
 // ===== SAUVEGARDE DANS FIREBASE =====
-function saveToFirebase(path, data) {
-    if (STATE.firebaseReady) {
-        dbRef.child(path).set(data)
-            .then(() => {
-                console.log(`✅ ${path} sauvegardé dans Firebase`);
-            })
-            .catch((error) => {
-                console.error(`❌ Erreur sauvegarde ${path}:`, error);
-            });
+async function saveToFirebase(firebaseDatabase, path, data) {
+    if (STATE.firebaseReady && database) {
+        try {
+            const dbRef = firebaseDatabase.ref(database, `paniers-du-jardin/${path}`);
+            await firebaseDatabase.set(dbRef, data);
+            console.log(`✅ ${path} sauvegardé dans Firebase`);
+        } catch (error) {
+            console.error(`❌ Erreur sauvegarde ${path}:`, error);
+            saveToLocalStorage();
+        }
     }
 }
 
@@ -253,11 +279,9 @@ function initializePage() {
     renderBaskets();
     updateCartDisplay();
     
-    // Initialiser Firebase
-    if (typeof firebase !== 'undefined') {
-        initializeFirebase();
-    } else {
-        console.log('⚠️ Firebase non chargé - utilisation du localStorage');
+    // Firebase sera initialisé depuis le module principal
+    if (!STATE.firebaseReady) {
+        console.log('⏳ En attente de Firebase...');
         loadFromLocalStorage();
     }
 }
@@ -544,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function processPayment() {
+async function processPayment() {
     const orderId = `CMD-${Date.now()}`;
     const order = {
         id: orderId,
@@ -564,9 +588,9 @@ function processPayment() {
     });
     
     // Sauvegarder dans Firebase
-    if (STATE.firebaseReady) {
-        saveToFirebase('baskets', DATA.baskets);
-        saveToFirebase('orders', DATA.orders);
+    if (STATE.firebaseReady && window.firebaseDatabase) {
+        await saveToFirebase(window.firebaseDatabase, 'baskets', DATA.baskets);
+        await saveToFirebase(window.firebaseDatabase, 'orders', DATA.orders);
     } else {
         saveToLocalStorage();
     }
@@ -625,7 +649,7 @@ function renderStockManagement() {
     `).join('');
 }
 
-function updateStock(basketId) {
+async function updateStock(basketId) {
     const input = document.getElementById(`stock-${basketId}`);
     const newStock = parseInt(input.value);
     
@@ -634,8 +658,8 @@ function updateStock(basketId) {
         basket.stock = newStock;
         
         // Sauvegarder dans Firebase
-        if (STATE.firebaseReady) {
-            saveToFirebase('baskets', DATA.baskets);
+        if (STATE.firebaseReady && window.firebaseDatabase) {
+            await saveToFirebase(window.firebaseDatabase, 'baskets', DATA.baskets);
         } else {
             saveToLocalStorage();
         }
@@ -668,7 +692,7 @@ function renderPromotionsManagement() {
     }).join('');
 }
 
-function addPromotion() {
+async function addPromotion() {
     const basketId = document.getElementById('promoBasket').value;
     const discount = parseInt(document.getElementById('promoDiscount').value);
     
@@ -681,8 +705,8 @@ function addPromotion() {
     DATA.promotions.push({ basketId, discount });
     
     // Sauvegarder dans Firebase
-    if (STATE.firebaseReady) {
-        saveToFirebase('promotions', DATA.promotions);
+    if (STATE.firebaseReady && window.firebaseDatabase) {
+        await saveToFirebase(window.firebaseDatabase, 'promotions', DATA.promotions);
     } else {
         saveToLocalStorage();
     }
@@ -693,12 +717,12 @@ function addPromotion() {
     document.getElementById('promoDiscount').value = '';
 }
 
-function removePromotion(index) {
+async function removePromotion(index) {
     DATA.promotions.splice(index, 1);
     
     // Sauvegarder dans Firebase
-    if (STATE.firebaseReady) {
-        saveToFirebase('promotions', DATA.promotions);
+    if (STATE.firebaseReady && window.firebaseDatabase) {
+        await saveToFirebase(window.firebaseDatabase, 'promotions', DATA.promotions);
     } else {
         saveToLocalStorage();
     }
