@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paniers du Jardin - Fruits & Légumes Locaux</title>
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -51,9 +47,7 @@
         <!-- Fruits de Saison -->
         <div class="container">
             <h2 class="section-title">Fruits de Saison Disponibles</h2>
-            <div class="seasonal-grid" id="seasonalFruits">
-                <!-- Généré dynamiquement -->
-            </div>
+            <div class="seasonal-grid" id="seasonalFruits"></div>
         </div>
 
         <!-- Vidéo Présentation -->
@@ -101,10 +95,7 @@
         <div class="container">
             <h2 class="page-title">Choisissez Votre Panier</h2>
             <p class="page-subtitle">Trois tailles adaptées à vos besoins</p>
-            
-            <div class="baskets-grid" id="basketsGrid">
-                <!-- Généré dynamiquement -->
-            </div>
+            <div class="baskets-grid" id="basketsGrid"></div>
         </div>
     </section>
 
@@ -112,27 +103,21 @@
     <section id="apropos" class="page">
         <div class="container">
             <h2 class="page-title">À Propos de Nous</h2>
-            
             <div class="about-content">
                 <div class="about-text">
                     <h3>Notre Histoire</h3>
-                    <p>Fondée en 2015, Paniers du Jardin est une entreprise familiale passionnée par l'agriculture locale et durable. Notre mission est de vous faire découvrir les saveurs authentiques des fruits et légumes de saison, cultivés avec respect et passion.</p>
-                    
+                    <p>Fondée en 2015, Paniers du Jardin est une entreprise familiale passionnée par l'agriculture locale et durable.</p>
                     <h3>Nos Valeurs</h3>
                     <ul class="values-list">
-                        <li><strong>Qualité :</strong> Sélection rigoureuse de nos produits</li>
-                        <li><strong>Proximité :</strong> Circuit court et relation directe avec les producteurs</li>
-                        <li><strong>Respect :</strong> De l'environnement et des saisons</li>
-                        <li><strong>Transparence :</strong> Traçabilité complète de nos produits</li>
+                        <li><strong>Qualité :</strong> Sélection rigoureuse</li>
+                        <li><strong>Proximité :</strong> Circuit court</li>
+                        <li><strong>Respect :</strong> De l'environnement</li>
+                        <li><strong>Transparence :</strong> Traçabilité complète</li>
                     </ul>
-
-                    <h3>L'Équipe</h3>
-                    <p>Une équipe de 8 passionnés : maraîchers, logisticiens et service client, tous dévoués à vous offrir la meilleure expérience possible.</p>
                 </div>
                 <div class="about-image">
                     <div class="image-placeholder">
                         <span style="font-size: 80px;">🌾</span>
-                        <p>Notre équipe au travail</p>
                     </div>
                 </div>
             </div>
@@ -143,30 +128,10 @@
     <section id="cgv" class="page">
         <div class="container legal-content">
             <h2 class="page-title">Conditions Générales de Vente</h2>
-            
             <h3>1. Objet</h3>
-            <p>Les présentes conditions générales de vente régissent les relations entre Paniers du Jardin et ses clients.</p>
-            
+            <p>Les présentes CGV régissent les relations entre Paniers du Jardin et ses clients.</p>
             <h3>2. Commandes</h3>
-            <p>Toute commande passée sur notre site implique l'acceptation pleine et entière des présentes conditions. La validation de votre commande vaut acceptation de nos CGV.</p>
-            
-            <h3>3. Prix</h3>
-            <p>Les prix sont indiqués en euros TTC. Nous nous réservons le droit de modifier nos prix à tout moment, mais les produits seront facturés sur la base des tarifs en vigueur au moment de la validation de la commande.</p>
-            
-            <h3>4. Paiement</h3>
-            <p>Le paiement s'effectue en ligne de manière sécurisée par carte bancaire. La commande est enregistrée après validation du paiement.</p>
-            
-            <h3>5. Livraison</h3>
-            <p>Les livraisons sont effectuées dans un rayon de 30km autour de notre exploitation. Délai de livraison : 24 à 48h après validation de la commande.</p>
-            
-            <h3>6. Droit de rétractation</h3>
-            <p>Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne peut être exercé pour les denrées périssables.</p>
-            
-            <h3>7. Fraîcheur et qualité</h3>
-            <p>Nous garantissons la fraîcheur de nos produits. En cas de problème, contactez-nous dans les 24h suivant la réception.</p>
-            
-            <h3>8. Données personnelles</h3>
-            <p>Vos données sont traitées conformément au RGPD. Vous disposez d'un droit d'accès, de modification et de suppression.</p>
+            <p>Toute commande implique l'acceptation de nos conditions.</p>
         </div>
     </section>
 
@@ -174,41 +139,12 @@
     <section id="mentions" class="page">
         <div class="container legal-content">
             <h2 class="page-title">Mentions Légales</h2>
-            
-            <h3>Éditeur du site</h3>
-            <p>
-                <strong>Paniers du Jardin</strong><br>
-                SARL au capital de 10 000€<br>
-                RCS : 123 456 789<br>
-                Siège social : Route des Vergers, 44000 Nantes<br>
-                Téléphone : 02 40 XX XX XX<br>
-                Email : contact@paniersdujardin.fr
-            </p>
-            
-            <h3>Directeur de publication</h3>
-            <p>Jean Dupont, Gérant</p>
-            
-            <h3>Hébergement</h3>
-            <p>
-                Ce site est hébergé par :<br>
-                <strong>GitHub Pages</strong><br>
-                88 Colin P Kelly Jr St<br>
-                San Francisco, CA 94107<br>
-                États-Unis
-            </p>
-            
-            <h3>Propriété intellectuelle</h3>
-            <p>L'ensemble du contenu de ce site (textes, images, vidéos) est la propriété exclusive de Paniers du Jardin. Toute reproduction est interdite sans autorisation préalable.</p>
-            
-            <h3>Cookies</h3>
-            <p>Ce site utilise des cookies pour améliorer votre expérience de navigation et réaliser des statistiques de visite.</p>
-            
-            <h3>Protection des données</h3>
-            <p>Conformément à la loi Informatique et Libertés et au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.</p>
+            <h3>Éditeur</h3>
+            <p><strong>Paniers du Jardin</strong><br>SARL - RCS 123 456 789</p>
         </div>
     </section>
 
-    <!-- Page Admin (secrète) -->
+    <!-- Page Admin -->
     <section id="admin" class="page">
         <div class="container">
             <div class="admin-login" id="adminLogin">
@@ -218,46 +154,35 @@
                     <button onclick="adminLogin()" class="btn-primary">Connexion</button>
                 </div>
             </div>
-
             <div class="admin-panel" id="adminPanel" style="display: none;">
                 <h2 class="page-title">Panneau d'Administration</h2>
-                
                 <div class="admin-section">
                     <h3>Gestion des Stocks</h3>
-                    <div class="stock-management" id="stockManagement">
-                        <!-- Généré dynamiquement -->
-                    </div>
+                    <div id="stockManagement"></div>
                 </div>
-
                 <div class="admin-section">
-                    <h3>Promotions Actives</h3>
-                    <div class="promotions-management" id="promotionsManagement">
-                        <div class="promo-form">
-                            <select id="promoBasket" class="input-field">
-                                <option value="petit">Panier Petit</option>
-                                <option value="moyen">Panier Moyen</option>
-                                <option value="grand">Panier Grand</option>
-                            </select>
-                            <input type="number" id="promoDiscount" placeholder="Réduction %" class="input-field" min="0" max="100">
-                            <button onclick="addPromotion()" class="btn-primary">Ajouter Promotion</button>
-                        </div>
-                        <div id="promoList"></div>
+                    <h3>Promotions</h3>
+                    <div class="promo-form">
+                        <select id="promoBasket" class="input-field">
+                            <option value="petit">Petit</option>
+                            <option value="moyen">Moyen</option>
+                            <option value="grand">Grand</option>
+                        </select>
+                        <input type="number" id="promoDiscount" placeholder="%" class="input-field">
+                        <button onclick="addPromotion()" class="btn-primary">Ajouter</button>
                     </div>
+                    <div id="promoList"></div>
                 </div>
-
                 <div class="admin-section">
-                    <h3>Commandes Récentes</h3>
-                    <div class="orders-list" id="ordersList">
-                        <p class="text-muted">Aucune commande pour le moment</p>
-                    </div>
+                    <h3>Commandes</h3>
+                    <div id="ordersList"></div>
                 </div>
-
                 <button onclick="adminLogout()" class="btn-secondary">Déconnexion</button>
             </div>
         </div>
     </section>
 
-    <!-- Panier Sidebar -->
+    <!-- Panier -->
     <div class="cart-sidebar" id="cartSidebar">
         <div class="cart-header">
             <h3>Votre Panier</h3>
@@ -269,15 +194,14 @@
         <div class="cart-footer">
             <div class="cart-total">
                 <span>Total:</span>
-                <span class="total-price" id="totalPrice">0,00 €</span>
+                <span id="totalPrice">0,00 €</span>
             </div>
             <button onclick="checkout()" class="btn-primary btn-block">Commander</button>
         </div>
     </div>
-
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 
-    <!-- Modal de Paiement -->
+    <!-- Modal Paiement -->
     <div class="modal" id="paymentModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -286,31 +210,22 @@
             </div>
             <div class="modal-body">
                 <form id="paymentForm">
-                    <h4>Informations de Livraison</h4>
-                    <input type="text" placeholder="Nom complet" class="input-field" required>
+                    <h4>Livraison</h4>
+                    <input type="text" placeholder="Nom" class="input-field" required>
                     <input type="email" placeholder="Email" class="input-field" required>
                     <input type="tel" placeholder="Téléphone" class="input-field" required>
                     <input type="text" placeholder="Adresse" class="input-field" required>
-                    <input type="text" placeholder="Code postal" class="input-field" required>
-                    <input type="text" placeholder="Ville" class="input-field" required>
-
-                    <h4>Paiement Sécurisé</h4>
-                    <input type="text" placeholder="Numéro de carte" class="input-field" maxlength="16" required>
-                    <div class="input-row">
-                        <input type="text" placeholder="MM/AA" class="input-field" maxlength="5" required>
-                        <input type="text" placeholder="CVV" class="input-field" maxlength="3" required>
-                    </div>
-
+                    <h4>Paiement</h4>
+                    <input type="text" placeholder="Carte" class="input-field" required>
                     <div class="order-summary">
                         <h4>Récapitulatif</h4>
                         <div id="orderSummary"></div>
                         <div class="summary-total">
-                            <strong>Total à payer:</strong>
+                            <strong>Total:</strong>
                             <strong id="finalTotal">0,00 €</strong>
                         </div>
                     </div>
-
-                    <button type="submit" class="btn-primary btn-block">Payer Maintenant</button>
+                    <button type="submit" class="btn-primary btn-block">Payer</button>
                 </form>
             </div>
         </div>
@@ -322,38 +237,50 @@
             <div class="footer-grid">
                 <div class="footer-section">
                     <h4>Paniers du Jardin</h4>
-                    <p>Des fruits et légumes frais, locaux et de saison, livrés directement chez vous.</p>
+                    <p>Fruits & légumes locaux</p>
                 </div>
                 <div class="footer-section">
                     <h4>Navigation</h4>
                     <ul>
                         <li><a href="#accueil" onclick="navigateTo('accueil')">Accueil</a></li>
                         <li><a href="#commander" onclick="navigateTo('commander')">Commander</a></li>
-                        <li><a href="#apropos" onclick="navigateTo('apropos')">À Propos</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
-                    <h4>Informations</h4>
+                    <h4>Légal</h4>
                     <ul>
                         <li><a href="#cgv" onclick="navigateTo('cgv')">CGV</a></li>
-                        <li><a href="#mentions" onclick="navigateTo('mentions')">Mentions Légales</a></li>
-                        <li><a href="#admin" onclick="navigateTo('admin')">Admin</a></li>
+                        <li><a href="#mentions" onclick="navigateTo('mentions')">Mentions</a></li>
                     </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <p>📍 Route des Vergers, 44000 Nantes</p>
-                    <p>📞 02 40 XX XX XX</p>
-                    <p>✉️ contact@paniersdujardin.fr</p>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2026 Paniers du Jardin. Tous droits réservés.</p>
+                <p>&copy; 2026 Paniers du Jardin</p>
             </div>
         </div>
     </footer>
 
-    <!-- Charger le script avec Firebase -->
-    <script src="script-firebase.js"></script>
+    <!-- Firebase v12 Module -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
+
+        window.firebaseApp = { initializeApp };
+        window.firebaseDatabase = { getDatabase, ref, set, get, onValue };
+        window.firebaseAnalytics = { getAnalytics };
+
+        setTimeout(() => {
+            if (window.initializeFirebaseApp) {
+                window.initializeFirebaseApp(
+                    window.firebaseApp,
+                    window.firebaseDatabase,
+                    window.firebaseAnalytics
+                );
+            }
+        }, 100);
+    </script>
+
+    <script src="app.js"></script>
 </body>
 </html>
