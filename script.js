@@ -5,7 +5,7 @@
 const firebaseConfig = {
     apiKey: "AIzaSyCFeVRcxq_YOc2EuNcMZExtZvyQn919wog",
     authDomain: "sitecommercejardin-b348e.firebaseapp.com",
-    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.firebaseio.com", // À vérifier dans Firebase Console
+    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.europe-west1.firebasedatabase.app/", // À vérifier dans Firebase Console
     projectId: "sitecommercejardin-b348e",
     storageBucket: "sitecommercejardin-b348e.firebasestorage.app",
     messagingSenderId: "468169255056",
@@ -806,3 +806,4 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(el);
     });
 });
+
