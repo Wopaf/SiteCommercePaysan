@@ -559,6 +559,26 @@ select.input-field {
     margin-bottom: 1rem;
 }
 
+/* Formulaires d'ajout par URL */
+.add-image-form,
+.add-video-form {
+    background: var(--pale);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin-top: 1.5rem;
+}
+
+.add-image-form h4,
+.add-video-form h4 {
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.add-image-form input,
+.add-video-form input {
+    margin-bottom: 1rem;
+}
+
 /* Media Section */
 .media-section {
     background: white;
