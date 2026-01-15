@@ -884,3 +884,194 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Bouton Google */
+.auth-divider {
+    text-align: center;
+    margin: 1.5rem 0;
+    position: relative;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border);
+}
+
+.auth-divider span {
+    position: relative;
+    background: white;
+    padding: 0 1rem;
+    color: var(--gray);
+}
+
+.btn-google {
+    width: 100%;
+    background: white;
+    border: 2px solid var(--border);
+    padding: 0.8rem;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1rem;
+    transition: 0.3s;
+}
+
+.btn-google:hover {
+    border-color: #4285f4;
+    background: #f8f9fa;
+}
+
+.google-icon {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(to bottom, #EA4335 0%, #FBBC05 33%, #34A853 66%, #4285F4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+/* Message boutique fermée */
+.shop-closed-message {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+    border-radius: 20px;
+    margin: 2rem 0;
+}
+
+.closed-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+}
+
+.shop-closed-message h3 {
+    color: var(--primary);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.shop-closed-message p {
+    font-size: 1.2rem;
+    color: var(--gray);
+}
+
+/* Paniers améliorés */
+.basket-card {
+    position: relative;
+    padding: 2rem;
+    transition: 0.3s;
+}
+
+.basket-card.featured {
+    border: 3px solid var(--orange);
+    transform: scale(1.05);
+}
+
+.featured-badge {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: var(--orange);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.basket-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.basket-subtitle {
+    color: var(--gray);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.basket-content {
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.basket-content h4 {
+    color: var(--primary);
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+}
+
+.basket-content ul {
+    list-style: none;
+    padding: 0;
+}
+
+.basket-content li {
+    padding: 0.4rem 0;
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.promo-badge {
+    color: var(--orange);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+.stock-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 1rem 0;
+}
+
+.stock-badge.available {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.stock-badge.limited {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+.stock-badge.out {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.basket-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* Mobile responsive pour paniers */
+@media (max-width: 768px) {
+    .basket-card.featured {
+        transform: scale(1);
+        border-width: 2px;
+    }
+    
+    .featured-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.8rem;
+    }
+    
+    .basket-icon {
+        font-size: 2.5rem;
+    }
+}
