@@ -30,6 +30,7 @@ setTimeout(async () => {
     
     await loadAllData();
     initCarousel();
+    checkShopStatus();
 }, 200);
 
 async function loadAllData() {
@@ -149,20 +150,77 @@ function filterByMonth(month) {
 
 // Paniers prédéfinis
 function renderBaskets() {
-    document.getElementById('basketsGrid').innerHTML = DATA.baskets.map(b => {
-        const promo = DATA.promotions.find(p => p.basketId === b.id);
-        const finalPrice = promo ? b.price * (1 - promo.discount / 100) : b.price;
+    const basketsData = [
+        {
+            id: 'petit',
+            name: 'Panier Petit',
+            icon: '🧺',
+            subtitle: 'Idéal pour 1-2 personnes',
+            price: DATA.baskets.find(b => b.id === 'petit')?.price || 15,
+            stock: DATA.baskets.find(b => b.id === 'petit')?.stock || 25,
+            content: ['3 variétés de fruits', '4 variétés de légumes', 'Environ 3kg']
+        },
+        {
+            id: 'moyen',
+            name: 'Panier Moyen',
+            icon: '🧺',
+            subtitle: 'Parfait pour 3-4 personnes',
+            price: DATA.baskets.find(b => b.id === 'moyen')?.price || 25,
+            stock: DATA.baskets.find(b => b.id === 'moyen')?.stock || 30,
+            content: ['5 variétés de fruits', '6 variétés de légumes', 'Environ 5kg', '1 surprise du jardin'],
+            featured: true
+        },
+        {
+            id: 'grand',
+            name: 'Panier Grand',
+            icon: '🧺',
+            subtitle: 'Pour famille nombreuse',
+            price: DATA.baskets.find(b => b.id === 'grand')?.price || 40,
+            stock: DATA.baskets.find(b => b.id === 'grand')?.stock || 15,
+            content: ['7 variétés de fruits', '8 variétés de légumes', 'Environ 8kg', '2 surprises du jardin', 'Herbes aromatiques']
+        }
+    ];
+    
+    document.getElementById('basketsGrid').innerHTML = basketsData.map(basket => {
+        const promo = DATA.promotions.find(p => p.basketId === basket.id);
+        const finalPrice = promo ? basket.price * (1 - promo.discount / 100) : basket.price;
+        const stockClass = basket.stock < 10 ? 'limited' : basket.stock === 0 ? 'out' : 'available';
+        const stockText = basket.stock === 0 ? 'Rupture' : basket.stock < 10 ? `Plus que ${basket.stock}` : `${basket.stock} disponibles`;
+        
         return `
-            <div class="basket-card">
-                <h3>Panier ${b.name}</h3>
-                <div class="price">${promo ? `<span class="old">${b.price}€</span>` : ''}<span class="${promo?'promo':''}">${finalPrice}€</span></div>
-                <p>Stock: ${b.stock}</p>
-                <div class="qty-selector">
-                    <button onclick="changeQty('${b.id}', -1)">-</button>
-                    <span id="qty-${b.id}">1</span>
-                    <button onclick="changeQty('${b.id}', 1)">+</button>
+            <div class="basket-card ${basket.featured ? 'featured' : ''}">
+                ${basket.featured ? '<div class="featured-badge">⭐ Populaire</div>' : ''}
+                <div class="basket-icon">${basket.icon}</div>
+                <h3>${basket.name}</h3>
+                <p class="basket-subtitle">${basket.subtitle}</p>
+                
+                <div class="basket-price">
+                    ${promo ? `<span class="old">${basket.price}€</span>` : ''}
+                    <span class="${promo ? 'promo' : ''}">${finalPrice.toFixed(2)}€</span>
+                    ${promo ? `<div class="promo-badge">-${promo.discount}% 🎉</div>` : ''}
                 </div>
-                <button class="btn-primary" onclick="addBasketToCart('${b.id}')">Ajouter</button>
+                
+                <div class="basket-content">
+                    <h4>Contenu :</h4>
+                    <ul>
+                        ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <div class="basket-stock">
+                    <span class="stock-badge ${stockClass}">${stockText}</span>
+                </div>
+                
+                <div class="basket-actions">
+                    <div class="qty-selector">
+                        <button onclick="changeQty('${basket.id}', -1)">-</button>
+                        <span id="qty-${basket.id}">1</span>
+                        <button onclick="changeQty('${basket.id}', 1)">+</button>
+                    </div>
+                    <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
+                        ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
@@ -364,10 +422,16 @@ async function loadUserData(uid) {
         if (snapshot.exists()) {
             const user = snapshot.val();
             document.getElementById('userName').textContent = `${user.firstName} ${user.lastName}`;
-            document.getElementById('userInitials').textContent = user.firstName[0] + user.lastName[0];
-            document.getElementById('userFirstName').value = user.firstName;
-            document.getElementById('userLastName').value = user.lastName;
-            document.getElementById('userEmail').value = user.email;
+            document.getElementById('userInitials').textContent = (user.firstName[0] + (user.lastName[0] || '')).toUpperCase();
+            
+            // Pré-remplir les champs du formulaire
+            const firstNameField = document.getElementById('userFirstName');
+            const lastNameField = document.getElementById('userLastName');
+            const emailField = document.getElementById('userEmail');
+            
+            if (firstNameField) firstNameField.value = user.firstName || '';
+            if (lastNameField) lastNameField.value = user.lastName || '';
+            if (emailField) emailField.value = user.email || '';
         }
     } catch (err) {
         console.error('Erreur:', err);
@@ -420,3 +484,60 @@ document.getElementById('userForm')?.addEventListener('submit', async (e) => {
         alert('Erreur: ' + err.message);
     }
 });
+
+// ===== AUTHENTIFICATION GOOGLE =====
+async function signInWithGoogle() {
+    try {
+        const provider = new window.firebase.GoogleAuthProvider();
+        const result = await window.firebase.signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        const userRef = window.firebase.ref(db, `paniers-du-jardin/users/${user.uid}`);
+        const snapshot = await window.firebase.get(userRef);
+        
+        if (!snapshot.exists()) {
+            const names = user.displayName?.split(' ') || ['', ''];
+            await window.firebase.set(userRef, {
+                firstName: names[0],
+                lastName: names.slice(1).join(' ') || names[0],
+                email: user.email,
+                created: new Date().toISOString(),
+                photoURL: user.photoURL
+            });
+        }
+        
+        closeAuthModal();
+        alert('✅ Connecté avec Google !');
+    } catch (error) {
+        alert('Erreur: ' + error.message);
+    }
+}
+
+// ===== VÉRIFICATION OUVERTURE BOUTIQUE =====
+async function checkShopStatus() {
+    try {
+        const statusRef = window.firebase.ref(db, 'paniers-du-jardin/settings/shopStatus');
+        const snapshot = await window.firebase.get(statusRef);
+        
+        if (snapshot.exists()) {
+            const status = snapshot.val();
+            if (!status.isOpen) {
+                document.getElementById('shopClosedMessage').style.display = 'block';
+                document.getElementById('orderSection').style.display = 'none';
+                document.querySelector('.divider').style.display = 'none';
+                document.querySelector('.custom-basket-section').style.display = 'none';
+                
+                const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+                const reopenDay = status.reopenDay ? days[status.reopenDay] : 'bientôt';
+                document.getElementById('reopeningMessage').textContent = `Repassez ${reopenDay} !`;
+            } else {
+                document.getElementById('shopClosedMessage').style.display = 'none';
+                document.getElementById('orderSection').style.display = 'block';
+                document.querySelector('.divider').style.display = 'block';
+                document.querySelector('.custom-basket-section').style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error('Erreur vérification boutique:', err);
+    }
+}
