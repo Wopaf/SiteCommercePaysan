@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Paniers du Jardin</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-body">
+    
+    <!-- Page de connexion Admin -->
+    <div class="admin-login-page" id="adminLoginPage">
+        <div class="admin-login-container">
+            <div class="admin-login-header">
+                <span class="logo">🌱</span>
+                <h1>Paniers du Jardin</h1>
+                <p>Interface d'Administration</p>
+            </div>
+            <form class="admin-login-form" onsubmit="adminLogin(event)">
+                <input type="email" id="adminEmail" placeholder="Email" class="input-field" required>
+                <input type="password" id="adminPassword" placeholder="Mot de passe" class="input-field" required>
+                <button type="submit" class="btn-primary btn-block">Se connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Interface Admin -->
+    <div class="admin-dashboard" id="adminDashboard" style="display: none;">
+        
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <span class="logo">🌱</span>
+                <h2>Paniers du Jardin</h2>
+            </div>
+            
+            <nav class="admin-nav">
+                <button class="admin-nav-btn active" onclick="showAdminSection('dashboard')">
+                    <span class="nav-icon">📊</span> Tableau de bord
+                </button>
+                <button class="admin-nav-btn" onclick="showAdminSection('products')">
+                    <span class="nav-icon">🥕</span> Produits
+                </button>
+                <button class="admin-nav-btn" onclick="showAdminSection('baskets')">
+                    <span class="nav-icon">🧺</span> Paniers
+                </button>
+                <button class="admin-nav-btn" onclick="showAdminSection('orders')">
+                    <span class="nav-icon">📦</span> Commandes
+                </button>
+                <button class="admin-nav-btn" onclick="showAdminSection('users')">
+                    <span class="nav-icon">👥</span> Utilisateurs
+                </button>
+                <button class="admin-nav-btn" onclick="showAdminSection('media')">
+                    <span class="nav-icon">🖼️</span> Médias
+                </button>
+                <button class="admin-nav-btn" onclick="showAdminSection('settings')">
+                    <span class="nav-icon">⚙️</span> Paramètres
+                </button>
+            </nav>
+
+            <div class="admin-sidebar-footer">
+                <button class="btn-secondary btn-block" onclick="adminLogout()">Déconnexion</button>
+                <a href="index.html" class="btn-link">← Retour au site</a>
+            </div>
+        </aside>
+
+        <!-- Contenu Principal -->
+        <main class="admin-content">
+            <div class="admin-header">
+                <h1 id="adminSectionTitle">Tableau de bord</h1>
+                <div class="admin-user-info">
+                    <span id="adminUserName">Admin</span>
+                    <div class="admin-avatar">A</div>
+                </div>
+            </div>
+
+            <!-- Section Tableau de Bord -->
+            <div class="admin-section active" id="admin-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-info">
+                            <p>Commandes du jour</p>
+                            <h3 id="todayOrders">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-info">
+                            <p>Chiffre d'affaires</p>
+                            <h3 id="todayRevenue">0€</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🥕</div>
+                        <div class="stat-info">
+                            <p>Produits en stock</p>
+                            <h3 id="totalProducts">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <p>Utilisateurs</p>
+                            <h3 id="totalUsers">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-orders">
+                    <h3>Commandes Récentes</h3>
+                    <div id="dashboardOrders"></div>
+                </div>
+            </div>
+
+            <!-- Section Produits -->
+            <div class="admin-section" id="admin-products">
+                <div class="section-header">
+                    <h2>Gestion des Produits</h2>
+                    <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
+                </div>
+
+                <div class="products-list" id="productsList">
+                    <!-- Liste des produits -->
+                </div>
+            </div>
+
+            <!-- Section Paniers -->
+            <div class="admin-section" id="admin-baskets">
+                <div class="section-header">
+                    <h2>Gestion des Paniers Prédéfinis</h2>
+                </div>
+
+                <div class="baskets-admin-list" id="basketsAdminList">
+                    <!-- Paniers -->
+                </div>
+
+                <div class="promotions-section">
+                    <h3>Promotions Actives</h3>
+                    <div class="promo-form">
+                        <select id="promoBasket" class="input-field">
+                            <option value="petit">Panier Petit</option>
+                            <option value="moyen">Panier Moyen</option>
+                            <option value="grand">Panier Grand</option>
+                        </select>
+                        <input type="number" id="promoDiscount" placeholder="Réduction %" class="input-field" min="0" max="100">
+                        <button onclick="addPromotion()" class="btn-primary">Ajouter</button>
+                    </div>
+                    <div id="promoList"></div>
+                </div>
+            </div>
+
+            <!-- Section Commandes -->
+            <div class="admin-section" id="admin-orders">
+                <div class="section-header">
+                    <h2>Toutes les Commandes</h2>
+                    <div class="filters">
+                        <select class="input-field" onchange="filterOrders(this.value)">
+                            <option value="all">Toutes</option>
+                            <option value="pending">En attente</option>
+                            <option value="completed">Complétées</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="orders-table" id="ordersTable">
+                    <!-- Table des commandes -->
+                </div>
+            </div>
+
+            <!-- Section Utilisateurs -->
+            <div class="admin-section" id="admin-users">
+                <div class="section-header">
+                    <h2>Utilisateurs Inscrits</h2>
+                </div>
+
+                <div class="users-table" id="usersTable">
+                    <!-- Table des utilisateurs -->
+                </div>
+            </div>
+
+            <!-- Section Médias -->
+            <div class="admin-section" id="admin-media">
+                <h2>Gestion des Médias</h2>
+
+                <!-- Carrousel d'accueil -->
+                <div class="media-section">
+                    <h3>Images du Carrousel (Accueil)</h3>
+                    <p class="section-description">Les images défilent toutes les 10 secondes sur la page d'accueil</p>
+                    
+                    <div class="carousel-images-grid" id="carouselImagesGrid">
+                        <!-- Images du carrousel -->
+                    </div>
+                    
+                    <div class="upload-zone" onclick="document.getElementById('carouselImageInput').click()">
+                        <input type="file" id="carouselImageInput" accept="image/*" style="display: none;" onchange="uploadCarouselImage(event)">
+                        <span class="upload-icon">📤</span>
+                        <p>Cliquez pour ajouter une image au carrousel</p>
+                        <small>Format: JPG, PNG (recommandé: 1920x1080px)</small>
+                    </div>
+                </div>
+
+                <!-- Vidéo d'exploitation -->
+                <div class="media-section">
+                    <h3>Vidéo de l'Exploitation</h3>
+                    <p class="section-description">Cette vidéo sera affichée sur la page d'accueil</p>
+                    
+                    <div class="video-preview" id="videoPreview">
+                        <video controls id="currentVideo">
+                            <source src="" type="video/mp4">
+                        </video>
+                    </div>
+
+                    <div class="upload-zone" onclick="document.getElementById('videoInput').click()">
+                        <input type="file" id="videoInput" accept="video/*" style="display: none;" onchange="uploadVideo(event)">
+                        <span class="upload-icon">🎬</span>
+                        <p>Cliquez pour modifier la vidéo</p>
+                        <small>Format: MP4 (recommandé: max 50MB)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Paramètres -->
+            <div class="admin-section" id="admin-settings">
+                <h2>Paramètres du Commerce</h2>
+
+                <form class="settings-form" id="settingsForm">
+                    <div class="form-group">
+                        <label>Nom du Commerce</label>
+                        <input type="text" id="shopName" class="input-field" value="Paniers du Jardin">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Adresse Physique</label>
+                        <textarea id="shopAddressInput" class="input-field" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Numéro de Téléphone</label>
+                        <input type="tel" id="shopPhoneInput" class="input-field">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Adresse Email</label>
+                        <input type="email" id="shopEmailInput" class="input-field">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Coordonnées GPS (pour la carte)</label>
+                        <div class="input-row">
+                            <input type="text" id="shopLat" class="input-field" placeholder="Latitude">
+                            <input type="text" id="shopLng" class="input-field" placeholder="Longitude">
+                        </div>
+                        <small>Trouvez vos coordonnées sur <a href="https://www.google.fr/maps" target="_blank">Google Maps</a></small>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Enregistrer les paramètres</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Produit -->
+    <div class="modal" id="productModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Ajouter un Produit</h3>
+                <button onclick="closeProductModal()" class="close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm" onsubmit="saveProduct(event)">
+                    <input type="hidden" id="productId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nom du Produit *</label>
+                            <input type="text" id="productName" class="input-field" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Catégorie *</label>
+                            <select id="productCategory" class="input-field" required>
+                                <option value="fruits">Fruits</option>
+                                <option value="legumes">Légumes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Prix (€/kg) *</label>
+                            <input type="number" id="productPrice" class="input-field" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Stock</label>
+                            <div class="stock-controls-inline">
+                                <button type="button" class="qty-btn" onclick="changeProductStock(-10)">-</button>
+                                <input type="number" id="productStock" class="input-field stock-input-inline" value="0">
+                                <button type="button" class="qty-btn" onclick="changeProductStock(10)">+</button>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="productInStock" onchange="toggleInStock()">
+                                    <span>En Stock Illimité</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Image du Produit</label>
+                        <div class="image-upload-zone">
+                            <input type="file" id="productImage" accept="image/*" style="display: none;" onchange="previewProductImage(event)">
+                            <div class="image-preview" id="productImagePreview" onclick="document.getElementById('productImage').click()">
+                                <span class="upload-placeholder">📷 Cliquez pour ajouter une image</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Disponibilité (Mois de l'année)</label>
+                        <div class="months-checkboxes">
+                            <label><input type="checkbox" value="1"> Janvier</label>
+                            <label><input type="checkbox" value="2"> Février</label>
+                            <label><input type="checkbox" value="3"> Mars</label>
+                            <label><input type="checkbox" value="4"> Avril</label>
+                            <label><input type="checkbox" value="5"> Mai</label>
+                            <label><input type="checkbox" value="6"> Juin</label>
+                            <label><input type="checkbox" value="7"> Juillet</label>
+                            <label><input type="checkbox" value="8"> Août</label>
+                            <label><input type="checkbox" value="9"> Septembre</label>
+                            <label><input type="checkbox" value="10"> Octobre</label>
+                            <label><input type="checkbox" value="11"> Novembre</label>
+                            <label><input type="checkbox" value="12"> Décembre</label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeProductModal()">Annuler</button>
+                        <button type="submit" class="btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Module -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
+
+        window.firebaseApp = { initializeApp };
+        window.firebaseDatabase = { getDatabase, ref, set, get, onValue };
+        window.firebaseAuth = { getAuth, signInWithEmailAndPassword, onAuthStateChanged };
+        window.firebaseStorage = { getStorage, storageRef, uploadBytes, getDownloadURL, deleteObject };
+
+        setTimeout(() => {
+            if (window.initializeAdminFirebase) {
+                window.initializeAdminFirebase(
+                    window.firebaseApp,
+                    window.firebaseDatabase,
+                    window.firebaseAuth,
+                    window.firebaseStorage
+                );
+            }
+        }, 100);
+    </script>
+
+    <script src="admin.js"></script>
+</body>
+</html>
