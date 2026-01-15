@@ -247,6 +247,7 @@ function addBasketToCart(id) {
     }
     updateCart();
     document.getElementById(`qty-${id}`).textContent = '1';
+    showToast(`${qty} Panier ${basket.name} ajouté à votre panier !`);
 }
 
 // Panier personnalisé
@@ -293,6 +294,7 @@ function addCustomToCart(id) {
     }
     updateCart();
     document.getElementById(`custom-${id}`).value = '0';
+    showToast(`${qty}kg de ${product.name} ajouté à votre panier !`);
 }
 
 // Panier
@@ -332,10 +334,31 @@ function toggleCart() {
 }
 
 function checkout() {
-    if (STATE.cart.length === 0) return alert('Panier vide');
-    if (!currentUser) return openAuthModal();
+    if (STATE.cart.length === 0) return alert('Votre panier est vide');
+    
+    if (!currentUser) {
+        alert('⚠️ Vous devez être connecté pour réserver une commande');
+        openAuthModal();
+        return;
+    }
+    
     document.getElementById('paymentModal').classList.add('active');
-    document.getElementById('orderSummary').innerHTML = STATE.cart.map(i => `<p>${i.name} × ${i.quantity}</p>`).join('');
+    
+    const totalPrice = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    document.getElementById('finalTotal').textContent = totalPrice.toFixed(2) + ' €';
+    
+    document.getElementById('orderSummary').innerHTML = STATE.cart.map(item => `
+        <div class="order-item">
+            <div class="order-item-info">
+                <span class="order-item-icon">${item.icon}</span>
+                <span class="order-item-name">${item.name}</span>
+            </div>
+            <div class="order-item-details">
+                <span>${item.quantity} × ${item.price.toFixed(2)}€</span>
+                <strong>${(item.quantity * item.price).toFixed(2)}€</strong>
+            </div>
+        </div>
+    `).join('');
 }
 
 function closePaymentModal() {
@@ -344,14 +367,18 @@ function closePaymentModal() {
 
 document.getElementById('paymentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser) {
+        alert('⚠️ Vous devez être connecté');
+        return;
+    }
     
     const order = {
         id: `CMD-${Date.now()}`,
         userId: currentUser.uid,
         items: STATE.cart,
         total: STATE.cart.reduce((s, i) => s + (i.price * i.quantity), 0),
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        status: 'reserved'
     };
     
     try {
@@ -360,7 +387,7 @@ document.getElementById('paymentForm')?.addEventListener('submit', async (e) => 
         STATE.cart = [];
         updateCart();
         closePaymentModal();
-        alert('✅ Commande validée !');
+        showToast('✅ Commande réservée avec succès ! Vous recevrez une confirmation par email.', 'success');
     } catch (err) {
         alert('Erreur: ' + err.message);
     }
@@ -395,18 +422,31 @@ async function handleLogin(e) {
 
 async function handleRegister(e) {
     e.preventDefault();
+    const firstName = e.target[0].value;
+    const lastName = e.target[1].value;
+    const email = e.target[2].value;
+    const phone = e.target[3].value;
+    const password = e.target[4].value;
+    
     try {
-        const userCred = await window.firebase.createUserWithEmailAndPassword(auth, e.target[2].value, e.target[3].value);
-        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/users/${userCred.user.uid}`), {
-            firstName: e.target[0].value,
-            lastName: e.target[1].value,
-            email: e.target[2].value,
-            created: new Date().toISOString()
-        });
+        const userCredential = await window.firebase.createUserWithEmailAndPassword(auth, email, password);
+        
+        // Sauvegarder les infos utilisateur
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/users/${userCredential.user.uid}`),
+            {
+                firstName,
+                lastName,
+                email,
+                phone: phone || '',
+                created: new Date().toISOString()
+            }
+        );
+        
         closeAuthModal();
-        alert('Compte créé !');
-    } catch (err) {
-        alert('Erreur: ' + err.message);
+        alert('✅ Compte créé avec succès !');
+    } catch (error) {
+        alert('Erreur d\'inscription : ' + error.message);
     }
 }
 
@@ -428,10 +468,12 @@ async function loadUserData(uid) {
             const firstNameField = document.getElementById('userFirstName');
             const lastNameField = document.getElementById('userLastName');
             const emailField = document.getElementById('userEmail');
+            const phoneField = document.getElementById('userPhone');
             
             if (firstNameField) firstNameField.value = user.firstName || '';
             if (lastNameField) lastNameField.value = user.lastName || '';
             if (emailField) emailField.value = user.email || '';
+            if (phoneField) phoneField.value = user.phone || '';
         }
     } catch (err) {
         console.error('Erreur:', err);
@@ -477,9 +519,10 @@ document.getElementById('userForm')?.addEventListener('submit', async (e) => {
         await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/users/${currentUser.uid}`), {
             firstName: document.getElementById('userFirstName').value,
             lastName: document.getElementById('userLastName').value,
-            email: document.getElementById('userEmail').value
+            email: document.getElementById('userEmail').value,
+            phone: document.getElementById('userPhone').value || ''
         });
-        alert('Enregistré !');
+        alert('✅ Informations enregistrées !');
     } catch (err) {
         alert('Erreur: ' + err.message);
     }
@@ -540,4 +583,18 @@ async function checkShopStatus() {
     } catch (err) {
         console.error('Erreur vérification boutique:', err);
     }
+}
+
+// ===== NOTIFICATION TOAST =====
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
