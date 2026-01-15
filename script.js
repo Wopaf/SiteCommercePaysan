@@ -39,17 +39,48 @@ async function loadAllData() {
         if (snapshot.exists()) {
             const data = snapshot.val();
             DATA.products = data.products ? Object.entries(data.products).map(([id, p]) => ({id, ...p})) : [];
-            DATA.baskets = data.baskets || DATA.baskets;
+            
+            // Corriger le chargement des paniers
+            if (data.baskets && typeof data.baskets === 'object') {
+                // Si baskets est un objet avec petit, moyen, grand
+                DATA.baskets = [
+                    {id: 'petit', name: 'Petit', price: data.baskets.petit?.price || 15, stock: data.baskets.petit?.stock || 25},
+                    {id: 'moyen', name: 'Moyen', price: data.baskets.moyen?.price || 25, stock: data.baskets.moyen?.stock || 30},
+                    {id: 'grand', name: 'Grand', price: data.baskets.grand?.price || 40, stock: data.baskets.grand?.stock || 15}
+                ];
+            } else {
+                // Valeurs par défaut
+                DATA.baskets = [
+                    {id: 'petit', name: 'Petit', price: 15, stock: 25},
+                    {id: 'moyen', name: 'Moyen', price: 25, stock: 30},
+                    {id: 'grand', name: 'Grand', price: 40, stock: 15}
+                ];
+            }
+            
             DATA.promotions = data.promotions || [];
-            DATA.orders = data.orders || [];
+            DATA.orders = data.orders ? Object.values(data.orders) : [];
             DATA.settings = data.settings || {};
             carouselImages = data.media?.carouselImages || ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
             if (data.media?.videoUrl) document.getElementById('exploitationVideo').src = data.media.videoUrl;
+        } else {
+            // Données par défaut si rien dans Firebase
+            DATA.baskets = [
+                {id: 'petit', name: 'Petit', price: 15, stock: 25},
+                {id: 'moyen', name: 'Moyen', price: 25, stock: 30},
+                {id: 'grand', name: 'Grand', price: 40, stock: 15}
+            ];
+            carouselImages = ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
         }
         renderAll();
         loadSettings();
     } catch (err) {
         console.error('Erreur:', err);
+        // Valeurs par défaut en cas d'erreur
+        DATA.baskets = [
+            {id: 'petit', name: 'Petit', price: 15, stock: 25},
+            {id: 'moyen', name: 'Moyen', price: 25, stock: 30},
+            {id: 'grand', name: 'Grand', price: 40, stock: 15}
+        ];
         carouselImages = ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
         renderAll();
     }
@@ -156,8 +187,8 @@ function renderBaskets() {
             name: 'Panier Petit',
             icon: '🧺',
             subtitle: 'Idéal pour 1-2 personnes',
-            price: DATA.baskets.find(b => b.id === 'petit')?.price || 15,
-            stock: DATA.baskets.find(b => b.id === 'petit')?.stock || 25,
+            price: 15,
+            stock: 25,
             content: ['3 variétés de fruits', '4 variétés de légumes', 'Environ 3kg']
         },
         {
@@ -165,8 +196,8 @@ function renderBaskets() {
             name: 'Panier Moyen',
             icon: '🧺',
             subtitle: 'Parfait pour 3-4 personnes',
-            price: DATA.baskets.find(b => b.id === 'moyen')?.price || 25,
-            stock: DATA.baskets.find(b => b.id === 'moyen')?.stock || 30,
+            price: 25,
+            stock: 30,
             content: ['5 variétés de fruits', '6 variétés de légumes', 'Environ 5kg', '1 surprise du jardin'],
             featured: true
         },
@@ -175,11 +206,20 @@ function renderBaskets() {
             name: 'Panier Grand',
             icon: '🧺',
             subtitle: 'Pour famille nombreuse',
-            price: DATA.baskets.find(b => b.id === 'grand')?.price || 40,
-            stock: DATA.baskets.find(b => b.id === 'grand')?.stock || 15,
+            price: 40,
+            stock: 15,
             content: ['7 variétés de fruits', '8 variétés de légumes', 'Environ 8kg', '2 surprises du jardin', 'Herbes aromatiques']
         }
     ];
+    
+    // Mettre à jour avec les données Firebase si disponibles
+    basketsData.forEach(basket => {
+        const firebaseBasket = DATA.baskets.find(b => b.id === basket.id);
+        if (firebaseBasket) {
+            basket.price = firebaseBasket.price;
+            basket.stock = firebaseBasket.stock;
+        }
+    });
     
     document.getElementById('basketsGrid').innerHTML = basketsData.map(basket => {
         const promo = DATA.promotions.find(p => p.basketId === basket.id);
