@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration - Paniers du Jardin</title>
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="admin-body">
     
@@ -39,10 +39,7 @@
                     <span class="nav-icon">📊</span> Tableau de bord
                 </button>
                 <button class="admin-nav-btn" onclick="showAdminSection('products')">
-                    <span class="nav-icon">🥕</span> Produits
-                </button>
-                <button class="admin-nav-btn" onclick="showAdminSection('baskets')">
-                    <span class="nav-icon">🧺</span> Paniers
+                    <span class="nav-icon">🥕</span> Produits & Paniers
                 </button>
                 <button class="admin-nav-btn" onclick="showAdminSection('orders')">
                     <span class="nav-icon">📦</span> Commandes
@@ -116,40 +113,39 @@
                 </div>
             </div>
 
-            <!-- Section Produits -->
+            <!-- Section Produits & Paniers -->
             <div class="admin-section" id="admin-products">
-                <div class="section-header">
-                    <h2>Gestion des Produits</h2>
-                    <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
-                </div>
-
-                <div class="products-list" id="productsList">
-                    <!-- Liste des produits -->
-                </div>
-            </div>
-
-            <!-- Section Paniers -->
-            <div class="admin-section" id="admin-baskets">
-                <div class="section-header">
-                    <h2>Gestion des Paniers Prédéfinis</h2>
-                </div>
-
-                <div class="baskets-admin-list" id="basketsAdminList">
-                    <!-- Paniers -->
-                </div>
-
-                <div class="promotions-section">
-                    <h3>Promotions Actives</h3>
-                    <div class="promo-form">
-                        <select id="promoBasket" class="input-field">
-                            <option value="petit">Panier Petit</option>
-                            <option value="moyen">Panier Moyen</option>
-                            <option value="grand">Panier Grand</option>
-                        </select>
-                        <input type="number" id="promoDiscount" placeholder="Réduction %" class="input-field" min="0" max="100">
-                        <button onclick="addPromotion()" class="btn-primary">Ajouter</button>
+                <h2>Gestion des Paniers & Produits</h2>
+                
+                <!-- Paniers Prédéfinis -->
+                <div class="baskets-section">
+                    <h3>Paniers Prédéfinis</h3>
+                    <div class="baskets-admin-list" id="basketsAdminList"></div>
+                    
+                    <div class="promotions-section">
+                        <h4>Promotions Actives</h4>
+                        <div class="promo-form">
+                            <select id="promoBasket" class="input-field">
+                                <option value="petit">Panier Petit</option>
+                                <option value="moyen">Panier Moyen</option>
+                                <option value="grand">Panier Grand</option>
+                            </select>
+                            <input type="number" id="promoDiscount" placeholder="Réduction %" class="input-field" min="0" max="100">
+                            <button onclick="addPromotion()" class="btn-primary">Ajouter</button>
+                        </div>
+                        <div id="promoList"></div>
                     </div>
-                    <div id="promoList"></div>
+                </div>
+                
+                <div class="section-divider"></div>
+                
+                <!-- Produits Individuels -->
+                <div class="products-section">
+                    <div class="section-header">
+                        <h3>Produits Individuels</h3>
+                        <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
+                    </div>
+                    <div class="products-grid" id="productsList"></div>
                 </div>
             </div>
 
@@ -257,6 +253,18 @@
 
                     <button type="submit" class="btn-primary">Enregistrer les paramètres</button>
                 </form>
+                
+                <div class="admin-management-section">
+                    <h3>Gestion des Administrateurs</h3>
+                    <div class="admins-list" id="adminsList"></div>
+                    
+                    <div class="add-admin-form">
+                        <h4>Ajouter un administrateur</h4>
+                        <p class="info-text">L'utilisateur doit d'abord créer un compte sur le site.</p>
+                        <input type="text" id="newAdminUid" class="input-field" placeholder="UID de l'utilisateur">
+                        <button class="btn-primary" onclick="addAdmin()">Ajouter comme admin</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
