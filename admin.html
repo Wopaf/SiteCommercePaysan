@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration - Paniers du Jardin</title>
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="admin-styles.css">
 </head>
 <body class="admin-body">
     
@@ -192,11 +192,10 @@
                         <!-- Images du carrousel -->
                     </div>
                     
-                    <div class="upload-zone" onclick="document.getElementById('carouselImageInput').click()">
-                        <input type="file" id="carouselImageInput" accept="image/*" style="display: none;" onchange="uploadCarouselImage(event)">
-                        <span class="upload-icon">📤</span>
-                        <p>Cliquez pour ajouter une image au carrousel</p>
-                        <small>Format: JPG, PNG (recommandé: 1920x1080px)</small>
+                    <div class="add-image-form">
+                        <h4>Ajouter une image</h4>
+                        <input type="url" id="carouselImageUrl" class="input-field" placeholder="https://exemple.com/image.jpg">
+                        <button class="btn-primary" onclick="addCarouselImageUrl()">Ajouter l'image</button>
                     </div>
                 </div>
 
@@ -211,11 +210,10 @@
                         </video>
                     </div>
 
-                    <div class="upload-zone" onclick="document.getElementById('videoInput').click()">
-                        <input type="file" id="videoInput" accept="video/*" style="display: none;" onchange="uploadVideo(event)">
-                        <span class="upload-icon">🎬</span>
-                        <p>Cliquez pour modifier la vidéo</p>
-                        <small>Format: MP4 (recommandé: max 50MB)</small>
+                    <div class="add-video-form">
+                        <h4>Modifier la vidéo</h4>
+                        <input type="url" id="videoUrl" class="input-field" placeholder="https://exemple.com/video.mp4">
+                        <button class="btn-primary" onclick="saveVideoUrl()">Enregistrer la vidéo</button>
                     </div>
                 </div>
             </div>
@@ -307,13 +305,12 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Image du Produit</label>
-                        <div class="image-upload-zone">
-                            <input type="file" id="productImage" accept="image/*" style="display: none;" onchange="previewProductImage(event)">
-                            <div class="image-preview" id="productImagePreview" onclick="document.getElementById('productImage').click()">
-                                <span class="upload-placeholder">📷 Cliquez pour ajouter une image</span>
-                            </div>
+                        <label>Image du Produit (URL)</label>
+                        <input type="url" id="productImageUrl" class="input-field" placeholder="https://exemple.com/image.jpg">
+                        <div class="image-preview" id="productImagePreview">
+                            <span class="upload-placeholder">Aperçu de l'image</span>
                         </div>
+                        <small style="color:#666;">Collez l'URL de votre image ci-dessus</small>
                     </div>
 
                     <div class="form-group">
@@ -374,4 +371,3 @@
     <script src="admin.js"></script>
 </body>
 </html>
-
