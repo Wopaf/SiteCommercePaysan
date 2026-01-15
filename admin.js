@@ -131,12 +131,20 @@ function renderDashboard() {
         dashboardOrders.innerHTML = '<p style="text-align:center;color:#999;">Aucune commande aujourd\'hui</p>';
     } else {
         dashboardOrders.innerHTML = todayOrders.slice(0, 5).map(order => `
-            <div style="padding:1rem;border-bottom:1px solid #ddd;">
+            <div style="padding:1rem;border-bottom:1px solid #ddd;cursor:pointer;transition:0.3s;" 
+                 onclick="showOrderDetailsFromDashboard('${order.id}')"
+                 onmouseover="this.style.background='#f5f5f5'"
+                 onmouseout="this.style.background='white'">
                 <strong>${order.id}</strong> - ${order.total?.toFixed(2)}€
                 <div style="font-size:0.9rem;color:#666;">${order.items?.length || 0} article(s)</div>
             </div>
         `).join('');
     }
+}
+
+function showOrderDetailsFromDashboard(orderId) {
+    showAdminSection('orders');
+    setTimeout(() => showOrderDetails(orderId), 300);
 }
 
 // ===== PRODUITS =====
@@ -557,3 +565,285 @@ document.getElementById('settingsForm')?.addEventListener('submit', async (event
         alert('Erreur: ' + err.message);
     }
 });
+
+// ===== SYSTÈME OUVERTURE/FERMETURE BOUTIQUE =====
+let shopStatus = { isOpen: true, reopenDay: null };
+
+async function loadShopStatus() {
+    try {
+        const snapshot = await window.firebase.get(window.firebase.ref(db, 'paniers-du-jardin/settings/shopStatus'));
+        if (snapshot.exists()) {
+            shopStatus = snapshot.val();
+        }
+        renderShopStatusToggle();
+    } catch (err) {
+        console.error('Erreur chargement statut:', err);
+    }
+}
+
+function renderShopStatusToggle() {
+    const container = document.getElementById('shopStatusToggle');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="shop-status-card">
+            <h3>Statut de la Boutique</h3>
+            <div class="status-toggle">
+                <label class="toggle-switch">
+                    <input type="checkbox" ${shopStatus.isOpen ? 'checked' : ''} onchange="toggleShopStatus()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="status-text">${shopStatus.isOpen ? 'Ouverte' : 'Fermée'}</span>
+            </div>
+            ${!shopStatus.isOpen ? `
+                <div class="reopen-day-selector">
+                    <label>Jour de réouverture :</label>
+                    <select id="reopenDaySelect" class="input-field">
+                        <option value="">Non défini</option>
+                        <option value="1" ${shopStatus.reopenDay === 1 ? 'selected' : ''}>Lundi</option>
+                        <option value="2" ${shopStatus.reopenDay === 2 ? 'selected' : ''}>Mardi</option>
+                        <option value="3" ${shopStatus.reopenDay === 3 ? 'selected' : ''}>Mercredi</option>
+                        <option value="4" ${shopStatus.reopenDay === 4 ? 'selected' : ''}>Jeudi</option>
+                        <option value="5" ${shopStatus.reopenDay === 5 ? 'selected' : ''}>Vendredi</option>
+                        <option value="6" ${shopStatus.reopenDay === 6 ? 'selected' : ''}>Samedi</option>
+                        <option value="0" ${shopStatus.reopenDay === 0 ? 'selected' : ''}>Dimanche</option>
+                    </select>
+                    <button class="btn-primary" onclick="saveReopenDay()">Enregistrer</button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+async function toggleShopStatus() {
+    shopStatus.isOpen = !shopStatus.isOpen;
+    if (shopStatus.isOpen) {
+        shopStatus.reopenDay = null;
+    }
+    
+    try {
+        await window.firebase.set(window.firebase.ref(db, 'paniers-du-jardin/settings/shopStatus'), shopStatus);
+        renderShopStatusToggle();
+        alert(shopStatus.isOpen ? '✅ Boutique ouverte !' : '⚠️ Boutique fermée');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+async function saveReopenDay() {
+    const day = document.getElementById('reopenDaySelect').value;
+    shopStatus.reopenDay = day ? parseInt(day) : null;
+    
+    try {
+        await window.firebase.set(window.firebase.ref(db, 'paniers-du-jardin/settings/shopStatus'), shopStatus);
+        renderShopStatusToggle();
+        alert('✅ Jour de réouverture enregistré !');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+// ===== AMÉLIORATIONS COMMANDES =====
+let selectedOrder = null;
+
+function renderOrders() {
+    const container = document.getElementById('ordersTable');
+    
+    if (DATA.orders.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:3rem;">Aucune commande</p>';
+        return;
+    }
+    
+    // Trier par date (plus récente en premier)
+    const sortedOrders = [...DATA.orders].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    container.innerHTML = `
+        <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
+            <thead style="background:#4a7c4e;color:white;">
+                <tr>
+                    <th style="padding:1rem;text-align:left;">Commande</th>
+                    <th style="padding:1rem;text-align:left;">Date</th>
+                    <th style="padding:1rem;text-align:left;">Articles</th>
+                    <th style="padding:1rem;text-align:right;">Total</th>
+                    <th style="padding:1rem;text-align:center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sortedOrders.map(order => `
+                    <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showOrderDetails('${order.id}')">
+                        <td style="padding:1rem;">${order.id}</td>
+                        <td style="padding:1rem;">${new Date(order.date).toLocaleString('fr-FR')}</td>
+                        <td style="padding:1rem;">${order.items?.length || 0} article(s)</td>
+                        <td style="padding:1rem;text-align:right;font-weight:600;">${order.total?.toFixed(2)}€</td>
+                        <td style="padding:1rem;text-align:center;">
+                            <button class="btn-secondary" style="padding:0.5rem 1rem;" onclick="event.stopPropagation();showOrderDetails('${order.id}')">Voir plus</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function showOrderDetails(orderId) {
+    const order = DATA.orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    selectedOrder = order;
+    const user = DATA.users.find(u => u.id === order.userId);
+    
+    const modal = document.getElementById('orderDetailsModal') || createOrderDetailsModal();
+    document.getElementById('orderDetailsContent').innerHTML = `
+        <h3>Commande ${order.id}</h3>
+        <p><strong>Date:</strong> ${new Date(order.date).toLocaleString('fr-FR')}</p>
+        <p><strong>Total:</strong> ${order.total?.toFixed(2)}€</p>
+        
+        <h4 style="margin-top:1.5rem;">Articles:</h4>
+        <div style="background:#f5f5f5;padding:1rem;border-radius:10px;">
+            ${order.items.map(item => `
+                <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #ddd;">
+                    <span>${item.icon} ${item.name}</span>
+                    <span>${item.quantity} × ${item.price}€ = ${(item.quantity * item.price).toFixed(2)}€</span>
+                </div>
+            `).join('')}
+        </div>
+        
+        <h4 style="margin-top:1.5rem;">Client:</h4>
+        <div style="background:#e8f5e9;padding:1rem;border-radius:10px;">
+            ${user ? `
+                <p><strong>${user.firstName} ${user.lastName}</strong></p>
+                <p>📧 ${user.email}</p>
+                <button class="btn-primary" style="margin-top:0.5rem;" onclick="goToUserProfile('${user.id}')">Voir le profil</button>
+            ` : '<p>Utilisateur non trouvé</p>'}
+        </div>
+    `;
+    
+    modal.classList.add('active');
+}
+
+function createOrderDetailsModal() {
+    const modal = document.createElement('div');
+    modal.id = 'orderDetailsModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Détails de la commande</h3>
+                <button class="close-modal" onclick="closeOrderDetails()">✕</button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function closeOrderDetails() {
+    document.getElementById('orderDetailsModal')?.classList.remove('active');
+}
+
+function goToUserProfile(userId) {
+    closeOrderDetails();
+    showAdminSection('users');
+    setTimeout(() => showUserDetails(userId), 300);
+}
+
+// ===== AMÉLIORATIONS UTILISATEURS =====
+function renderUsers() {
+    const container = document.getElementById('usersTable');
+    
+    if (DATA.users.length === 0) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:3rem;">Aucun utilisateur inscrit</p>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
+            <thead style="background:#4a7c4e;color:white;">
+                <tr>
+                    <th style="padding:1rem;text-align:left;">Nom</th>
+                    <th style="padding:1rem;text-align:left;">Email</th>
+                    <th style="padding:1rem;text-align:left;">Inscription</th>
+                    <th style="padding:1rem;text-align:center;">Commandes</th>
+                    <th style="padding:1rem;text-align:center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${DATA.users.map(user => {
+                    const userOrders = DATA.orders.filter(o => o.userId === user.id);
+                    return `
+                        <tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:1rem;">${user.firstName} ${user.lastName}</td>
+                            <td style="padding:1rem;">${user.email}</td>
+                            <td style="padding:1rem;">${user.created ? new Date(user.created).toLocaleDateString('fr-FR') : 'N/A'}</td>
+                            <td style="padding:1rem;text-align:center;font-weight:600;">${userOrders.length}</td>
+                            <td style="padding:1rem;text-align:center;">
+                                <button class="btn-secondary" style="padding:0.5rem 1rem;" onclick="showUserDetails('${user.id}')">Voir plus</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+function showUserDetails(userId) {
+    const user = DATA.users.find(u => u.id === userId);
+    if (!user) return;
+    
+    const userOrders = DATA.orders.filter(o => o.userId === user.id).sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    const modal = document.getElementById('userDetailsModal') || createUserDetailsModal();
+    document.getElementById('userDetailsContent').innerHTML = `
+        <h3>${user.firstName} ${user.lastName}</h3>
+        <p>📧 ${user.email}</p>
+        <p><strong>Inscription:</strong> ${user.created ? new Date(user.created).toLocaleDateString('fr-FR') : 'N/A'}</p>
+        <p><strong>Nombre de commandes:</strong> ${userOrders.length}</p>
+        
+        <h4 style="margin-top:2rem;">Historique des commandes:</h4>
+        ${userOrders.length === 0 ? '<p style="color:#999;">Aucune commande</p>' : `
+            <div style="max-height:400px;overflow-y:auto;">
+                ${userOrders.map(order => `
+                    <div style="background:#f5f5f5;padding:1rem;border-radius:10px;margin:0.5rem 0;cursor:pointer;" onclick="showOrderDetails('${order.id}')">
+                        <div style="display:flex;justify-content:space-between;">
+                            <strong>${order.id}</strong>
+                            <span>${new Date(order.date).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                        <div style="color:#666;font-size:0.9rem;margin-top:0.5rem;">
+                            ${order.items.length} article(s) - ${order.total?.toFixed(2)}€
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `}
+    `;
+    
+    modal.classList.add('active');
+}
+
+function createUserDetailsModal() {
+    const modal = document.createElement('div');
+    modal.id = 'userDetailsModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Profil utilisateur</h3>
+                <button class="close-modal" onclick="closeUserDetails()">✕</button>
+            </div>
+            <div class="modal-body" id="userDetailsContent"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+}
+
+function closeUserDetails() {
+    document.getElementById('userDetailsModal')?.classList.remove('active');
+}
+
+// Initialiser le statut boutique au chargement
+setTimeout(() => {
+    if (STATE.firebaseReady) loadShopStatus();
+}, 1000);
