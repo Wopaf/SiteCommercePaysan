@@ -4,502 +4,218 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paniers du Jardin - Fruits & Légumes Locaux</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles-new.css">
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
                 <span class="logo">🌱</span>
                 <h1>Paniers du Jardin</h1>
             </div>
-            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
-                <span></span>
-                <span></span>
-                <span></span>
+            <button class="mobile-toggle" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
             </button>
             <ul class="nav-menu" id="navMenu">
                 <li><a href="#accueil" class="nav-link active">Accueil</a></li>
                 <li><a href="#commander" class="nav-link">Commander</a></li>
                 <li><a href="#apropos" class="nav-link">À Propos</a></li>
                 <li><a href="#contact" class="nav-link">Contact</a></li>
-                <li class="auth-section">
-                    <button class="btn-auth" id="authBtn" onclick="openAuthModal()">
-                        <span class="auth-icon">👤</span> Connexion
-                    </button>
-                </li>
-                <li>
-                    <button class="cart-button" onclick="toggleCart()">
-                        🛒 <span class="cart-count" id="cartCount">0</span>
-                    </button>
-                </li>
+                <li><button class="btn-auth" id="authBtn" onclick="openAuthModal()">👤 Connexion</button></li>
+                <li><button class="cart-btn" onclick="toggleCart()">🛒 <span id="cartCount">0</span></button></li>
             </ul>
         </div>
     </nav>
 
-    <!-- Page Accueil -->
     <section id="accueil" class="page active">
-        <!-- Hero Section avec Carrousel -->
-        <div class="hero">
-            <div class="hero-carousel" id="heroCarousel">
-                <div class="carousel-track" id="carouselTrack">
-                    <!-- Images générées dynamiquement -->
-                </div>
-                <div class="carousel-controls">
-                    <button class="carousel-btn prev" onclick="prevSlide()">‹</button>
-                    <button class="carousel-btn next" onclick="nextSlide()">›</button>
-                </div>
+        <div class="hero-section">
+            <div class="carousel" id="carousel">
+                <div class="carousel-track" id="carouselTrack"></div>
+                <button class="carousel-btn prev" onclick="prevSlide()">‹</button>
+                <button class="carousel-btn next" onclick="nextSlide()">›</button>
                 <div class="carousel-dots" id="carouselDots"></div>
             </div>
             <div class="hero-content">
-                <h2 class="hero-title">Fruits & Légumes Frais de nos Jardins</h2>
-                <p class="hero-subtitle">Des produits locaux, cultivés avec passion, livrés chez vous</p>
-                <button class="btn-primary" onclick="navigateTo('commander')">Commander Maintenant</button>
+                <h2>Fruits & Légumes Frais de nos Jardins</h2>
+                <p>Des produits locaux, cultivés avec passion</p>
+                <button class="btn-primary" onclick="navigateTo('commander')">Commander</button>
             </div>
         </div>
 
-        <!-- Produits de Saison -->
         <div class="container">
             <h2 class="section-title">Produits de Saison</h2>
-            <p class="section-subtitle">Découvrez nos produits frais du mois</p>
-            
-            <div class="seasonal-products-wrapper">
-                <div class="seasonal-products-horizontal" id="seasonalProductsHorizontal">
-                    <!-- Produits du mois actuel -->
-                </div>
-                
-                <button class="btn-see-more" id="btnSeeMore" onclick="toggleSeasonalView()">
-                    <span id="seeMoreText">Voir plus</span>
-                    <span class="arrow-icon">↓</span>
-                </button>
-                
-                <div class="seasonal-expanded" id="seasonalExpanded" style="display: none;">
-                    <div class="months-filter">
-                        <button class="month-btn active" data-month="1" onclick="filterByMonth(1)">Jan</button>
-                        <button class="month-btn" data-month="2" onclick="filterByMonth(2)">Fév</button>
-                        <button class="month-btn" data-month="3" onclick="filterByMonth(3)">Mar</button>
-                        <button class="month-btn" data-month="4" onclick="filterByMonth(4)">Avr</button>
-                        <button class="month-btn" data-month="5" onclick="filterByMonth(5)">Mai</button>
-                        <button class="month-btn" data-month="6" onclick="filterByMonth(6)">Juin</button>
-                        <button class="month-btn" data-month="7" onclick="filterByMonth(7)">Juil</button>
-                        <button class="month-btn" data-month="8" onclick="filterByMonth(8)">Août</button>
-                        <button class="month-btn" data-month="9" onclick="filterByMonth(9)">Sep</button>
-                        <button class="month-btn" data-month="10" onclick="filterByMonth(10)">Oct</button>
-                        <button class="month-btn" data-month="11" onclick="filterByMonth(11)">Nov</button>
-                        <button class="month-btn" data-month="12" onclick="filterByMonth(12)">Déc</button>
-                    </div>
-                    <div class="seasonal-grid" id="seasonalGrid">
-                        <!-- Produits filtrés par mois -->
-                    </div>
-                </div>
+            <div class="seasonal-horizontal" id="seasonalHorizontal"></div>
+            <button class="btn-see-more" id="btnSeeMore" onclick="toggleSeasonal()">
+                <span id="seeMoreText">Voir plus</span> <span class="arrow">↓</span>
+            </button>
+            <div class="seasonal-expanded" id="seasonalExpanded" style="display:none;">
+                <div class="months-filter" id="monthsFilter"></div>
+                <div class="seasonal-grid" id="seasonalGrid"></div>
             </div>
         </div>
 
-        <!-- Vidéo Présentation -->
         <div class="video-section">
             <div class="container">
-                <h2 class="section-title">Découvrez Notre Exploitation</h2>
-                <div class="video-container" id="videoContainer">
-                    <video id="exploitationVideo" controls autoplay muted loop>
-                        <source src="" type="video/mp4" id="videoSource">
-                        Votre navigateur ne supporte pas la vidéo.
-                    </video>
-                </div>
+                <h2 class="section-title">Notre Exploitation</h2>
+                <video id="exploitationVideo" controls autoplay muted loop>
+                    <source src="" type="video/mp4">
+                </video>
             </div>
         </div>
 
-        <!-- Avantages -->
         <div class="container">
             <div class="benefits-grid">
-                <div class="benefit-card">
-                    <span class="benefit-icon">🌿</span>
-                    <h3>100% Local</h3>
-                    <p>Produits cultivés à moins de 30km</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">🚚</span>
-                    <h3>Livraison Rapide</h3>
-                    <p>Fraîcheur garantie en 24h</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">♻️</span>
-                    <h3>Éco-Responsable</h3>
-                    <p>Emballages biodégradables</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">👨‍🌾</span>
-                    <h3>Agriculture Raisonnée</h3>
-                    <p>Sans pesticides chimiques</p>
-                </div>
+                <div class="benefit-card"><span>🌿</span><h3>100% Local</h3><p>Moins de 30km</p></div>
+                <div class="benefit-card"><span>🚚</span><h3>Livraison Rapide</h3><p>En 24h</p></div>
+                <div class="benefit-card"><span>♻️</span><h3>Éco-Responsable</h3><p>Emballages bio</p></div>
+                <div class="benefit-card"><span>👨‍🌾</span><h3>Agriculture Raisonnée</h3><p>Sans pesticides</p></div>
             </div>
         </div>
     </section>
 
-    <!-- Page Commander -->
     <section id="commander" class="page">
         <div class="container">
             <h2 class="page-title">Choisissez Votre Panier</h2>
-            
-            <!-- Paniers Prédéfinis -->
             <div class="order-section">
-                <h3 class="subsection-title">Paniers Prédéfinis</h3>
-                <p class="subsection-subtitle">Trois tailles adaptées à vos besoins</p>
+                <h3>Paniers Prédéfinis</h3>
                 <div class="baskets-grid" id="basketsGrid"></div>
             </div>
-
-            <!-- Séparateur -->
-            <div class="section-divider">
-                <span>OU</span>
-            </div>
-
-            <!-- Panier Personnalisé -->
-            <div class="order-section custom-basket-section">
-                <h3 class="subsection-title">Créez Votre Panier Personnalisé</h3>
-                <p class="subsection-subtitle">Choisissez vos produits préférés</p>
-                
-                <div class="custom-basket-filters">
-                    <button class="filter-btn active" data-category="all" onclick="filterProducts('all')">Tous</button>
-                    <button class="filter-btn" data-category="fruits" onclick="filterProducts('fruits')">Fruits</button>
-                    <button class="filter-btn" data-category="legumes" onclick="filterProducts('legumes')">Légumes</button>
+            <div class="divider"><span>OU</span></div>
+            <div class="order-section">
+                <h3>Créez Votre Panier Personnalisé</h3>
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterProducts('all')">Tous</button>
+                    <button class="filter-btn" onclick="filterProducts('fruits')">Fruits</button>
+                    <button class="filter-btn" onclick="filterProducts('legumes')">Légumes</button>
                 </div>
-
-                <div class="custom-products-grid" id="customProductsGrid">
-                    <!-- Produits générés dynamiquement -->
-                </div>
+                <div class="custom-grid" id="customGrid"></div>
             </div>
         </div>
     </section>
 
-    <!-- Page Contact -->
     <section id="contact" class="page">
         <div class="container">
             <h2 class="page-title">Contactez-Nous</h2>
-            
             <div class="contact-grid">
                 <div class="contact-info">
-                    <div class="contact-card">
-                        <div class="contact-icon">📍</div>
-                        <h3>Adresse</h3>
-                        <p id="shopAddress">Chargement...</p>
-                    </div>
-                    
-                    <div class="contact-card">
-                        <div class="contact-icon">📞</div>
-                        <h3>Téléphone</h3>
-                        <p id="shopPhone">Chargement...</p>
-                    </div>
-                    
-                    <div class="contact-card">
-                        <div class="contact-icon">✉️</div>
-                        <h3>Email</h3>
-                        <p><a href="mailto:" id="shopEmail">Chargement...</a></p>
-                    </div>
-
-                    <div class="contact-card">
-                        <div class="contact-icon">🕐</div>
-                        <h3>Horaires</h3>
-                        <p>Lun-Ven: 9h-19h<br>Sam: 9h-18h<br>Dim: Fermé</p>
-                    </div>
+                    <div class="contact-card"><div>📍</div><h3>Adresse</h3><p id="shopAddress"></p></div>
+                    <div class="contact-card"><div>📞</div><h3>Téléphone</h3><p id="shopPhone"></p></div>
+                    <div class="contact-card"><div>✉️</div><h3>Email</h3><p id="shopEmail"></p></div>
                 </div>
-
-                <div class="contact-map">
-                    <h3>Nous Trouver</h3>
-                    <div id="map" class="map-container">
-                        <!-- Google Map -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="contact-form-section">
-                <h3>Envoyez-nous un message</h3>
-                <form class="contact-form" id="contactForm">
-                    <div class="form-row">
-                        <input type="text" placeholder="Nom" class="input-field" required>
-                        <input type="email" placeholder="Email" class="input-field" required>
-                    </div>
-                    <input type="text" placeholder="Sujet" class="input-field" required>
-                    <textarea placeholder="Votre message" class="input-field textarea-field" rows="5" required></textarea>
-                    <button type="submit" class="btn-primary">Envoyer</button>
-                </form>
+                <div class="map-container" id="map"></div>
             </div>
         </div>
     </section>
 
-    <!-- Page À Propos -->
     <section id="apropos" class="page">
         <div class="container">
-            <h2 class="page-title">À Propos de Nous</h2>
+            <h2 class="page-title">À Propos</h2>
             <div class="about-content">
-                <div class="about-text">
-                    <h3>Notre Histoire</h3>
-                    <p>Fondée en 2015, Paniers du Jardin est une entreprise familiale passionnée par l'agriculture locale et durable. Notre mission est de vous faire découvrir les saveurs authentiques des fruits et légumes de saison.</p>
-                    <h3>Nos Valeurs</h3>
-                    <ul class="values-list">
-                        <li><strong>Qualité :</strong> Sélection rigoureuse de nos produits</li>
-                        <li><strong>Proximité :</strong> Circuit court</li>
-                        <li><strong>Respect :</strong> De l'environnement</li>
-                        <li><strong>Transparence :</strong> Traçabilité complète</li>
-                    </ul>
-                </div>
-                <div class="about-image">
-                    <div class="image-placeholder">
-                        <span style="font-size: 80px;">🌾</span>
-                    </div>
-                </div>
+                <div><h3>Notre Histoire</h3><p>Fondée en 2015, entreprise familiale passionnée par l'agriculture locale.</p></div>
+                <div class="about-img">🌾</div>
             </div>
         </div>
     </section>
 
-    <!-- Page Espace Personnel -->
     <section id="mon-compte" class="page">
         <div class="container">
-            <h2 class="page-title">Mon Espace Personnel</h2>
-            
+            <h2 class="page-title">Mon Compte</h2>
             <div class="account-grid">
                 <div class="account-sidebar">
-                    <div class="account-profile">
-                        <div class="profile-avatar">
-                            <span id="userInitials">U</span>
-                        </div>
-                        <h3 id="userName">Utilisateur</h3>
-                        <p id="userEmail">email@example.com</p>
-                    </div>
-                    <nav class="account-nav">
-                        <button class="account-nav-btn active" onclick="showAccountSection('infos')">
-                            📝 Mes Informations
-                        </button>
-                        <button class="account-nav-btn" onclick="showAccountSection('orders')">
-                            📦 Mes Commandes
-                        </button>
-                        <button class="account-nav-btn" onclick="showAccountSection('addresses')">
-                            📍 Mes Adresses
-                        </button>
-                        <button class="account-nav-btn logout-btn" onclick="logout()">
-                            🚪 Déconnexion
-                        </button>
-                    </nav>
+                    <div class="profile"><div class="avatar" id="userInitials">U</div><h3 id="userName">User</h3></div>
+                    <button class="account-btn active" onclick="showAccount('infos')">📝 Mes Infos</button>
+                    <button class="account-btn" onclick="showAccount('orders')">📦 Commandes</button>
+                    <button class="account-btn logout" onclick="logout()">🚪 Déconnexion</button>
                 </div>
-
                 <div class="account-content">
-                    <!-- Section Informations -->
                     <div class="account-section active" id="section-infos">
-                        <h3>Mes Informations Personnelles</h3>
-                        <form class="account-form" id="userInfoForm">
-                            <div class="form-group">
-                                <label>Prénom</label>
-                                <input type="text" class="input-field" id="userFirstName" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Nom</label>
-                                <input type="text" class="input-field" id="userLastName" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" class="input-field" id="userEmailField" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Téléphone</label>
-                                <input type="tel" class="input-field" id="userPhone">
-                            </div>
+                        <h3>Informations</h3>
+                        <form id="userForm">
+                            <input type="text" class="input-field" placeholder="Prénom" id="userFirstName">
+                            <input type="text" class="input-field" placeholder="Nom" id="userLastName">
+                            <input type="email" class="input-field" placeholder="Email" id="userEmail">
                             <button type="submit" class="btn-primary">Enregistrer</button>
                         </form>
                     </div>
-
-                    <!-- Section Commandes -->
                     <div class="account-section" id="section-orders">
                         <h3>Mes Commandes</h3>
-                        <div id="userOrdersList">
-                            <!-- Liste des commandes -->
-                        </div>
-                    </div>
-
-                    <!-- Section Adresses -->
-                    <div class="account-section" id="section-addresses">
-                        <h3>Mes Adresses de Livraison</h3>
-                        <div id="userAddressesList">
-                            <!-- Liste des adresses -->
-                        </div>
-                        <button class="btn-secondary" onclick="addNewAddress()">+ Ajouter une adresse</button>
+                        <div id="userOrders"></div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Pages légales (CGV, Mentions) - simplifiées -->
-    <section id="cgv" class="page">
-        <div class="container legal-content">
-            <h2 class="page-title">Conditions Générales de Vente</h2>
-            <h3>1. Objet</h3>
-            <p>Les présentes CGV régissent les relations entre Paniers du Jardin et ses clients.</p>
-        </div>
-    </section>
-
-    <section id="mentions" class="page">
-        <div class="container legal-content">
-            <h2 class="page-title">Mentions Légales</h2>
-            <h3>Éditeur</h3>
-            <p><strong>Paniers du Jardin</strong><br>SARL - RCS 123 456 789</p>
-        </div>
-    </section>
-
-    <!-- Modal Authentification -->
     <div class="modal" id="authModal">
-        <div class="modal-content auth-modal-content">
+        <div class="modal-content">
             <button class="close-modal" onclick="closeAuthModal()">✕</button>
-            
             <div class="auth-tabs">
                 <button class="auth-tab active" onclick="showAuthTab('login')">Connexion</button>
                 <button class="auth-tab" onclick="showAuthTab('register')">Inscription</button>
             </div>
-
-            <!-- Formulaire Connexion -->
-            <div class="auth-form-container" id="loginForm">
-                <h3>Bon retour !</h3>
+            <div id="loginForm">
+                <h3>Connexion</h3>
                 <form onsubmit="handleLogin(event)">
-                    <input type="email" placeholder="Email" class="input-field" required>
-                    <input type="password" placeholder="Mot de passe" class="input-field" required>
+                    <input type="email" class="input-field" placeholder="Email" required>
+                    <input type="password" class="input-field" placeholder="Mot de passe" required>
                     <button type="submit" class="btn-primary btn-block">Se connecter</button>
                 </form>
-                <p class="auth-link">Mot de passe oublié ? <a href="#">Réinitialiser</a></p>
             </div>
-
-            <!-- Formulaire Inscription -->
-            <div class="auth-form-container" id="registerForm" style="display: none;">
-                <h3>Créer un compte</h3>
+            <div id="registerForm" style="display:none;">
+                <h3>Inscription</h3>
                 <form onsubmit="handleRegister(event)">
-                    <input type="text" placeholder="Prénom" class="input-field" required>
-                    <input type="text" placeholder="Nom" class="input-field" required>
-                    <input type="email" placeholder="Email" class="input-field" required>
-                    <input type="password" placeholder="Mot de passe" class="input-field" required>
-                    <input type="password" placeholder="Confirmer le mot de passe" class="input-field" required>
+                    <input type="text" class="input-field" placeholder="Prénom" required>
+                    <input type="text" class="input-field" placeholder="Nom" required>
+                    <input type="email" class="input-field" placeholder="Email" required>
+                    <input type="password" class="input-field" placeholder="Mot de passe" required>
                     <button type="submit" class="btn-primary btn-block">Créer mon compte</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Panier Sidebar -->
     <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h3>Votre Panier</h3>
-            <button onclick="toggleCart()" class="close-cart">✕</button>
-        </div>
-        <div class="cart-items" id="cartItems">
-            <p class="empty-cart">Votre panier est vide</p>
-        </div>
+        <div class="cart-header"><h3>Panier</h3><button onclick="toggleCart()">✕</button></div>
+        <div class="cart-items" id="cartItems"><p>Votre panier est vide</p></div>
         <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span>
-                <span id="totalPrice">0,00 €</span>
-            </div>
-            <button onclick="checkout()" class="btn-primary btn-block">Commander</button>
+            <div class="cart-total"><span>Total:</span><span id="totalPrice">0€</span></div>
+            <button class="btn-primary btn-block" onclick="checkout()">Commander</button>
         </div>
     </div>
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 
-    <!-- Modal Paiement -->
     <div class="modal" id="paymentModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>Finaliser la Commande</h3>
-                <button onclick="closePaymentModal()" class="close-modal">✕</button>
-            </div>
-            <div class="modal-body">
-                <form id="paymentForm">
-                    <h4>Livraison</h4>
-                    <input type="text" placeholder="Nom complet" class="input-field" required>
-                    <input type="email" placeholder="Email" class="input-field" required>
-                    <input type="tel" placeholder="Téléphone" class="input-field" required>
-                    <input type="text" placeholder="Adresse" class="input-field" required>
-                    <input type="text" placeholder="Code postal" class="input-field" required>
-                    <input type="text" placeholder="Ville" class="input-field" required>
-                    <h4>Paiement Sécurisé</h4>
-                    <input type="text" placeholder="Numéro de carte" class="input-field" required>
-                    <div class="input-row">
-                        <input type="text" placeholder="MM/AA" class="input-field" required>
-                        <input type="text" placeholder="CVV" class="input-field" required>
-                    </div>
-                    <div class="order-summary">
-                        <h4>Récapitulatif</h4>
-                        <div id="orderSummary"></div>
-                        <div class="summary-total">
-                            <strong>Total:</strong>
-                            <strong id="finalTotal">0,00 €</strong>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-primary btn-block">Payer Maintenant</button>
-                </form>
-            </div>
+            <div class="modal-header"><h3>Finaliser</h3><button onclick="closePaymentModal()">✕</button></div>
+            <form id="paymentForm">
+                <input type="text" class="input-field" placeholder="Nom" required>
+                <input type="email" class="input-field" placeholder="Email" required>
+                <input type="text" class="input-field" placeholder="Adresse" required>
+                <div class="order-summary" id="orderSummary"></div>
+                <button type="submit" class="btn-primary btn-block">Payer</button>
+            </form>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
-                <div class="footer-section">
-                    <h4>Paniers du Jardin</h4>
-                    <p>Des fruits et légumes frais, locaux et de saison.</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Navigation</h4>
-                    <ul>
-                        <li><a href="#accueil" onclick="navigateTo('accueil')">Accueil</a></li>
-                        <li><a href="#commander" onclick="navigateTo('commander')">Commander</a></li>
-                        <li><a href="#apropos" onclick="navigateTo('apropos')">À Propos</a></li>
-                        <li><a href="#contact" onclick="navigateTo('contact')">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Informations</h4>
-                    <ul>
-                        <li><a href="#cgv" onclick="navigateTo('cgv')">CGV</a></li>
-                        <li><a href="#mentions" onclick="navigateTo('mentions')">Mentions</a></li>
-                        <li><a href="admin.html" target="_blank">Admin</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <p id="footerAddress">📍 Chargement...</p>
-                    <p id="footerPhone">📞 Chargement...</p>
-                    <p id="footerEmail">✉️ Chargement...</p>
-                </div>
+                <div><h4>Paniers du Jardin</h4><p>Fruits & légumes locaux</p></div>
+                <div><h4>Navigation</h4><a href="#accueil">Accueil</a><a href="#commander">Commander</a></div>
+                <div><h4>Contact</h4><p id="footerAddress"></p><p id="footerPhone"></p></div>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Paniers du Jardin. Tous droits réservés.</p>
-            </div>
+            <p class="footer-bottom">© 2026 Paniers du Jardin</p>
         </div>
     </footer>
 
-    <!-- Firebase Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
         import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
 
-        window.firebaseApp = { initializeApp };
-        window.firebaseDatabase = { getDatabase, ref, set, get, onValue };
-        window.firebaseAnalytics = { getAnalytics };
-        window.firebaseAuth = { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged };
-        window.firebaseStorage = { getStorage, storageRef, uploadBytes, getDownloadURL };
-
-        setTimeout(() => {
-            if (window.initializeFirebaseApp) {
-                window.initializeFirebaseApp(
-                    window.firebaseApp,
-                    window.firebaseDatabase,
-                    window.firebaseAnalytics,
-                    window.firebaseAuth,
-                    window.firebaseStorage
-                );
-            }
-        }, 100);
+        window.firebase = { initializeApp, getDatabase, ref, set, get, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, getStorage, storageRef, uploadBytes, getDownloadURL };
     </script>
-
-    <script src="script.js"></script>
+    <script src="script-main.js"></script>
 </body>
 </html>
