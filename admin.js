@@ -182,6 +182,7 @@ function openProductModal(productId = null) {
             document.getElementById('productPrice').value = product.price;
             document.getElementById('productStock').value = product.stock || 0;
             document.getElementById('productInStock').checked = product.inStock || false;
+            document.getElementById('productImageUrl').value = product.imageUrl || '';
             
             if (product.imageUrl) {
                 document.getElementById('productImagePreview').innerHTML = `<img src="${product.imageUrl}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;">`;
@@ -193,11 +194,24 @@ function openProductModal(productId = null) {
         }
     } else {
         document.getElementById('productModalTitle').textContent = 'Ajouter un Produit';
-        document.getElementById('productImagePreview').innerHTML = '<span class="upload-placeholder">📷 Cliquez pour ajouter une image</span>';
+        document.getElementById('productImagePreview').innerHTML = '<span class="upload-placeholder">Aperçu de l\'image</span>';
     }
     
     modal.classList.add('active');
 }
+
+// Ajouter un événement pour prévisualiser l'image quand on colle une URL
+document.addEventListener('DOMContentLoaded', () => {
+    const urlInput = document.getElementById('productImageUrl');
+    if (urlInput) {
+        urlInput.addEventListener('input', (e) => {
+            const url = e.target.value;
+            if (url) {
+                document.getElementById('productImagePreview').innerHTML = `<img src="${url}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;" onerror="this.parentElement.innerHTML='<span class=\\'upload-placeholder\\'>Image invalide</span>'">`;
+            }
+        });
+    }
+});
 
 function closeProductModal() {
     document.getElementById('productModal').classList.remove('active');
@@ -217,17 +231,6 @@ function toggleInStock() {
     if (checkbox.checked) stockInput.value = 0;
 }
 
-function previewProductImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('productImagePreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;">`;
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
 async function saveProduct(event) {
     event.preventDefault();
     
@@ -238,23 +241,9 @@ async function saveProduct(event) {
         price: parseFloat(document.getElementById('productPrice').value),
         stock: parseInt(document.getElementById('productStock').value),
         inStock: document.getElementById('productInStock').checked,
-        availableMonths: Array.from(document.querySelectorAll('.months-checkboxes input:checked')).map(cb => parseInt(cb.value))
+        availableMonths: Array.from(document.querySelectorAll('.months-checkboxes input:checked')).map(cb => parseInt(cb.value)),
+        imageUrl: document.getElementById('productImageUrl').value || 'https://via.placeholder.com/200'
     };
-    
-    // Upload image si présente
-    const imageFile = document.getElementById('productImage').files[0];
-    if (imageFile) {
-        try {
-            const imageRef = window.firebase.storageRef(storage, `images/products/${Date.now()}_${imageFile.name}`);
-            await window.firebase.uploadBytes(imageRef, imageFile);
-            productData.imageUrl = await window.firebase.getDownloadURL(imageRef);
-        } catch (err) {
-            console.error('Erreur upload image:', err);
-        }
-    } else {
-        const existingProduct = DATA.products.find(p => p.id === productId);
-        if (existingProduct) productData.imageUrl = existingProduct.imageUrl;
-    }
     
     try {
         await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/products/${productId}`), productData);
@@ -445,11 +434,12 @@ function renderUsers() {
     `;
 }
 
-// ===== MÉDIAS =====
+// ===== MÉDIAS avec URLs =====
 function renderMedia() {
     renderCarouselImages();
     if (DATA.videoUrl) {
         document.getElementById('currentVideo').src = DATA.videoUrl;
+        document.getElementById('videoUrl').value = DATA.videoUrl;
     }
 }
 
@@ -469,19 +459,28 @@ function renderCarouselImages() {
     `).join('');
 }
 
-async function uploadCarouselImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+async function addCarouselImageUrl() {
+    const url = document.getElementById('carouselImageUrl').value.trim();
+    
+    if (!url) {
+        alert('Veuillez entrer une URL d\'image');
+        return;
+    }
+    
+    // Vérifier que c'est une URL valide
+    try {
+        new URL(url);
+    } catch (err) {
+        alert('URL invalide');
+        return;
+    }
+    
+    DATA.carouselImages.push(url);
     
     try {
-        const imageRef = window.firebase.storageRef(storage, `images/carousel/${Date.now()}_${file.name}`);
-        await window.firebase.uploadBytes(imageRef, file);
-        const url = await window.firebase.getDownloadURL(imageRef);
-        
-        DATA.carouselImages.push(url);
         await window.firebase.set(window.firebase.ref(db, 'paniers-du-jardin/media/carouselImages'), DATA.carouselImages);
-        
         renderCarouselImages();
+        document.getElementById('carouselImageUrl').value = '';
         alert('✅ Image ajoutée');
     } catch (err) {
         alert('Erreur: ' + err.message);
@@ -502,25 +501,27 @@ async function deleteCarouselImage(index) {
     }
 }
 
-async function uploadVideo(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+async function saveVideoUrl() {
+    const url = document.getElementById('videoUrl').value.trim();
     
-    if (file.size > 50 * 1024 * 1024) {
-        alert('La vidéo est trop volumineuse (max 50MB)');
+    if (!url) {
+        alert('Veuillez entrer une URL de vidéo');
+        return;
+    }
+    
+    // Vérifier que c'est une URL valide
+    try {
+        new URL(url);
+    } catch (err) {
+        alert('URL invalide');
         return;
     }
     
     try {
-        const videoRef = window.firebase.storageRef(storage, `videos/exploitation_${Date.now()}.mp4`);
-        await window.firebase.uploadBytes(videoRef, file);
-        const url = await window.firebase.getDownloadURL(videoRef);
-        
         await window.firebase.set(window.firebase.ref(db, 'paniers-du-jardin/media/videoUrl'), url);
         DATA.videoUrl = url;
         document.getElementById('currentVideo').src = url;
-        
-        alert('✅ Vidéo uploadée');
+        alert('✅ Vidéo enregistrée');
     } catch (err) {
         alert('Erreur: ' + err.message);
     }
