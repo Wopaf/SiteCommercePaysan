@@ -157,19 +157,20 @@ function renderProducts() {
     }
     
     container.innerHTML = DATA.products.map(product => `
-        <div class="product-item" style="display:flex;gap:1rem;padding:1.5rem;background:white;border-radius:15px;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-            <img src="${product.imageUrl || 'https://via.placeholder.com/100'}" style="width:100px;height:100px;object-fit:cover;border-radius:10px;">
-            <div style="flex:1;">
+        <div class="product-card-admin">
+            <img src="${product.imageUrl || 'https://via.placeholder.com/200'}" class="product-img">
+            <div class="product-info">
                 <h4>${product.name}</h4>
-                <p style="color:#666;">Catégorie: ${product.category} | Prix: ${product.price}€/kg</p>
-                <p style="color:#666;">Stock: ${product.inStock ? 'En stock illimité' : product.stock}</p>
-                <div style="margin-top:0.5rem;">
-                    <span style="font-size:0.9rem;color:#999;">Disponible: ${product.availableMonths?.length || 0} mois</span>
+                <div class="product-meta">
+                    <span class="badge">${product.category}</span>
+                    <span class="price-tag">${product.price}€/kg</span>
                 </div>
+                <p class="stock-info">Stock: ${product.inStock ? 'Illimité' : product.stock}</p>
+                <p class="availability-info">${product.availableMonths?.length || 0} mois</p>
             </div>
-            <div style="display:flex;flex-direction:column;gap:0.5rem;">
-                <button class="btn-secondary" onclick="editProduct('${product.id}')" style="padding:0.5rem 1rem;white-space:nowrap;">✏️ Modifier</button>
-                <button class="btn-secondary" onclick="deleteProduct('${product.id}')" style="padding:0.5rem 1rem;background:#e57373;color:white;border:none;">🗑️ Supprimer</button>
+            <div class="product-actions">
+                <button class="btn-secondary btn-sm" onclick="editProduct('${product.id}')">✏️ Modifier</button>
+                <button class="btn-danger btn-sm" onclick="deleteProduct('${product.id}')">🗑️</button>
             </div>
         </div>
     `).join('');
@@ -763,22 +764,25 @@ function renderUsers() {
                 <tr>
                     <th style="padding:1rem;text-align:left;">Nom</th>
                     <th style="padding:1rem;text-align:left;">Email</th>
+                    <th style="padding:1rem;text-align:left;">Téléphone</th>
                     <th style="padding:1rem;text-align:left;">Inscription</th>
                     <th style="padding:1rem;text-align:center;">Commandes</th>
-                    <th style="padding:1rem;text-align:center;">Action</th>
+                    <th style="padding:1rem;text-align:center;">Statut</th>
                 </tr>
             </thead>
             <tbody>
                 ${DATA.users.map(user => {
                     const userOrders = DATA.orders.filter(o => o.userId === user.id);
+                    const isAdmin = adminsList.includes(user.id);
                     return `
-                        <tr style="border-bottom:1px solid #eee;">
+                        <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showUserDetails('${user.id}')">
                             <td style="padding:1rem;">${user.firstName} ${user.lastName}</td>
                             <td style="padding:1rem;">${user.email}</td>
+                            <td style="padding:1rem;">${user.phone || 'Non renseigné'}</td>
                             <td style="padding:1rem;">${user.created ? new Date(user.created).toLocaleDateString('fr-FR') : 'N/A'}</td>
                             <td style="padding:1rem;text-align:center;font-weight:600;">${userOrders.length}</td>
                             <td style="padding:1rem;text-align:center;">
-                                <button class="btn-secondary" style="padding:0.5rem 1rem;" onclick="showUserDetails('${user.id}')">Voir plus</button>
+                                ${isAdmin ? '<span class="admin-badge">👑 Admin</span>' : '<span style="color:#999;">Client</span>'}
                             </td>
                         </tr>
                     `;
@@ -847,3 +851,91 @@ function closeUserDetails() {
 setTimeout(() => {
     if (STATE.firebaseReady) loadShopStatus();
 }, 1000);
+
+// ===== GESTION DES ADMINISTRATEURS =====
+let adminsList = [];
+
+async function loadAdminsList() {
+    try {
+        const snapshot = await window.firebase.get(window.firebase.ref(db, 'paniers-du-jardin/admins'));
+        if (snapshot.exists()) {
+            const admins = snapshot.val();
+            adminsList = Object.keys(admins).filter(uid => admins[uid] === true);
+        }
+        renderAdminsList();
+    } catch (err) {
+        console.error('Erreur chargement admins:', err);
+    }
+}
+
+async function renderAdminsList() {
+    const container = document.getElementById('adminsList');
+    if (!container) return;
+    
+    if (adminsList.length === 0) {
+        container.innerHTML = '<p style="color:#999;">Aucun administrateur</p>';
+        return;
+    }
+    
+    let html = '';
+    for (const uid of adminsList) {
+        const user = DATA.users.find(u => u.id === uid);
+        html += `
+            <div class="admin-item">
+                <div>
+                    <strong>${user ? `${user.firstName} ${user.lastName}` : 'Utilisateur inconnu'}</strong>
+                    <br><small>${user ? user.email : uid}</small>
+                </div>
+                ${uid !== currentAdmin.uid ? `
+                    <button class="btn-secondary" style="background:#e57373;color:white;border:none;" onclick="removeAdmin('${uid}')">Retirer</button>
+                ` : '<span style="color:#4a7c4e;font-weight:600;">● Vous</span>'}
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+async function addAdmin() {
+    const uid = document.getElementById('newAdminUid').value.trim();
+    
+    if (!uid) {
+        alert('⚠️ Veuillez entrer un UID');
+        return;
+    }
+    
+    // Vérifier si l'utilisateur existe
+    const userSnapshot = await window.firebase.get(window.firebase.ref(db, `paniers-du-jardin/users/${uid}`));
+    if (!userSnapshot.exists()) {
+        alert('❌ Cet utilisateur n\'existe pas');
+        return;
+    }
+    
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/admins/${uid}`), true);
+        adminsList.push(uid);
+        renderAdminsList();
+        document.getElementById('newAdminUid').value = '';
+        alert('✅ Administrateur ajouté !');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+async function removeAdmin(uid) {
+    if (!confirm('Retirer cet administrateur ?')) return;
+    
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/admins/${uid}`), null);
+        adminsList = adminsList.filter(id => id !== uid);
+        renderAdminsList();
+        alert('✅ Administrateur retiré');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+// Charger les admins au démarrage
+setTimeout(() => {
+    if (STATE.firebaseReady) loadAdminsList();
+}, 1500);
