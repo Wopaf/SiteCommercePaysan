@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paniers du Jardin - Fruits & Légumes Locaux</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles-new.css">
 </head>
 <body>
     <nav class="navbar">
@@ -142,6 +142,7 @@
                             <input type="text" class="input-field" placeholder="Prénom" id="userFirstName">
                             <input type="text" class="input-field" placeholder="Nom" id="userLastName">
                             <input type="email" class="input-field" placeholder="Email" id="userEmail">
+                            <input type="tel" class="input-field" placeholder="Téléphone" id="userPhone">
                             <button type="submit" class="btn-primary">Enregistrer</button>
                         </form>
                     </div>
@@ -179,6 +180,7 @@
                     <input type="text" class="input-field" placeholder="Prénom" required>
                     <input type="text" class="input-field" placeholder="Nom" required>
                     <input type="email" class="input-field" placeholder="Email" required>
+                    <input type="tel" class="input-field" placeholder="Téléphone (facultatif)" id="registerPhone">
                     <input type="password" class="input-field" placeholder="Mot de passe" required>
                     <button type="submit" class="btn-primary btn-block">Créer mon compte</button>
                 </form>
@@ -202,13 +204,21 @@
 
     <div class="modal" id="paymentModal">
         <div class="modal-content">
-            <div class="modal-header"><h3>Finaliser</h3><button onclick="closePaymentModal()">✕</button></div>
+            <div class="modal-header">
+                <h3>Réserver ma Commande</h3>
+                <button onclick="closePaymentModal()">✕</button>
+            </div>
             <form id="paymentForm">
-                <input type="text" class="input-field" placeholder="Nom" required>
-                <input type="email" class="input-field" placeholder="Email" required>
-                <input type="text" class="input-field" placeholder="Adresse" required>
-                <div class="order-summary" id="orderSummary"></div>
-                <button type="submit" class="btn-primary btn-block">Payer</button>
+                <div class="order-summary-detail">
+                    <h4>Récapitulatif de votre commande</h4>
+                    <div id="orderSummary"></div>
+                    <div class="summary-total">
+                        <strong>Total à payer sur place:</strong>
+                        <strong id="finalTotal">0,00 €</strong>
+                    </div>
+                </div>
+                <p class="payment-info">💳 Le paiement se fera sur place lors de la récupération de votre commande.</p>
+                <button type="submit" class="btn-primary btn-block">Je réserve</button>
             </form>
         </div>
     </div>
@@ -232,8 +242,6 @@
 
         window.firebase = { initializeApp, getDatabase, ref, set, get, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, getStorage, storageRef, uploadBytes, getDownloadURL };
     </script>
-    <script src="script.js"></script>
+    <script src="script-main.js"></script>
 </body>
 </html>
-
-
