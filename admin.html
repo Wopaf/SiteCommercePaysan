@@ -347,28 +347,30 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
         import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
 
-        window.firebaseApp = { initializeApp };
-        window.firebaseDatabase = { getDatabase, ref, set, get, onValue };
-        window.firebaseAuth = { getAuth, signInWithEmailAndPassword, onAuthStateChanged };
-        window.firebaseStorage = { getStorage, storageRef, uploadBytes, getDownloadURL, deleteObject };
-
-        setTimeout(() => {
-            if (window.initializeAdminFirebase) {
-                window.initializeAdminFirebase(
-                    window.firebaseApp,
-                    window.firebaseDatabase,
-                    window.firebaseAuth,
-                    window.firebaseStorage
-                );
-            }
-        }, 100);
+        window.firebase = {
+            initializeApp,
+            getDatabase,
+            ref,
+            set,
+            get,
+            onValue,
+            getAuth,
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            signOut,
+            getStorage,
+            storageRef,
+            uploadBytes,
+            getDownloadURL,
+            deleteObject
+        };
+        
+        console.log('✅ Firebase modules chargés');
     </script>
 
     <script src="admin.js"></script>
 </body>
 </html>
-
-
