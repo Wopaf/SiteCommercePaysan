@@ -229,36 +229,37 @@ function renderBaskets() {
         
         return `
             <div class="basket-card ${basket.featured ? 'featured' : ''}">
-                ${basket.featured ? '<div class="featured-badge">⭐ Populaire</div>' : ''}
-                <div class="basket-icon">${basket.icon}</div>
-                <h3>${basket.name}</h3>
-                <p class="basket-subtitle">${basket.subtitle}</p>
-                
-                <div class="basket-price">
-                    ${promo ? `<span class="old">${basket.price}€</span>` : ''}
-                    <span class="${promo ? 'promo' : ''}">${finalPrice.toFixed(2)}€</span>
-                    ${promo ? `<div class="promo-badge">-${promo.discount}% 🎉</div>` : ''}
-                </div>
-                
-                <div class="basket-content">
-                    <h4>Contenu :</h4>
-                    <ul>
-                        ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <div class="basket-stock">
-                    <span class="stock-badge ${stockClass}">${stockText}</span>
-                </div>
-                
-                <div class="basket-actions">
-                    <div class="qty-selector">
-                        <button onclick="changeQty('${basket.id}', -1)">-</button>
-                        <span id="qty-${basket.id}">1</span>
-                        <button onclick="changeQty('${basket.id}', 1)">+</button>
+                <div class="basket-f-content">
+                    <div class="basket-icon">${basket.icon}</div>
+                    <h3>${basket.name}</h3>
+                    <p class="basket-subtitle">${basket.subtitle}</p>
+                    
+                    <div class="basket-price">
+                        ${promo ? `<span class="old">${basket.price}€</span>` : ''}
+                        <span class="${promo ? 'promo' : ''}">${finalPrice.toFixed(2)}€</span>
+                        ${promo ? `<div class="promo-badge">-${promo.discount}% 🎉</div>` : ''}
                     </div>
-                    <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
-                        ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
+                    
+                    <div class="basket-content">
+                        <h4>Contenu :</h4>
+                        <ul>
+                            ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                <div class="basket-actions">
+                    <div class="basket-stock">
+                        <span class="stock-badge ${stockClass}">${stockText}</span>
+                    </div>
+                    <div class="basket-actions2">
+                        <div class="qty-selector">
+                            <button onclick="changeQty('${basket.id}', -1)">-</button>
+                            <span id="qty-${basket.id}" class="input-qty">1</span>
+                            <button onclick="changeQty('${basket.id}', 1)">+</button>
+                        </div>                        
+                    </div>
+                    <button class="btn-primary btn-sm" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
+                            ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
                     </button>
                 </div>
             </div>
@@ -295,11 +296,16 @@ function renderCustomProducts() {
     document.getElementById('customGrid').innerHTML = DATA.products.map(p => `
         <div class="custom-card" data-category="${p.category}">
             <img src="${p.imageUrl || 'https://via.placeholder.com/150'}" alt="${p.name}">
-            <h4>${p.name}</h4>
-            <p>${p.price}€/kg</p>
+            <div style="display: flex; flex-direction: row; gap: 0.5rem; align-items: center; justify-content: space-between; padding: 0.5rem 1rem;">
+                <h4>${p.name}</h4>
+                <p>${p.price}€/kg</p>
+            </div>
             <div class="qty-selector">
                 <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
-                <input type="number" id="custom-${p.id}" value="0" step="0.5" min="0" readonly>
+                <div class="input-wrapper">
+                <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0" readonly class="input-qty">
+                <span class="unit">kg</span>
+                </div>
                 <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
             </div>
             <button class="btn-primary btn-sm" onclick="addCustomToCart('${p.id}')">Ajouter</button>
