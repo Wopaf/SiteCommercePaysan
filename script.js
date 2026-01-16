@@ -275,13 +275,27 @@ function changeQty(id, change) {
 }
 
 function addBasketToCart(id) {
+
+function addBasketToCart(id) {
     const basket = DATA.baskets.find(b => b.id === id);
     const qty = parseInt(document.getElementById(`qty-${id}`).textContent);
+    
+    // Vérifier stock disponible
+    if (basket.stock < qty) {
+        showToast(`❌ Stock insuffisant ! Seulement ${basket.stock} disponibles`, 'error');
+        return;
+    }
+    
     const promo = DATA.promotions.find(p => p.basketId === id);
     const price = promo ? basket.price * (1 - promo.discount / 100) : basket.price;
     
     const existing = STATE.cart.find(c => c.id === id && c.type === 'basket');
     if (existing) {
+        const totalQty = existing.quantity + qty;
+        if (basket.stock < totalQty) {
+            showToast(`❌ Vous ne pouvez pas ajouter plus de ${basket.stock} paniers`, 'error');
+            return;
+        }
         existing.quantity += qty;
     } else {
         STATE.cart.push({ id, name: `Panier ${basket.name}`, price, quantity: qty, type: 'basket', icon: '🧺' });
@@ -291,40 +305,11 @@ function addBasketToCart(id) {
     showToast(`${qty} Panier ${basket.name} ajouté à votre panier !`);
 }
 
-// Panier personnalisé
-function renderCustomProducts() {
-    document.getElementById('customGrid').innerHTML = DATA.products.map(p => `
-        <div class="custom-card" data-category="${p.category}">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/150'}" alt="${p.name}">
-            <div style="display: flex; flex-direction: row; gap: 0.5rem; align-items: center; justify-content: space-between; padding: 0.5rem 1rem;">
-                <h4>${p.name}</h4>
-                <p>${p.price}€/kg</p>
-            </div>
-            <div class="qty-selector">
-                <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
-                <div class="input-wrapper">
-                <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0" readonly class="input-qty">
-                <span class="unit">kg</span>
-                </div>
-                <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
-            </div>
-            <button class="btn-primary btn-sm" onclick="addCustomToCart('${p.id}')">Ajouter</button>
-        </div>
-    `).join('');
-}
-
-function filterProducts(cat) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(cat === 'all' ? 'tous' : cat)));
-    document.querySelectorAll('.custom-card').forEach(c => {
-        c.style.display = cat === 'all' || c.dataset.category === cat ? 'block' : 'none';
-    });
-}
-
-function changeCustomQty(id, change) {
-    const el = document.getElementById(`custom-${id}`);
-    let val = parseFloat(el.value) + change;
-    if (val < 0) val = 0;
-    el.value = val.toFixed(1);
+function changeQty(id, change) {
+    const el = document.getElementById(`qty-${id}`);
+    let qty = parseInt(el.textContent) + change;
+    if (qty < 1) qty = 1;
+    el.textContent = qty;
 }
 
 function addCustomToCart(id) {
@@ -332,8 +317,19 @@ function addCustomToCart(id) {
     const qty = parseFloat(document.getElementById(`custom-${id}`).value);
     if (qty <= 0) return;
     
+    // Vérifier stock disponible
+    if (!product.inStock && product.stock < qty) {
+        showToast(`❌ Stock insuffisant ! Seulement ${product.stock}kg disponibles`, 'error');
+        return;
+    }
+    
     const existing = STATE.cart.find(c => c.id === id && c.type === 'product');
     if (existing) {
+        const totalQty = existing.quantity + qty;
+        if (!product.inStock && product.stock < totalQty) {
+            showToast(`❌ Vous ne pouvez pas ajouter plus de ${product.stock}kg`, 'error');
+            return;
+        }
         existing.quantity += qty;
     } else {
         STATE.cart.push({ id, name: product.name, price: product.price, quantity: qty, type: 'product', icon: product.category === 'fruits' ? '🍎' : '🥕' });
@@ -342,7 +338,6 @@ function addCustomToCart(id) {
     document.getElementById(`custom-${id}`).value = '0';
     showToast(`${qty}kg de ${product.name} ajouté à votre panier !`);
 }
-
 // Panier
 function updateCart() {
     const count = document.getElementById('cartCount');
@@ -431,6 +426,8 @@ document.getElementById('paymentForm')?.addEventListener('submit', async (e) => 
         const ordersRef = window.firebase.ref(db, `paniers-du-jardin/orders/${order.id}`);
         await window.firebase.set(ordersRef, order);
         STATE.cart = [];
+        await deductStock(STATE.cart);
+        await loadAllData();
         updateCart();
         closePaymentModal();
         showToast('✅ Commande réservée avec succès ! Vous recevrez une confirmation par email.', 'success');
@@ -708,3 +705,43 @@ document.querySelectorAll('.modal').forEach(modal => {
 
 // Pour le cart overlay
 document.getElementById('cartOverlay')?.addEventListener('click', toggleCart);
+
+// Déduire stock après commande
+async function deductStock(items) {
+    try {
+        for (const item of items) {
+            if (item.type === 'basket') {
+                const basket = DATA.baskets.find(b => b.id === item.id);
+                if (basket) {
+                    const newStock = Math.max(0, basket.stock - item.quantity);
+                    await window.firebase.set(
+                        window.firebase.ref(db, `paniers-du-jardin/baskets/${item.id}/stock`),
+                        newStock
+                    );
+                }
+            } else if (item.type === 'product') {
+                const product = DATA.products.find(p => p.id === item.id);
+                if (product && !product.inStock) {
+                    const newStock = Math.max(0, product.stock - item.quantity);
+                    await window.firebase.set(
+                        window.firebase.ref(db, `paniers-du-jardin/products/${item.id}/stock`),
+                        newStock
+                    );
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Erreur déduction stock:', err);
+    }
+}
+
+// Fermer modals en cliquant sur overlay
+setTimeout(() => {
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+    });
+}, 1000);
