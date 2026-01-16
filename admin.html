@@ -29,17 +29,13 @@
         
         <!-- Sidebar -->
         <aside class="admin-sidebar">
-            <div class="admin-sidebar-header">
-                <span class="logo">🌱</span>
-                <h2>Paniers du Jardin</h2>
-            </div>
             
             <nav class="admin-nav">
                 <button class="admin-nav-btn active" onclick="showAdminSection('dashboard')">
-                    <span class="nav-icon">📊</span> Tableau de bord
+                    <span class="nav-icon">📊</span> Dashboard
                 </button>
                 <button class="admin-nav-btn" onclick="showAdminSection('products')">
-                    <span class="nav-icon">🥕</span> Produits & Paniers
+                    <span class="nav-icon">🥕</span> Produits
                 </button>
                 <button class="admin-nav-btn" onclick="showAdminSection('orders')">
                     <span class="nav-icon">📦</span> Commandes
@@ -65,10 +61,6 @@
         <main class="admin-content">
             <div class="admin-header">
                 <h1 id="adminSectionTitle">Tableau de bord</h1>
-                <div class="admin-user-info">
-                    <span id="adminUserName">Admin</span>
-                    <div class="admin-avatar">A</div>
-                </div>
             </div>
 
             <!-- Section Tableau de Bord -->
@@ -115,11 +107,10 @@
 
             <!-- Section Produits & Paniers -->
             <div class="admin-section" id="admin-products">
-                <h2>Gestion des Paniers & Produits</h2>
+                <h2 style="padding-left: 20px; margin-bottom:20px; color: var(--primary);">Paniers Prédéfinis</h2>
                 
                 <!-- Paniers Prédéfinis -->
                 <div class="baskets-section">
-                    <h3>Paniers Prédéfinis</h3>
                     <div class="baskets-admin-list" id="basketsAdminList"></div>
                     
                     <div class="promotions-section">
@@ -138,11 +129,10 @@
                 </div>
                 
                 <div class="section-divider"></div>
-                
+                <h2 style="padding-left: 20px; margin-bottom:20px; color: var(--primary);">Produits Individuels</h2>
                 <!-- Produits Individuels -->
                 <div class="products-section">
                     <div class="section-header">
-                        <h3>Produits Individuels</h3>
                         <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
                     </div>
                     <div class="products-grid" id="productsList"></div>
@@ -152,7 +142,6 @@
             <!-- Section Commandes -->
             <div class="admin-section" id="admin-orders">
                 <div class="section-header">
-                    <h2>Toutes les Commandes</h2>
                     <div class="filters">
                         <select class="input-field" onchange="filterOrders(this.value)">
                             <option value="all">Toutes</option>
@@ -169,9 +158,6 @@
 
             <!-- Section Utilisateurs -->
             <div class="admin-section" id="admin-users">
-                <div class="section-header">
-                    <h2>Utilisateurs Inscrits</h2>
-                </div>
 
                 <div class="users-table" id="usersTable">
                     <!-- Table des utilisateurs -->
