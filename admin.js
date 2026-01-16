@@ -935,3 +935,71 @@ async function removeAdmin(uid) {
 setTimeout(() => {
     if (STATE.firebaseReady) loadAdminsList();
 }, 1500);
+
+// ==== GESTION STATUT COMMANDES ====
+async function toggleOrderStatus(orderId) {
+    const order = DATA.orders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    order.processed = !order.processed;
+    
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}/processed`),
+            order.processed
+        );
+        renderOrders();
+        if (document.getElementById('orderDetailsModal')?.classList.contains('active')) {
+            showOrderDetails(orderId);
+        }
+        alert(order.processed ? '✅ Commande marquée comme traitée' : '⚠️ Commande marquée comme non traitée');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+// ==== FILTRES COMMANDES ====
+let orderFilters = { sortBy: 'date', sortOrder: 'desc' };
+
+function applySortOrders(criteria) {
+    orderFilters.sortBy = criteria;
+    renderOrders();
+}
+
+function toggleSortOrder() {
+    orderFilters.sortOrder = orderFilters.sortOrder === 'desc' ? 'asc' : 'desc';
+    renderOrders();
+}
+
+// ==== FILTRES UTILISATEURS ====
+let userFilters = { sortBy: 'name', sortOrder: 'asc' };
+
+function applySortUsers(criteria) {
+    userFilters.sortBy = criteria;
+    renderUsers();
+}
+
+function toggleUserSortOrder() {
+    userFilters.sortOrder = userFilters.sortOrder === 'desc' ? 'asc' : 'desc';
+    renderUsers();
+}
+
+// ==== MODIFICATION PRIX PANIERS ====
+async function updateBasketPrice(basketId) {
+    const newPrice = parseFloat(prompt('Nouveau prix pour ce panier:'));
+    if (isNaN(newPrice) || newPrice < 0) {
+        alert('Prix invalide');
+        return;
+    }
+    
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/baskets/${basketId}/price`),
+            newPrice
+        );
+        await loadAllAdminData();
+        alert('✅ Prix mis à jour !');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}

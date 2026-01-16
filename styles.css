@@ -2343,3 +2343,30 @@ input[type=number] {
     }
 }
 
+
+/* Message d'erreur formulaire */
+.error-message {
+    background: #ffebee;
+    color: #c62828;
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-weight: 600;
+    text-align: center;
+    border: 2px solid #ef5350;
+}
+
+/* Modals cliquables sur overlay */
+.modal.active {
+    display: flex !important;
+}
+
+.modal-content {
+    position: relative;
+    z-index: 10001;
+}
+
+/* Permettre clic sur overlay pour fermer */
+.cart-overlay.active {
+    display: block;
+}

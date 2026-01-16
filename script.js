@@ -457,12 +457,22 @@ function showAuthTab(tab) {
 
 async function handleLogin(e) {
     e.preventDefault();
+    const email = e.target[0].value;
+    const password = e.target[1].value;
+    
+    const oldError = document.getElementById("loginError");
+    if (oldError) oldError.remove();
+    
     try {
-        await window.firebase.signInWithEmailAndPassword(auth, e.target[0].value, e.target[1].value);
+        await window.firebase.signInWithEmailAndPassword(auth, email, password);
         closeAuthModal();
-        alert('Connecté !');
-    } catch (err) {
-        alert('Erreur: ' + err.message);
+        showToast("✅ Connecté !", "success");
+    } catch (error) {
+        const errorDiv = document.createElement("div");
+        errorDiv.id = "loginError";
+        errorDiv.className = "error-message";
+        errorDiv.textContent = "❌ Email ou mot de passe incorrect";
+        e.target.appendChild(errorDiv);
     }
 }
 
@@ -644,3 +654,57 @@ function showToast(message, type = 'success') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// Vérifier stock disponible avant ajout
+function checkStockAvailable(productId, requestedQty, type = 'product') {
+    if (type === 'basket') {
+        const basket = DATA.baskets.find(b => b.id === productId);
+        return basket && basket.stock >= requestedQty;
+    } else {
+        const product = DATA.products.find(p => p.id === productId);
+        if (!product) return false;
+        if (product.inStock) return true; // Stock illimité
+        return product.stock >= requestedQty;
+    }
+}
+
+// Déduire le stock après commande
+async function deductStock(items) {
+    try {
+        for (const item of items) {
+            if (item.type === 'basket') {
+                const basket = DATA.baskets.find(b => b.id === item.id);
+                if (basket) {
+                    const newStock = Math.max(0, basket.stock - item.quantity);
+                    await window.firebase.set(
+                        window.firebase.ref(db, `paniers-du-jardin/baskets/${item.id}/stock`),
+                        newStock
+                    );
+                }
+            } else if (item.type === 'product') {
+                const product = DATA.products.find(p => p.id === item.id);
+                if (product && !product.inStock) {
+                    const newStock = Math.max(0, product.stock - item.quantity);
+                    await window.firebase.set(
+                        window.firebase.ref(db, `paniers-du-jardin/products/${item.id}/stock`),
+                        newStock
+                    );
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Erreur déduction stock:', err);
+    }
+}
+
+// Fermer modals en cliquant sur l'overlay
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+});
+
+// Pour le cart overlay
+document.getElementById('cartOverlay')?.addEventListener('click', toggleCart);
