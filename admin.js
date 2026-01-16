@@ -109,7 +109,7 @@ function showAdminSection(section) {
         baskets: 'Gestion des Paniers',
         orders: 'Commandes',
         users: 'Utilisateurs',
-        media: 'Médias',
+        media: 'Gestion des Médias',
         settings: 'Paramètres'
     };
     document.getElementById('adminSectionTitle').textContent = titles[section] || section;
@@ -287,11 +287,13 @@ function renderBaskets() {
         <div style="background:white;padding:1.5rem;border-radius:15px;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
             <h4>${basket.name}</h4>
             <p>Prix: ${basket.price}€ | Stock: ${basket.stock}</p>
-            <div style="display:flex;gap:0.5rem;margin-top:1rem;align-items:center;">
-                <label>Stock:</label>
-                <button onclick="changeBasketStock('${basket.id}', -5)" style="padding:0.5rem 0.7rem; width: 34px;;border:none;background:#ddd;border-radius:20px;cursor:pointer;">-</button>
-                <input class="input-number" type="number" id="basket-stock-${basket.id}" value="${basket.stock}"">
-                <button onclick="changeBasketStock('${basket.id}', 5)" style="padding:0.5rem 0.7rem; width: 34px; border:none;background:#ddd;border-radius:20px;cursor:pointer;">+</button>
+            <div style="display: grid; gap:0.5rem;margin-top:1rem;align-items:center;">
+                <div style="display:flex;gap:0.5rem;margin-top:1rem;align-items:center;">
+                    <label>Stock:</label>
+                    <button onclick="changeBasketStock('${basket.id}', -5)" style="padding:0.5rem 0.7rem; width: 34px;;border:none;background:#ddd;border-radius:20px;cursor:pointer;">-</button>
+                    <input class="input-number" type="number" id="basket-stock-${basket.id}" value="${basket.stock}"">
+                    <button onclick="changeBasketStock('${basket.id}', 5)" style="padding:0.5rem 0.7rem; width: 34px; border:none;background:#ddd;border-radius:20px;cursor:pointer;">+</button>
+                </div>
                 <button onclick="saveBasketStock('${basket.id}')" class="btn-primary" style="padding:0.5rem 1.5rem;">Enregistrer</button>
             </div>
         </div>
@@ -385,10 +387,10 @@ function renderOrders() {
         <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
             <thead style="background:#4a7c4e;color:white;">
                 <tr>
-                    <th style="padding:1rem;text-align:left;">Commande</th>
-                    <th style="padding:1rem;text-align:left;">Date</th>
-                    <th style="padding:1rem;text-align:left;">Articles</th>
-                    <th style="padding:1rem;text-align:right;">Total</th>
+                    <th style="padding:0.5rem 1rem;text-align:left;">Commande</th>
+                    <th style="padding:0.5rem 1rem;text-align:left;">Date</th>
+                    <th style="padding:0.5rem 1rem;text-align:left;">Articles</th>
+                    <th style="padding:0.5rem 1rem;text-align:right;">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -756,12 +758,12 @@ function renderUsers() {
         <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
             <thead style="background:#4a7c4e;color:white;">
                 <tr>
-                    <th id="u-th-nom" style="padding:1rem;text-align:left;">Nom</th>
-                    <th id="u-th-email" style="padding:1rem;text-align:left;">Email</th>
-                    <th id="u-th-tel" style="padding:1rem;text-align:left;">Téléphone</th>
-                    <th id="u-th-inscription" style="padding:1rem;text-align:left;">Inscription</th>
-                    <th id="u-th-commande" style="padding:1rem;text-align:center;">Commandes</th>
-                    <th id="u-th-statut" style="padding:1rem;text-align:center;">Statut</th>
+                    <th id="u-th-nom" style="padding:0.5rem 1rem;text-align:left;">Nom</th>
+                    <th id="u-th-email" style="padding:0.5rem 1rem;text-align:left;">Email</th>
+                    <th id="u-th-tel" style="padding:0.5rem 1rem;text-align:left;">Téléphone</th>
+                    <th id="u-th-inscription" style="padding:0.5rem 1rem;text-align:left;">Inscription</th>
+                    <th id="u-th-commande" style="padding:0.5rem 1rem;text-align:center;">Commandes</th>
+                    <th id="u-th-statut" style="padding:0.5rem 1rem;text-align:center;">Statut</th>
                 </tr>
             </thead>
             <tbody>
