@@ -162,11 +162,9 @@ function renderProducts() {
             <div class="product-info">
                 <h4>${product.name}</h4>
                 <div class="product-meta">
-                    <span class="badge">${product.category}</span>
+                    <span class="badge">Stock: ${product.inStock ? 'Illimité' : product.stock}</span>
                     <span class="price-tag">${product.price}€/kg</span>
                 </div>
-                <p class="stock-info">Stock: ${product.inStock ? 'Illimité' : product.stock}</p>
-                <p class="availability-info">${product.availableMonths?.length || 0} mois</p>
             </div>
             <div class="product-actions">
                 <button class="btn-secondary btn-sm" onclick="editProduct('${product.id}')">✏️ Modifier</button>
@@ -289,11 +287,11 @@ function renderBaskets() {
         <div style="background:white;padding:1.5rem;border-radius:15px;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
             <h4>${basket.name}</h4>
             <p>Prix: ${basket.price}€ | Stock: ${basket.stock}</p>
-            <div style="display:flex;gap:1rem;margin-top:1rem;align-items:center;">
+            <div style="display:flex;gap:0.5rem;margin-top:1rem;align-items:center;">
                 <label>Stock:</label>
-                <button onclick="changeBasketStock('${basket.id}', -5)" style="padding:0.5rem 1rem;border:none;background:#ddd;border-radius:5px;cursor:pointer;">-</button>
-                <input type="number" id="basket-stock-${basket.id}" value="${basket.stock}" style="width:80px;padding:0.5rem;text-align:center;border:2px solid #ddd;border-radius:5px;">
-                <button onclick="changeBasketStock('${basket.id}', 5)" style="padding:0.5rem 1rem;border:none;background:#ddd;border-radius:5px;cursor:pointer;">+</button>
+                <button onclick="changeBasketStock('${basket.id}', -5)" style="padding:0.5rem 0.7rem; width: 34px;;border:none;background:#ddd;border-radius:20px;cursor:pointer;">-</button>
+                <input class="input-number" type="number" id="basket-stock-${basket.id}" value="${basket.stock}"">
+                <button onclick="changeBasketStock('${basket.id}', 5)" style="padding:0.5rem 0.7rem; width: 34px; border:none;background:#ddd;border-radius:20px;cursor:pointer;">+</button>
                 <button onclick="saveBasketStock('${basket.id}')" class="btn-primary" style="padding:0.5rem 1.5rem;">Enregistrer</button>
             </div>
         </div>
@@ -662,23 +660,19 @@ function renderOrders() {
         <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
             <thead style="background:#4a7c4e;color:white;">
                 <tr>
-                    <th style="padding:1rem;text-align:left;">Commande</th>
-                    <th style="padding:1rem;text-align:left;">Date</th>
-                    <th style="padding:1rem;text-align:left;">Articles</th>
-                    <th style="padding:1rem;text-align:right;">Total</th>
-                    <th style="padding:1rem;text-align:center;">Action</th>
+                    <th id="c-th-cmd" style="padding:1rem;text-align:left;">Commande</th>
+                    <th id="c-th-date" style="padding:1rem;text-align:left;">Date</th>
+                    <th id="c-th-articles" style="padding:1rem;text-align:left;">Articles</th>
+                    <th id="c-th-total" style="padding:1rem;text-align:right;">Total</th>
                 </tr>
             </thead>
             <tbody>
                 ${sortedOrders.map(order => `
                     <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showOrderDetails('${order.id}')">
-                        <td style="padding:1rem;">${order.id}</td>
-                        <td style="padding:1rem;">${new Date(order.date).toLocaleString('fr-FR')}</td>
-                        <td style="padding:1rem;">${order.items?.length || 0} article(s)</td>
-                        <td style="padding:1rem;text-align:right;font-weight:600;">${order.total?.toFixed(2)}€</td>
-                        <td style="padding:1rem;text-align:center;">
-                            <button class="btn-secondary" style="padding:0.5rem 1rem;" onclick="event.stopPropagation();showOrderDetails('${order.id}')">Voir plus</button>
-                        </td>
+                        <td id="c-td-cmd" style="padding:1rem;">${order.id}</td>
+                        <td id="c-td-date" style="padding:1rem;">${new Date(order.date).toLocaleString('fr-FR')}</td>
+                        <td id="c-td-articles" style="padding:1rem;">${order.items?.length || 0} article(s)</td>
+                        <td id="c-td-total" style="padding:1rem;text-align:right;font-weight:600;">${order.total?.toFixed(2)}€</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -762,12 +756,12 @@ function renderUsers() {
         <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
             <thead style="background:#4a7c4e;color:white;">
                 <tr>
-                    <th style="padding:1rem;text-align:left;">Nom</th>
-                    <th style="padding:1rem;text-align:left;">Email</th>
-                    <th style="padding:1rem;text-align:left;">Téléphone</th>
-                    <th style="padding:1rem;text-align:left;">Inscription</th>
-                    <th style="padding:1rem;text-align:center;">Commandes</th>
-                    <th style="padding:1rem;text-align:center;">Statut</th>
+                    <th id="u-th-nom" style="padding:1rem;text-align:left;">Nom</th>
+                    <th id="u-th-email" style="padding:1rem;text-align:left;">Email</th>
+                    <th id="u-th-tel" style="padding:1rem;text-align:left;">Téléphone</th>
+                    <th id="u-th-inscription" style="padding:1rem;text-align:left;">Inscription</th>
+                    <th id="u-th-commande" style="padding:1rem;text-align:center;">Commandes</th>
+                    <th id="u-th-statut" style="padding:1rem;text-align:center;">Statut</th>
                 </tr>
             </thead>
             <tbody>
@@ -776,12 +770,12 @@ function renderUsers() {
                     const isAdmin = adminsList.includes(user.id);
                     return `
                         <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showUserDetails('${user.id}')">
-                            <td style="padding:1rem;">${user.firstName} ${user.lastName}</td>
-                            <td style="padding:1rem;">${user.email}</td>
-                            <td style="padding:1rem;">${user.phone || 'Non renseigné'}</td>
-                            <td style="padding:1rem;">${user.created ? new Date(user.created).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                            <td style="padding:1rem;text-align:center;font-weight:600;">${userOrders.length}</td>
-                            <td style="padding:1rem;text-align:center;">
+                            <td id="u-td-nom" style="padding:1rem;">${user.firstName} ${user.lastName}</td>
+                            <td id="u-td-email" style="padding:1rem;">${user.email}</td>
+                            <td id="u-td-tel" style="padding:1rem;">${user.phone || 'Non renseigné'}</td>
+                            <td id="u-td-inscription" style="padding:1rem;">${user.created ? new Date(user.created).toLocaleDateString('fr-FR') : 'N/A'}</td>
+                            <td id="u-td-commande" style="padding:1rem;text-align:center;font-weight:600;">${userOrders.length}</td>
+                            <td id="u-td-statut" style="padding:1rem;text-align:center;">
                                 ${isAdmin ? '<span class="admin-badge">👑 Admin</span>' : '<span style="color:#999;">Client</span>'}
                             </td>
                         </tr>
