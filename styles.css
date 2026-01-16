@@ -226,7 +226,7 @@ body {
 
 /* Buttons */
 .btn-primary {
-    background: var(--light);
+    background: var(--primary) !important;
     color: white;
     border: none;
     padding: 1rem 2rem;
@@ -472,12 +472,26 @@ body {
 
 .qty-selector button {
     background: var(--pale);
-    border: none;
+    border: solid 1px var(--border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0);
     width: 35px;
     height: 35px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 1.2rem;
+    transition: all 0.05s ease-out;
+}
+
+.qty-selector button:hover {
+    border: solid 1px var(--light);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+    transition: all 0.1s ease-out;
+}
+
+.qty-selector button:active {
+    transform: scale(0.9);
+    transition: all 0.1s ease-out;
 }
 
 .divider {
@@ -536,9 +550,15 @@ body {
 .custom-card {
     background: white;
     border-radius: 15px;
+    border: solid 2px var(--border);
     padding: 1.5rem;
     text-align: center;
     box-shadow: 0 4px 20px var(--shadow);
+    transition: all 0.2s ease-out;
+}
+
+.custom-card:hover {
+    border: solid 2px var(--orange);
 }
 
 .custom-card img {
@@ -965,17 +985,32 @@ body {
     color: var(--gray);
 }
 
+
+.input-qty {
+    width: 60px;
+    height: 40px;
+    text-align: center;
+    font-size: 1rem;
+    padding: 0.4rem;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+}
+
+
 /* Paniers améliorés */
 .basket-card {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     padding: 2rem;
-    transition: 0.3s;
+    transition: 0.2s ease-out;
 }
 
-.basket-card.featured {
+.basket-card:hover {
     border: 3px solid var(--orange);
-    transform: scale(1.05);
 }
+
 
 .featured-badge {
     position: absolute;
@@ -1035,7 +1070,7 @@ body {
     border-radius: 15px;
     font-size: 0.85rem;
     font-weight: 600;
-    margin: 1rem 0;
+    margin-top: 1rem;
 }
 
 .stock-badge.available {
@@ -1055,8 +1090,16 @@ body {
 
 .basket-actions {
     display: flex;
+    flex-direction: column;
+    bottom: 0px;
+    align-items: center;
+}
+
+.basket-actions2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 1rem;
-    margin-top: 1.5rem;
 }
 
 /* Mobile responsive pour paniers */
@@ -1161,25 +1204,9 @@ body.admin-body {
     position: fixed;
     height: 100vh;
     overflow-y: auto;
+    transition: all 0.2s ease-in-out;
 }
 
-.admin-sidebar-header {
-    padding: 2rem 1.5rem;
-    border-bottom: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, var(--light), var(--primary));
-    color: white;
-}
-
-.admin-sidebar-header .logo {
-    font-size: 2rem;
-}
-
-.admin-sidebar-header h2 {
-    font-size: 1.2rem;
-}
 
 .admin-nav {
     flex: 1;
@@ -1208,7 +1235,7 @@ body.admin-body {
 }
 
 .admin-nav-btn.active {
-    background: var(--light);
+    background: var(--primary);
     color: white;
 }
 
@@ -1254,11 +1281,6 @@ body.admin-body {
     font-size: 1.8rem;
 }
 
-.admin-user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
 
 .admin-avatar {
     width: 45px;
@@ -1369,6 +1391,7 @@ body.admin-body {
 /* Buttons */
 .btn-primary {
     background: var(--light);
+    height: 40px;
     color: white;
     border: none;
     padding: 0.8rem 1.5rem;
@@ -1736,52 +1759,6 @@ table tr:hover {
     margin-bottom: 1.5rem;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-    .admin-sidebar {
-        width: 70px;
-    }
-    
-    .admin-sidebar-header h2,
-    .admin-nav-btn span:not(.nav-icon),
-    .admin-sidebar-footer {
-        display: none;
-    }
-    
-    .admin-nav-btn {
-        justify-content: center;
-    }
-    
-    .admin-content {
-        margin-left: 70px;
-        width: calc(100% - 70px);
-    }
-}
-
-@media (max-width: 768px) {
-    .admin-sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-    }
-    
-    .admin-content {
-        margin-left: 0;
-        width: 100%;
-    }
-    
-    .form-row, .input-row {
-        grid-template-columns: 1fr;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .months-checkboxes {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
 
 /* Toggle boutique */
 .shop-status-card {
@@ -1865,46 +1842,6 @@ table tr:hover {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
-}
-
-/* Responsive Mobile Admin */
-@media (max-width: 768px) {
-    .admin-sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-    }
-    
-    .admin-content {
-        margin-left: 0;
-        width: 100%;
-        padding: 1rem;
-    }
-    
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .modal-content {
-        width: 95%;
-        padding: 1rem;
-    }
-    
-    table {
-        font-size: 0.9rem;
-    }
-    
-    table th, table td {
-        padding: 0.5rem;
-    }
-    
-    .products-list {
-        font-size: 0.9rem;
-    }
-    
-    .form-row {
-        grid-template-columns: 1fr;
-    }
 }
 
 
@@ -2114,7 +2051,7 @@ table tr:hover {
 }
 
 .btn-sm {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 3rem;
     font-size: 0.9rem;
 }
 
@@ -2170,10 +2107,124 @@ button, .btn {
     transform: translateY(-2px);
 }
 
-/* Mobile responsive global */
-@media (max-width: 768px) {
+
+.input-number {
+    width: 50px;
+    padding: 0.5rem;
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+/* Pour Chrome, Safari, Edge et Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Pour Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+
+
+
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .admin-sidebar {
+        width: 200px;
+        height: auto;
+        position: relative;
+    }
+    
+    .admin-nav-btn span:not(.nav-icon),
+    .admin-sidebar-footer {
+        display: none;
+    }
+    
+    .admin-nav-btn {
+        justify-content: left;
+    }
+    
+    .admin-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    #u-th-statut, #u-td-statut,
+    #u-th-inscription, #u-td-inscription {
+        display: none;
+    }
+
+    .carousel-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
     .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+}
+
+
+
+/* Responsive Mobile Admin */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        width: 92px;
+        height: auto;
+        position: relative;
+    }
+
+    .admin-nav-btn {
+        font-size: 0;
+    }
+
+    .admin-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .admin-header, .stats-grid {
+        margin-bottom: 12px;
+        gap: 12px;
+    }
+
+    .stats-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1rem;
+    }
+    
+    table {
+        font-size: 0.9rem;
+    }
+    
+    table th, table td {
+        padding: 0.5rem;
+    }
+    
+    .products-list {
+        font-size: 0.9rem;
+    }
+    
+    .form-row, .input-row {
+        grid-template-columns: 1fr;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .months-checkboxes {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .order-item-details {
@@ -2181,8 +2232,20 @@ button, .btn {
         align-items: flex-end;
         gap: 0.3rem;
     }
+
+    .carousel-images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
     
     .product-actions {
         flex-direction: column;
     }
+
+    #u-th-tel, #u-td-tel {
+        display: none;
+    }
+    #c-th-date, #c-td-date {
+        display: none;
+    }
 }
+
