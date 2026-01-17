@@ -17,12 +17,12 @@
                 <p>Interface d'Administration</p>
             </div>
             <form class="admin-login-form" onsubmit="adminLogin(event)">
-                <input type="email" id="adminEmail" placeholder="Email" class="input-field" required>
-                <input type="password" id="adminPassword" placeholder="Mot de passe" class="input-field" required>
-                <button type="submit" class="btn-primary btn-block">Se connecter</button>
+                <input type="password" id="adminPassword" placeholder="Mot de passe administrateur" class="input-field" required>
+                <button type="submit" class="btn-primary btn-block">Accéder</button>
             </form>
         </div>
     </div>
+
 
     <!-- Interface Admin -->
     <div class="admin-dashboard" id="adminDashboard" style="display: none;">
@@ -124,20 +124,6 @@
                 <!-- Paniers Prédéfinis -->
                 <div class="baskets-section">
                     <div class="baskets-admin-list" id="basketsAdminList"></div>
-                    
-                    <div class="promotions-section">
-                        <h4>Promotions Actives</h4>
-                        <div class="promo-form">
-                            <select id="promoBasket" class="input-field">
-                                <option value="petit">Panier Petit</option>
-                                <option value="moyen">Panier Moyen</option>
-                                <option value="grand">Panier Grand</option>
-                            </select>
-                            <input type="number" id="promoDiscount" placeholder="Réduction %" class="input-field" min="0" max="100">
-                            <button onclick="addPromotion()" class="btn-primary">Ajouter</button>
-                        </div>
-                        <div id="promoList"></div>
-                    </div>
                 </div>
                 
                 <div class="section-divider"></div>
@@ -232,16 +218,6 @@
                     <button type="submit" class="btn-primary">Enregistrer les paramètres</button>
                 </form>
                 
-                <div class="admin-management-section">
-                    <div class="admins-list" id="adminsList"></div>
-                    
-                    <div class="add-admin-form">
-                        <h4>Ajouter un administrateur</h4>
-                        <p class="info-text">L'utilisateur doit d'abord créer un compte sur le site.</p>
-                        <input type="text" id="newAdminUid" class="input-field" placeholder="UID de l'utilisateur">
-                        <button class="btn-primary" onclick="addAdmin()">Ajouter comme admin</button>
-                    </div>
-                </div>
             </div>
         </main>
     </div>

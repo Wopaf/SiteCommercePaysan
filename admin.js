@@ -44,25 +44,44 @@ setTimeout(async () => {
     });
 }, 200);
 
-async function checkAdmin(uid) {
-    try {
-        const snapshot = await window.firebase.get(window.firebase.ref(db, `paniers-du-jardin/admins/${uid}`));
-        return snapshot.exists() && snapshot.val() === true;
-    } catch (err) {
-        return false;
+
+
+
+
+
+// Mot de passe admin
+const ADMIN_PASSWORD = 'Admin123';
+let isAdminLoggedIn = false;
+
+// Init Firebase
+setTimeout(async () => {
+    if (!window.firebase) return console.error('Firebase non chargé');
+    
+    window.firebaseApp = window.firebase.initializeApp(firebaseConfig);
+    db = window.firebase.getDatabase(window.firebaseApp);
+    
+    // Vérifier si déjà connecté (session storage)
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+        isAdminLoggedIn = true;
+        showDashboard();
+        await loadAllAdminData();
+        await loadShopStatus();
     }
-}
+}, 200);
 
 // Connexion Admin
-async function adminLogin(event) {
+function adminLogin(event) {
     event.preventDefault();
-    const email = document.getElementById('adminEmail').value;
     const password = document.getElementById('adminPassword').value;
     
-    try {
-        await window.firebase.signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-        alert('Erreur de connexion : ' + error.message);
+    if (password === ADMIN_PASSWORD) {
+        isAdminLoggedIn = true;
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        showDashboard();
+        loadAllAdminData();
+        loadShopStatus();
+    } else {
+        alert('Mot de passe incorrect');
     }
 }
 
@@ -71,11 +90,18 @@ function showDashboard() {
     document.getElementById('adminDashboard').style.display = 'flex';
 }
 
-async function adminLogout() {
-    await window.firebase.signOut(auth);
+function adminLogout() {
+    isAdminLoggedIn = false;
+    sessionStorage.removeItem('adminLoggedIn');
     document.getElementById('adminLoginPage').style.display = 'flex';
     document.getElementById('adminDashboard').style.display = 'none';
+    document.getElementById('adminPassword').value = '';
 }
+
+
+
+
+
 
 // Chargement des données (Logique synchronisée avec script.js)
 async function loadAllAdminData() {
@@ -268,38 +294,66 @@ async function deleteProduct(productId) {
 }
 
 
-// ===== GESTION DES PANIERS (Corrigé pour Firebase) =====
+// Variable pour suivre quel panier est en mode édition
+let editingBasketId = null;
+
 function renderBaskets() {
     const container = document.getElementById('basketsAdminList');
     if (!container) return;
 
-    // Utilisation des données DATA.baskets chargées depuis Firebase
-    container.innerHTML = DATA.baskets.map(basket => `
-        <div style="background:white;padding:1.5rem;border-radius:15px;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
-            <h4>${basket.name}</h4>
-            <p>Prix actuel: ${basket.price}€ | Stock actuel: ${basket.stock}</p>
-            
-            <div style="display:flex;gap:0.5rem;margin-top:1rem;align-items:center;">
-                <label style="width: 100%;">Stock</label>
-                <button onclick="changeBasketField('${basket.id}', 'stock', -1)" style="padding:0.5rem; width: 40px; height: 40px; border:none; background:#ddd; border-radius:20px; cursor:pointer;">-</button>
-                <input class="input-number" type="number" id="basket-stock-${basket.id}" value="${basket.stock}">
-                <button onclick="changeBasketField('${basket.id}', 'stock', 1)" style="padding:0.5rem; width: 40px; height: 40px; border:none; background:#ddd; border-radius:20px; cursor:pointer;">+</button>
-            </div>
-
-            <div style="display: grid; gap:0.5rem; margin-top:0rem; align-items:center;">
-                <div style="display:flex;gap:0.5rem;margin-top:1rem;align-items:center;">
-                    <label style="width: 100%;">Prix (€)</label>
-                    <button onclick="changeBasketField('${basket.id}', 'price', -1)" style="padding:0.5rem; width: 40px; height: 40px; border:none; background:#ddd; border-radius:20px; cursor:pointer;">-</button>
-                    <input class="input-number" type="number" id="basket-price-${basket.id}" value="${basket.price}">
-                    <button onclick="changeBasketField('${basket.id}', 'price', 1)" style="padding:0.5rem; width: 40px; height: 40px; border:none; background:#ddd; border-radius:20px; cursor:pointer;">+</button>
+    container.innerHTML = DATA.baskets.map(basket => {
+        const isEditing = editingBasketId === basket.id;
+        
+        return `
+            <div style="background:white;padding:1.5rem;border-radius:15px;margin-bottom:1rem;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <h4 style="margin:0;">${basket.name}</h4>
+                    ${!isEditing ? `
+                        <button onclick="toggleBasketEdit('${basket.id}')" class="btn-secondary" style="padding:0.5rem 1rem;font-size:0.9rem;">
+                            ✏️ Modifier
+                        </button>
+                    ` : ''}
                 </div>
-                <button onclick="saveBasketData('${basket.id}')" class="btn-primary" style="padding:0.5rem 1.5rem; margin-top:10px;">Enregistrer</button>
+                
+                <p style="margin:0.5rem 0;color:#666;">Prix: <strong>${basket.price}€</strong> | Stock: <strong>${basket.stock}</strong></p>
+                
+                ${isEditing ? `
+                    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #eee;">
+                        <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center;">
+                            <label style="width:80px;">Stock</label>
+                            <button class="qty-btn" onclick="changeBasketField('${basket.id}', 'stock', -1)">-</button>
+                            <input class="input-number" type="number" id="basket-stock-${basket.id}" value="${basket.stock}">
+                            <button class="qty-btn" onclick="changeBasketField('${basket.id}', 'stock', 1)">+</button>
+                        </div>
+
+                        <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center;">
+                            <label style="width:80px;">Prix (€)</label>
+                            <button class="qty-btn" onclick="changeBasketField('${basket.id}', 'price', -1)">-</button>
+                            <input class="input-number" type="number" id="basket-price-${basket.id}" value="${basket.price}" step="0.5">
+                            <button class="qty-btn" onclick="changeBasketField('${basket.id}', 'price', 1)">+</button>
+                        </div>
+                        
+                        <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+                            <button onclick="cancelBasketEdit()" class="btn-secondary" style="flex:1;">Annuler</button>
+                            <button onclick="saveBasketData('${basket.id}')" class="btn-primary" style="flex:1;">Enregistrer</button>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
-        </div>
-    `).join('');
-    
-    renderPromotions();
+        `;
+    }).join('');
 }
+
+function toggleBasketEdit(basketId) {
+    editingBasketId = basketId;
+    renderBaskets();
+}
+
+function cancelBasketEdit() {
+    editingBasketId = null;
+    renderBaskets();
+}
+
 
 function changeBasketField(id, field, change) {
     const input = document.getElementById(`basket-${field}-${id}`);
@@ -626,10 +680,6 @@ function renderUsers() {
                 valA = getOrdersCount(a.id);
                 valB = getOrdersCount(b.id);
                 break;
-            case 'admin':
-                valA = adminsList.includes(a.id) ? 1 : 0;
-                valB = adminsList.includes(b.id) ? 1 : 0;
-                break;
             case 'created':
             default:
                 valA = new Date(a.created || 0);
@@ -661,15 +711,11 @@ function renderUsers() {
                     <th style="padding:1rem;text-align:center;">
                         Commandes <button style="${sortBtnStyle('orders')}" onclick="sortUsers('orders')">${sortIcon('orders')}</button>
                     </th>
-                    <th style="padding:1rem;text-align:center;">
-                        Statut <button style="${sortBtnStyle('admin')}" onclick="sortUsers('admin')">${sortIcon('admin')}</button>
-                    </th>
                 </tr>
             </thead>
             <tbody>
                 ${sortedUsers.map(user => {
                     const userOrdersCount = getOrdersCount(user.id);
-                    const isAdmin = adminsList.includes(user.id);
                     return `
                         <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showUserDetails('${user.id}')">
                             <td style="padding:1rem;">${user.firstName} ${user.lastName}</td>
@@ -678,9 +724,6 @@ function renderUsers() {
                                     ${userOrdersCount}
                                 </span>
                             </td>
-                            <td style="padding:1rem;text-align:center;">
-                                ${isAdmin ? '<span style="background:#fff3e0;color:#e65100;padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;font-size:0.85rem;">👑 Admin</span>' : '<span style="color:#999;font-size:0.85rem;">Client</span>'}
-                            </td>
                         </tr>
                     `;
                 }).join('')}
@@ -688,6 +731,7 @@ function renderUsers() {
         </table>
     `;
 }
+
 
 function sortUsers(field) {
     if (usersSortField === field) {
