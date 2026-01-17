@@ -215,8 +215,8 @@ function renderProducts() {
                 </div>
             </div>
             <div class="product-actions">
-                <button class="btn-secondary btn-sm" onclick="editProduct('${product.id}')">✏️ Modifier</button>
-                <button class="btn-danger btn-sm" onclick="deleteProduct('${product.id}')">🗑️</button>
+                <button class="btn-secondary" onclick="editProduct('${product.id}')">✏️ Modifier</button>
+                <button class="btn-danger" onclick="deleteProduct('${product.id}')">🗑️</button>
             </div>
         </div>
     `).join('');

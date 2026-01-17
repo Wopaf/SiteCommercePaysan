@@ -1,5 +1,6 @@
 :root {
     --primary: #4a7c4e;
+    --primaryhover: #549359;
     --light: #7cb342;
     --pale: #e8f5e9;
     --cream: #fffef7;
@@ -29,89 +30,174 @@ body {
     padding: 0 20px;
 }
 
-/* Navigation */
+
+
+
+
+/* ===== NAVIGATION ===== */
 .navbar {
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 20px var(--shadow);
+    background: white;
     position: sticky;
     top: 0;
     z-index: 1000;
-    border-bottom: 3px solid var(--light);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.08);
 }
 
 .navbar .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 20px;
+    padding: 0.75rem 20px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .nav-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .logo {
-    font-size: 2rem;
-    animation: rotate 3s ease-in-out infinite;
+    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: var(--pale);
+    border-radius: 12px;
+    animation: pulse 3s ease-in-out infinite;
 }
 
-@keyframes rotate {
-    0%, 100% { transform: rotate(0deg); }
-    50% { transform: rotate(10deg); }
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .nav-brand h1 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
+    font-weight: 700;
     color: var(--primary);
+    letter-spacing: -0.5px;
+}
+
+.nav-brand h1 span {
+    color: var(--light);
+    font-weight: 400;
 }
 
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: 2rem;
+    gap: 0.5rem;
     align-items: center;
 }
 
 .nav-link {
     text-decoration: none;
-    color: var(--text);
+    color: var(--gray);
     font-weight: 500;
-    transition: 0.3s;
-    position: relative;
+    font-size: 0.95rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
 }
 
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--light);
-    transition: 0.3s;
+.nav-link:hover {
+    color: var(--primary);
+    background: var(--pale);
 }
 
-.nav-link:hover::after, .nav-link.active::after {
-    width: 100%;
+.nav-link.active {
+    color: var(--primary);
+    background: var(--pale);
+    font-weight: 600;
 }
 
-.btn-auth, .cart-btn {
-    background: var(--light);
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.btn-auth {
+    background: var(--primary);
+    height: ;
     color: white;
     border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 25px;
+    padding: 0.6rem 1.4rem;
+    border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
-    transition: 0.3s;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
 }
 
-.btn-auth:hover, .cart-btn:hover {
+.btn-auth:hover {
+    background: var(--light);
+}
+
+.cart-btn {
+    position: relative;
+    background: var(--pale);
+    color: var(--primary);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.cart-btn:hover {
     background: var(--primary);
-    transform: translateY(-2px);
+    color: white;
+    transition: all 0.1s ease;
+}
+
+.cart-btn:hover .cart-icon {
+    fill: white;
+    transition: all 0.1s ease;
+}
+
+.cart-btn span {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--orange);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cart-btn:hover span {
+    transform: scale(1.2);
+    transition: all 0.4s ease;
+}
+
+
+/* Séparateur dans le menu */
+.nav-separator {
+    width: 1px;
+    height: 25px;
+    background: var(--border);
+    margin: 0 0.5rem;
 }
 
 .mobile-toggle {
@@ -121,13 +207,24 @@ body {
     background: none;
     border: none;
     cursor: pointer;
+    padding: 0.5rem;
 }
 
 .mobile-toggle span {
     width: 25px;
     height: 3px;
     background: var(--primary);
+    border-radius: 2px;
+    transition: 0.3s;
 }
+
+
+
+
+
+
+
+
 
 /* Hero & Carousel */
 .hero-section {
@@ -227,10 +324,10 @@ body {
 /* Buttons */
 .btn-primary {
     background: var(--primary);
-    height: 40px;
+    height: 45px;
     color: white;
     border: none;
-    padding: 0 1.5rem;
+    padding: 0 2rem;
     border-radius: 10px;
     cursor: pointer;
     font-size: 1rem;
@@ -239,25 +336,43 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0px 0px 0px #33563600;
+    transform: translate(0,0px);
+    transition: all 0.2s ease !important;
 }
 
 
 .btn-primary:hover {
-    background: var(--primary);
+    transform: translate(0,-5px);
+    background: var(--primaryhover);
+    box-shadow: 0px 5px 1px #335636;
+    transition: all 0.1s ease !important;
 }
+
+.btn-primary:active {
+    transform: translate(0,1px);
+    background: var(--primary);
+    box-shadow: 0px 0px 0px #33563600;
+    transition: all 0.1 ease !important;
+}
+
 
 .btn-secondary {
     background: white;
-    color: var(--primary);
+    color: var(--border);
     border: 2px solid var(--primary);
-    padding: 0.8rem 1.8rem;
-    border-radius: 30px;
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
     cursor: pointer;
     transition: 0.3s;
 }
 
+.btn-secondary:hover {
+    background: var(--primaryhover);
+    color: white;
+}
+
 .btn-block { width: 100%; }
-.btn-sm { padding: 0.5rem 1rem; font-size: 0.9rem; }
 
 
 /* Pages */
@@ -436,11 +551,14 @@ body {
 
 .baskets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 2rem;
 }
 
 .basket-card {
+    display: flex; 
+    flex-direction: column;
+    justify-content: space-between;
     background: white;
     border-radius: 20px;
     padding: 2rem;
@@ -448,6 +566,12 @@ body {
     box-shadow: 0 8px 30px var(--shadow);
     border: 3px solid var(--border);
 }
+
+
+.basket-card:hover {
+    border: 3px solid var(--orange);
+}
+
 
 .basket-card .price {
     font-size: 2rem;
@@ -477,7 +601,8 @@ body {
 .qty-selector button {
     background: var(--pale);
     border: solid 1px var(--border);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0);
+    box-shadow: 0px 0px 0px #33563600;
+    transform: translate(0,0px);
     width: 35px;
     height: 35px;
     border-radius: 50%;
@@ -488,15 +613,19 @@ body {
 
 .qty-selector button:hover {
     border: solid 1px var(--light);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: scale(1.1);
+    transform: translate(0,-4px);
+    box-shadow: 0px 2px 1px #335636;
     transition: all 0.1s ease-out;
 }
 
 .qty-selector button:active {
-    transform: scale(0.9);
-    transition: all 0.1s ease-out;
+    box-shadow: 0px 0px 0px #33563600;
+    transform: translate(0,0px);
+    transition: all 0.05s ease-out;
 }
+
+
+
 
 .divider {
     text-align: center;
@@ -546,16 +675,20 @@ body {
 }
 
 .custom-grid {
+    max-width: 100%;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
+    justify-content: center;
+    gap: 1rem;
 }
 
 .custom-card {
+    display: flex;
+    flex-direction: column;
+    max-width: 350px;
     background: white;
     border-radius: 15px;
     border: solid 2px var(--border);
-    padding: 1.5rem;
     text-align: center;
     box-shadow: 0 4px 20px var(--shadow);
     transition: all 0.2s ease-out;
@@ -565,11 +698,33 @@ body {
     border: solid 2px var(--orange);
 }
 
-.custom-card img {
+.custom-card-img {
     width: 100%;
     height: 150px;
     object-fit: cover;
-    border-radius: 10px;
+    border-radius: 10px 10px 0px 0px;
+    overflow: hidden;
+    object-fit: cover;
+}
+
+.custom-card-header {
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.8));
+    width: 100%;
+    height: calc(100% - 50px);
+    display: flex; 
+    flex-direction: row; 
+    gap: 0.5rem; 
+    align-items: center; 
+    justify-content: space-between; 
+    margin-top: 50px;
+    padding: 2rem 1rem 0.5rem 1rem;
+}
+
+.custom-card-header h4 {color: white; font-size: 24px; font-weight: 400;}
+.custom-card-header p {color: white; font-size: 18px; font-weight: 400;}
+
+.custom-card-content {
+    padding: 0rem 1rem 1rem 1rem;
 }
 
 /* Contact */
@@ -1005,6 +1160,8 @@ body {
 }
 
 
+
+
 .icon-dashboard {
     width: 26px;
     height: 26px;
@@ -1050,20 +1207,6 @@ body {
 }
 
 
-/* Paniers améliorés */
-.basket-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 2rem;
-    transition: 0.2s ease-out;
-}
-
-.basket-card:hover {
-    border: 3px solid var(--orange);
-}
-
 
 .featured-badge {
     position: absolute;
@@ -1084,9 +1227,15 @@ body {
 
 .basket-subtitle {
     color: var(--gray);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
     font-size: 0.95rem;
 }
+
+.basket-price {
+    font-size: 1.5rem;
+    text-align: center;
+    color: var(--primary);
+} 
 
 .basket-content {
     margin: 1.5rem 0;
@@ -1448,20 +1597,6 @@ body.admin-body {
 }
 
 
-.btn-secondary {
-    background: white;
-    color: var(--primary);
-    border: 2px solid var(--primary);
-    padding: 0.8rem 1.5rem;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-secondary:hover {
-    background: var(--primary);
-    color: white;
-}
 
 .btn-block {
     width: 100%;
@@ -2280,10 +2415,6 @@ table tr:hover {
     padding: 0 1rem 1rem;
 }
 
-.btn-sm {
-    padding: 0.5rem 3rem;
-    font-size: 0.9rem;
-}
 
 .btn-danger {
     background: #e57373;
@@ -2329,11 +2460,6 @@ button, .btn {
     font-weight: 600;
 }
 
-.btn-secondary:hover {
-    transform: translateY(-2px);
-}
-
-
 .input-number {
     width: 50px;
     padding: 0.5rem;
@@ -2355,6 +2481,85 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
+
+
+
+
+/* ===== MENU MOBILE FIXE EN BAS ===== */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+    z-index: 1000;
+    padding: 0.5rem 0;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+.mobile-bottom-nav {
+    display: none;
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    text-decoration: none;
+    color: var(--gray);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    font-family: inherit;
+}
+
+.mobile-nav-item svg {
+    width: 26px;
+    height: 26px;
+    fill: var(--gray);
+    transition: all 0.2s ease;
+}
+
+.mobile-nav-item span {
+    font-size: 0.7rem;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.mobile-nav-item.active,
+.mobile-nav-item:hover {
+    color: var(--primary);
+}
+
+.mobile-nav-item.active svg,
+.mobile-nav-item:hover svg {
+    fill: var(--primary);
+    transform: scale(1.1);
+}
+
+.mobile-cart-badge {
+    position: absolute;
+    top: 2px;
+    right: 50%;
+    transform: translateX(12px);
+    background: var(--orange);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
 
 
@@ -2385,6 +2590,38 @@ input[type=number] {
     }
 }
 
+@media (max-width: 950px) {
+
+  /* Ajouter du padding en bas du body pour éviter que le contenu soit caché */
+    body {
+        padding-bottom: 80px;
+    }
+    
+    /* Cacher les boutons auth et cart de la navbar desktop */
+    .nav-menu .btn-auth,
+    .nav-menu .cart-btn {
+        display: none;
+    }
+
+    .nav-menu {
+        display: none;
+    }
+    
+    /* Ajuster le cart sidebar pour mobile */
+    .cart-sidebar {
+        bottom: 70px;
+        height: calc(100vh - 70px);
+    }
+
+    .nav-actions, .mobile-toggle {
+        display: none;
+    }
+
+    .mobile-bottom-nav {
+    display: grid;
+    }
+
+}
 
 
 /* Responsive Mobile Admin */
@@ -2509,5 +2746,6 @@ input[type=number] {
     #c-th-date, #c-td-date, #c-th-name, #c-td-name {
         display: none;
     }
+
 }
 

@@ -233,10 +233,8 @@ function renderBaskets() {
                     <h3>${basket.name}</h3>
                     <p class="basket-subtitle">${basket.subtitle}</p>
                     
-                    <div class="basket-price">
-                        ${promo ? `<span class="old">${basket.price}€</span>` : ''}
-                        <span class="${promo ? 'promo' : ''}">${finalPrice.toFixed(2)}€</span>
-                        ${promo ? `<div class="promo-badge">-${promo.discount}% 🎉</div>` : ''}
+                    <div>
+                        <span class="basket-price">${basket.price}€</span>
                     </div>
                     
                     <div class="basket-content">
@@ -252,12 +250,12 @@ function renderBaskets() {
                     </div>
                     <div class="basket-actions2">
                         <div class="qty-selector">
-                            <button onclick="changeQty('${basket.id}', -1)">-</button>
+                            <button onclick="changeQty('${basket.id}', -1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
                             <span id="qty-${basket.id}" class="input-qty">1</span>
-                            <button onclick="changeQty('${basket.id}', 1)">+</button>
+                            <button onclick="changeQty('${basket.id}', 1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg>
                         </div>                        
                     </div>
-                    <button class="btn-primary btn-sm" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
+                    <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
                             ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
                     </button>
                 </div>
@@ -294,20 +292,23 @@ function addBasketToCart(id) {
 function renderCustomProducts() {
     document.getElementById('customGrid').innerHTML = DATA.products.map(p => `
         <div class="custom-card" data-category="${p.category}">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/150'}" alt="${p.name}">
-            <div style="display: flex; flex-direction: row; gap: 0.5rem; align-items: center; justify-content: space-between; padding: 0.5rem 1rem;">
-                <h4>${p.name}</h4>
-                <p>${p.price}€/kg</p>
-            </div>
-            <div class="qty-selector">
-                <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
-                <div class="input-wrapper">
-                <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0" readonly class="input-qty">
-                <span class="unit">kg</span>
+            <div class="custom-card-img" style="background: url('${p.imageUrl || 'https://via.placeholder.com/150'}') center/cover no-repeat;">
+                <div class="custom-card-header">
+                    <h4>${p.name}</h4>
+                    <p>${p.price}€/kg</p>
                 </div>
-                <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
             </div>
-            <button class="btn-primary btn-sm" onclick="addCustomToCart('${p.id}')">Ajouter</button>
+            <div class="custom-card-content" >
+                <div class="qty-selector">
+                    <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
+                    <div class="input-wrapper">
+                    <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0" readonly class="input-qty">
+                    <span class="unit">kg</span>
+                    </div>
+                    <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
+                </div>
+                <button class="btn-primary" onclick="addCustomToCart('${p.id}')">Ajouter</button>
+            </div>
         </div>
     `).join('');
 }
@@ -497,7 +498,7 @@ async function handleRegister(e) {
 
 function updateAuthUI(loggedIn) {
     const btn = document.getElementById('authBtn');
-    btn.innerHTML = loggedIn ? '👤 Mon Compte' : '👤 Connexion';
+    btn.innerHTML = loggedIn ? 'Mon Compte' : 'Connexion';
     btn.onclick = loggedIn ? () => navigateTo('mon-compte') : openAuthModal;
 }
 
@@ -530,6 +531,26 @@ async function logout() {
     navigateTo('accueil');
 }
 
+// Mettre à jour le menu mobile actif
+function updateMobileNav(page) {
+    document.querySelectorAll('.mobile-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === page) {
+            item.classList.add('active');
+        }
+    });
+}
+
+// Synchroniser le compteur panier mobile
+function updateCartCount() {
+    const count = STATE.cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = count;
+    const mobileCount = document.getElementById('mobileCartCount');
+    if (mobileCount) mobileCount.textContent = count;
+}
+
+
+
 // Navigation
 function navigateTo(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -537,7 +558,18 @@ function navigateTo(page) {
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
     document.querySelector(`[href="#${page}"]`)?.classList.add('active');
     window.scrollTo(0, 0);
+    updateMobileNav(page);
 }
+
+function handleMobileAccount() {
+    if (currentUser) {
+        navigateTo('mon-compte');
+    } else {
+        openAuthModal();
+    }
+}
+
+
 
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
