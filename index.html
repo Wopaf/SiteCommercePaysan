@@ -7,363 +7,367 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
+        <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
                 <span class="logo">🌱</span>
-                <h1>Paniers du Jardin</h1>
+                <h1>Paniers <span>du Jardin</span></h1>
             </div>
-            <ul class="nav-menu">
+            <ul class="nav-menu" id="navMenu">
                 <li><a href="#accueil" class="nav-link active">Accueil</a></li>
                 <li><a href="#commander" class="nav-link">Commander</a></li>
                 <li><a href="#apropos" class="nav-link">À Propos</a></li>
                 <li><a href="#contact" class="nav-link">Contact</a></li>
-                <li>
-                    <button class="cart-button" onclick="toggleCart()">
-                        🛒 Panier <span class="cart-count" id="cartCount">0</span>
-                    </button>
-                </li>
             </ul>
+            <div class="nav-actions">
+                <button class="btn-auth" id="authBtn" onclick="openAuthModal()">
+                    Connexion
+                </button>
+                <button class="cart-btn" onclick="toggleCart()">
+                    <svg class="cart-icon" height="20px" viewBox="0 -960 960 960" width="20px" fill="#4a7c4e"><path d="M280-80q-33 0-56.5-23.5T200-160q0-33 23.5-56.5T280-240q33 0 56.5 23.5T360-160q0 33-23.5 56.5T280-80Zm400 0q-33 0-56.5-23.5T600-160q0-33 23.5-56.5T680-240q33 0 56.5 23.5T760-160q0 33-23.5 56.5T680-80ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h440q17 0 28.5 11.5T760-320q0 17-11.5 28.5T720-280H280q-45 0-68-39.5t-2-78.5l54-98-144-304H80q-17 0-28.5-11.5T40-840q0-17 11.5-28.5T80-880h65q11 0 21 6t15 17l27 57Zm134 280h280-280Z"/></svg>
+                    <span id="cartCount">0</span>
+                </button>
+            </div>
         </div>
     </nav>
 
-    <!-- Page Accueil -->
-    <section id="accueil" class="page active">
-        <!-- Hero Section -->
-        <div class="hero">
-            <div class="hero-content">
-                <h2 class="hero-title">Fruits & Légumes Frais de nos Jardins</h2>
-                <p class="hero-subtitle">Des produits locaux, cultivés avec passion, livrés chez vous</p>
-                <button class="btn-primary" onclick="navigateTo('commander')">Commander Maintenant</button>
-            </div>
-            <div class="hero-image">
-                <div class="floating-veg">🥕</div>
-                <div class="floating-veg">🍅</div>
-                <div class="floating-veg">🥬</div>
-            </div>
-        </div>
 
-        <!-- Fruits de Saison -->
+    <    <section id="accueil" class="page active">
+        
+        <!-- Hero Section - Carrousel + Texte côte à côte -->
         <div class="container">
-            <h2 class="section-title">Fruits de Saison Disponibles</h2>
-            <div class="seasonal-grid" id="seasonalFruits"></div>
-        </div>
-
-        <!-- Vidéo Présentation -->
-        <div class="video-section">
-            <div class="container">
-                <h2 class="section-title">Découvrez Notre Exploitation</h2>
-                <div class="video-container">
-                    <div class="video-placeholder">
-                        <span class="play-icon">▶</span>
-                        <p>Visite virtuelle de nos jardins et serres</p>
+            <div class="hero-grid">
+                <div class="hero-text">
+                    <h1>Des paniers frais, <br><span>directement du jardin</span></h1>
+                    <p>Fruits et légumes de saison cultivés avec passion à moins de 30km. Commandez en ligne, récupérez à la ferme.</p>
+                    <div class="hero-actions">
+                        <button class="btn-primary-large" onclick="navigateTo('commander')">
+                            Voir les paniers
+                        </button>
+                        <div class="hero-stats">
+                            <div class="stat">
+                                <strong>30+</strong>
+                                <span>Produits</span>
+                            </div>
+                            <div class="stat">
+                                <strong>100%</strong>
+                                <span>Local</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-carousel-wrapper">
+                    <div class="carousel" id="carousel">
+                        <div class="carousel-track" id="carouselTrack"></div>
+                        <div class="carousel-dots" id="carouselDots"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Avantages -->
-        <div class="container">
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <span class="benefit-icon">🌿</span>
-                    <h3>100% Local</h3>
-                    <p>Produits cultivés à moins de 30km</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">🚚</span>
-                    <h3>Livraison Rapide</h3>
-                    <p>Fraîcheur garantie en 24h</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">♻️</span>
-                    <h3>Éco-Responsable</h3>
-                    <p>Emballages biodégradables</p>
-                </div>
-                <div class="benefit-card">
-                    <span class="benefit-icon">👨‍🌾</span>
-                    <h3>Agriculture Raisonnée</h3>
-                    <p>Sans pesticides chimiques</p>
+        <!-- Barre d'avantages -->
+        <div class="benefits-strip">
+            <div class="container">
+                <div class="benefits-row">
+                    <div class="benefit-mini">
+                        <span>🌿</span>
+                        <div><strong>100% Local</strong><small>Moins de 30km</small></div>
+                    </div>
+                    <div class="benefit-mini">
+                        <span>📦</span>
+                        <div><strong>Retrait Facile</strong><small>À la ferme</small></div>
+                    </div>
+                    <div class="benefit-mini">
+                        <span>♻️</span>
+                        <div><strong>Éco-Responsable</strong><small>Zéro plastique</small></div>
+                    </div>
+                    <div class="benefit-mini">
+                        <span>👨‍🌾</span>
+                        <div><strong>Agriculture Raisonnée</strong><small>Sans pesticides</small></div>
+                    </div>
                 </div>
             </div>
         </div>
+
+
+
+
+
+        <!-- Section Paniers -->
+        <div class="home-baskets-section">
+            <div class="container">
+                <div class="section-intro">
+                    <h2>Nos Paniers Fraîcheur</h2>
+                    <p>Des paniers composés chaque semaine avec les meilleurs produits de saison</p>
+                </div>
+                <div class="home-baskets-showcase" id="homeBasketsPreview">
+                    <!-- Rempli par JS -->
+                </div>
+                <div class="section-cta">
+                    <button class="btn-primary btn-lg" onclick="navigateTo('commander')">
+                        Commander mon panier →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Section Où nous trouver -->
+        <div class="location-section">
+            <div class="container">
+                <div class="section-intro">
+                    <h2>Où nous trouver</h2>
+                    <p id="homeAddress">Route des Vergers, 44000 Nantes</p>
+                </div>
+                <div class="location-map" id="homeMap">
+                    <iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps?q=47.2184,-1.5536&z=12&output=embed"></iframe>
+                </div>
+
+                <div class="section-cta">
+                    <button class="btn-primary btn-lg" onclick="navigateTo('contact')">
+                        Nous contacter →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Section Produits de Saison -->
+        <div class="seasonal-section">
+            <div class="container">
+                <div class="seasonal-header">
+                    <div class="seasonal-title">
+                        <h2>🌿 En ce moment au jardin</h2>
+                        <p>Découvrez les produits frais disponibles</p>
+                    </div>
+                    <div class="months-selector" id="monthsSelector">
+                        <!-- Rempli par JS -->
+                    </div>
+                </div>
+                
+                <div class="seasonal-content">
+                    <div class="current-month-label" id="currentMonthLabel">
+                        <!-- Rempli par JS -->
+                    </div>
+                    <div class="seasonal-products-grid" id="seasonalGrid">
+                        <!-- Rempli par JS -->
+                    </div>
+                    <div class="seasonal-empty" id="seasonalEmpty" style="display:none;">
+                        <span>🍂</span>
+                        <p>Aucun produit disponible ce mois-ci</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+
     </section>
 
-    <!-- Page Commander -->
+
     <section id="commander" class="page">
         <div class="container">
             <h2 class="page-title">Choisissez Votre Panier</h2>
-            <p class="page-subtitle">Trois tailles adaptées à vos besoins</p>
-            <div class="baskets-grid" id="basketsGrid"></div>
+            
+            <!-- Message boutique fermée -->
+            <div class="shop-closed-message" id="shopClosedMessage" style="display:none;">
+                <div class="closed-icon">🔒</div>
+                <h3>Oups, la boutique n'est pas encore ouverte !</h3>
+                <p id="reopeningMessage">Repassez bientôt !</p>
+            </div>
+            
+            <div class="order-section" id="orderSection">
+                <div class="section-intro">
+                    <p>Choisissez la formule qui vous correspond</p>
+                </div>
+                <div class="home-baskets-showcase" id="basketsGrid"></div>
+            </div>
+
+            <div class="divider"><span>OU</span></div>
+            <div class="order-section custom-basket-section">
+                <h3>Créez Votre Panier Personnalisé</h3>
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterProducts('all')">Tous</button>
+                    <button class="filter-btn" onclick="filterProducts('fruits')">Fruits</button>
+                    <button class="filter-btn" onclick="filterProducts('legumes')">Légumes</button>
+                </div>
+                <div class="custom-grid" id="customGrid"></div>
+            </div>
         </div>
     </section>
 
-    <!-- Page À Propos -->
+    <section id="contact" class="page">
+        <div class="container">
+            <h2 class="page-title">Contactez-Nous</h2>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-card"><div>📍</div><h3>Adresse</h3><p id="shopAddress"></p></div>
+                    <div class="contact-card"><div>📞</div><h3>Téléphone</h3><p id="shopPhone"></p></div>
+                    <div class="contact-card"><div>✉️</div><h3>Email</h3><p id="shopEmail"></p></div>
+                </div>
+                <div class="map-container" id="map"></div>
+            </div>
+        </div>
+    </section>
+
     <section id="apropos" class="page">
         <div class="container">
-            <h2 class="page-title">À Propos de Nous</h2>
-            
+            <h2 class="page-title">À Propos</h2>
             <div class="about-content">
-                <div class="about-text">
-                    <h3>Notre Histoire</h3>
-                    <p>Fondée en 2015, Paniers du Jardin est une entreprise familiale passionnée par l'agriculture locale et durable. Notre mission est de vous faire découvrir les saveurs authentiques des fruits et légumes de saison, cultivés avec respect et passion.</p>
-                    
-                    <h3>Nos Valeurs</h3>
-                    <ul class="values-list">
-                        <li><strong>Qualité :</strong> Sélection rigoureuse de nos produits</li>
-                        <li><strong>Proximité :</strong> Circuit court et relation directe avec les producteurs</li>
-                        <li><strong>Respect :</strong> De l'environnement et des saisons</li>
-                        <li><strong>Transparence :</strong> Traçabilité complète de nos produits</li>
-                    </ul>
-
-                    <h3>L'Équipe</h3>
-                    <p>Une équipe de 8 passionnés : maraîchers, logisticiens et service client, tous dévoués à vous offrir la meilleure expérience possible.</p>
-                </div>
-                <div class="about-image">
-                    <div class="image-placeholder">
-                        <span style="font-size: 80px;">🌾</span>
-                        <p>Notre équipe au travail</p>
-                    </div>
-                </div>
+                <div><h3>Notre Histoire</h3><p>Fondée en 2015, entreprise familiale passionnée par l'agriculture locale.</p></div>
+                <div class="about-img">🌾</div>
             </div>
         </div>
     </section>
 
-    <!-- Page CGV -->
-    <section id="cgv" class="page">
-        <div class="container legal-content">
-            <h2 class="page-title">Conditions Générales de Vente</h2>
-            
-            <h3>1. Objet</h3>
-            <p>Les présentes conditions générales de vente régissent les relations entre Paniers du Jardin et ses clients.</p>
-            
-            <h3>2. Commandes</h3>
-            <p>Toute commande passée sur notre site implique l'acceptation pleine et entière des présentes conditions. La validation de votre commande vaut acceptation de nos CGV.</p>
-            
-            <h3>3. Prix</h3>
-            <p>Les prix sont indiqués en euros TTC. Nous nous réservons le droit de modifier nos prix à tout moment, mais les produits seront facturés sur la base des tarifs en vigueur au moment de la validation de la commande.</p>
-            
-            <h3>4. Paiement</h3>
-            <p>Le paiement s'effectue en ligne de manière sécurisée par carte bancaire. La commande est enregistrée après validation du paiement.</p>
-            
-            <h3>5. Livraison</h3>
-            <p>Les livraisons sont effectuées dans un rayon de 30km autour de notre exploitation. Délai de livraison : 24 à 48h après validation de la commande.</p>
-            
-            <h3>6. Droit de rétractation</h3>
-            <p>Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne peut être exercé pour les denrées périssables.</p>
-            
-            <h3>7. Fraîcheur et qualité</h3>
-            <p>Nous garantissons la fraîcheur de nos produits. En cas de problème, contactez-nous dans les 24h suivant la réception.</p>
-            
-            <h3>8. Données personnelles</h3>
-            <p>Vos données sont traitées conformément au RGPD. Vous disposez d'un droit d'accès, de modification et de suppression.</p>
-        </div>
-    </section>
-
-    <!-- Page Mentions Légales -->
-    <section id="mentions" class="page">
-        <div class="container legal-content">
-            <h2 class="page-title">Mentions Légales</h2>
-            
-            <h3>Éditeur du site</h3>
-            <p>
-                <strong>Paniers du Jardin</strong><br>
-                SARL au capital de 10 000€<br>
-                RCS : 123 456 789<br>
-                Siège social : Route des Vergers, 44000 Nantes<br>
-                Téléphone : 02 40 XX XX XX<br>
-                Email : contact@paniersdujardin.fr
-            </p>
-            
-            <h3>Directeur de publication</h3>
-            <p>Jean Dupont, Gérant</p>
-            
-            <h3>Hébergement</h3>
-            <p>
-                Ce site est hébergé par :<br>
-                <strong>GitHub Pages</strong><br>
-                88 Colin P Kelly Jr St<br>
-                San Francisco, CA 94107<br>
-                États-Unis
-            </p>
-            
-            <h3>Propriété intellectuelle</h3>
-            <p>L'ensemble du contenu de ce site (textes, images, vidéos) est la propriété exclusive de Paniers du Jardin. Toute reproduction est interdite sans autorisation préalable.</p>
-            
-            <h3>Cookies</h3>
-            <p>Ce site utilise des cookies pour améliorer votre expérience de navigation et réaliser des statistiques de visite.</p>
-            
-            <h3>Protection des données</h3>
-            <p>Conformément à la loi Informatique et Libertés et au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.</p>
-        </div>
-    </section>
-
-    <!-- Page Admin (secrète) -->
-    <section id="admin" class="page">
+    <section id="mon-compte" class="page">
         <div class="container">
-            <div class="admin-login" id="adminLogin">
-                <h2 class="page-title">Administration</h2>
-                <div class="login-form">
-                    <input type="password" id="adminPassword" placeholder="Mot de passe" class="input-field">
-                    <button onclick="adminLogin()" class="btn-primary">Connexion</button>
+            <div class="account-grid">
+                <div class="account-sidebar">
+                    <div class="profile"><div class="avatar" id="userInitials">U</div><h3 id="userName">User</h3></div>
+                    <button class="account-btn active" onclick="showAccount('infos')">
+                        <svg class="icon-admin" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M40-272q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v32q0 33-23.5 56.5T600-160H120q-33 0-56.5-23.5T40-240v-32Zm800 112H738q11-18 16.5-38.5T760-240v-40q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v40q0 33-23.5 56.5T840-160ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm400-160q0 66-47 113t-113 47q-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0 320Zm0-400Z"/></svg> Informations
+                    </button>
+                    <button class="account-btn" onclick="showAccount('orders')">
+                        <svg class="icon-admin" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M240-80q-33 0-56.5-23.5T160-160v-480q0-33 23.5-56.5T240-720h80q0-66 47-113t113-47q66 0 113 47t47 113h80q33 0 56.5 23.5T800-640v480q0 33-23.5 56.5T720-80H240Zm0-80h480v-480h-80v80q0 17-11.5 28.5T600-520q-17 0-28.5-11.5T560-560v-80H400v80q0 17-11.5 28.5T360-520q-17 0-28.5-11.5T320-560v-80h-80v480Zm160-560h160q0-33-23.5-56.5T480-800q-33 0-56.5 23.5T400-720ZM240-160v-480 480Z"/></svg> Commandes
+                    </button>
+                    <button class="account-btn logout" onclick="logout()">
+                        <svg class="icon-admin2" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="m127-833 73 73h-40v440h368L56-792q-11-11-11-28t11-28q11-11 28-11t28 11l736 736q11 11 11 28t-11 28q-11 11-28 11t-28-11L608-240h72l28 28q6 6 9 13.5t3 15.5v23q0 17-11.5 28.5T680-120H280q-17 0-28.5-11.5T240-160v-23q0-8 3-15.5t9-13.5l28-28H160q-33 0-56.5-23.5T80-320v-440q0-37 23.5-55l23.5-18Zm673-7q17 0 31.5 6.5t25 17q10.5 10.5 17 25T880-760v474q0 17-11.5 28.5T840-246q-17 0-28.5-11.5T800-286v-474H331q-20 0-30-12.5T291-800q0-15 10-27.5t30-12.5h469ZM557-517Zm-213 13Z"/></svg> Déconnexion
+                    </button>
                 </div>
-            </div>
-
-            <div class="admin-panel" id="adminPanel" style="display: none;">
-                <h2 class="page-title">Panneau d'Administration</h2>
-                
-                <div class="admin-section">
-                    <h3>Gestion des Stocks</h3>
-                    <div class="stock-management" id="stockManagement">
-                        <!-- Généré dynamiquement -->
+                <div class="account-content">
+                    <div class="account-section active" id="section-infos">
+                        <h3>Informations</h3>
+                        <form id="userForm">
+                            <input type="text" class="input-field" placeholder="Prénom" id="userFirstName">
+                            <input type="text" class="input-field" placeholder="Nom" id="userLastName">
+                            <input type="email" class="input-field" placeholder="Email" id="userEmail">
+                            <input type="tel" class="input-field" placeholder="Téléphone" id="userPhone">
+                            <button type="submit" class="btn-primary">Enregistrer</button>
+                        </form>
+                    </div>
+                    <div class="account-section" id="section-orders">
+                        <h3>Mes Commandes</h3>
+                        <div id="userOrders"></div>
                     </div>
                 </div>
-
-                <div class="admin-section">
-                    <h3>Promotions Actives</h3>
-                    <div class="promotions-management" id="promotionsManagement">
-                        <div class="promo-form">
-                            <select id="promoBasket" class="input-field">
-                                <option value="petit">Panier Petit</option>
-                                <option value="moyen">Panier Moyen</option>
-                                <option value="grand">Panier Grand</option>
-                            </select>
-                            <input type="number" id="promoDiscount" placeholder="Réduction %" class="input-field" min="0" max="100">
-                            <button onclick="addPromotion()" class="btn-primary">Ajouter Promotion</button>
-                        </div>
-                        <div id="promoList"></div>
-                    </div>
-                </div>
-
-                <div class="admin-section">
-                    <h3>Commandes Récentes</h3>
-                    <div class="orders-list" id="ordersList">
-                        <p class="text-muted">Aucune commande pour le moment</p>
-                    </div>
-                </div>
-
-                <button onclick="adminLogout()" class="btn-secondary">Déconnexion</button>
             </div>
         </div>
     </section>
 
-    <!-- Panier -->
-    <div class="cart-sidebar" id="cartSidebar">
-        <div class="cart-header">
-            <h3>Votre Panier</h3>
-            <button onclick="toggleCart()" class="close-cart">✕</button>
-        </div>
-        <div class="cart-items" id="cartItems">
-            <p class="empty-cart">Votre panier est vide</p>
-        </div>
-        <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span>
-                <span id="totalPrice">0,00 €</span>
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeAuthModal()">✕</button>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showAuthTab('login')">Connexion</button>
+                <button class="auth-tab" onclick="showAuthTab('register')">Inscription</button>
             </div>
-            <button onclick="checkout()" class="btn-primary btn-block">Commander</button>
+            <div id="loginForm">
+                <h3>Connexion</h3>
+                <form onsubmit="handleLogin(event)">
+                    <input type="email" class="input-field" placeholder="Email" required>
+                    <input type="password" class="input-field" placeholder="Mot de passe" required>
+                    <button type="submit" class="btn-primary btn-block">Se connecter</button>
+                </form>
+                <div class="auth-divider"><span>OU</span></div>
+                <button class="btn-google" type="button" onclick="signInWithGoogle()">
+                    <span class="google-icon">G</span> Continuer avec Google
+                </button>
+            </div>
+            <div id="registerForm" style="display:none;">
+                <h3>Inscription</h3>
+                <form onsubmit="handleRegister(event)">
+                    <input type="text" class="input-field" placeholder="Prénom" required>
+                    <input type="text" class="input-field" placeholder="Nom" required>
+                    <input type="email" class="input-field" placeholder="Email" required>
+                    <input type="tel" class="input-field" placeholder="Téléphone (facultatif)" id="registerPhone">
+                    <input type="password" class="input-field" placeholder="Mot de passe" required>
+                    <button type="submit" class="btn-primary btn-block">Créer mon compte</button>
+                </form>
+                <div class="auth-divider"><span>OU</span></div>
+                <button class="btn-google" type="button" onclick="signInWithGoogle()">
+                    <span class="google-icon">G</span> S'inscrire avec Google
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header"><h3>Panier</h3><button class="close-btn" onclick="toggleCart()">✕</button></div>
+        <div class="cart-items" id="cartItems"><p>Votre panier est vide</p></div>
+        <div class="cart-footer">
+            <div class="cart-total"><span>Total:</span><span id="totalPrice">0€</span></div>
+            <button class="btn-primary btn-block" onclick="checkout()">Commander</button>
         </div>
     </div>
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 
-    <!-- Modal de Paiement -->
     <div class="modal" id="paymentModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Finaliser la Commande</h3>
-                <button onclick="closePaymentModal()" class="close-modal">✕</button>
+                <h3>Réserver ma Commande</h3>
+                <button onclick="closePaymentModal()">✕</button>
             </div>
-            <div class="modal-body">
-                <form id="paymentForm">
-                    <h4>Informations de Livraison</h4>
-                    <input type="text" placeholder="Nom complet" class="input-field" required>
-                    <input type="email" placeholder="Email" class="input-field" required>
-                    <input type="tel" placeholder="Téléphone" class="input-field" required>
-                    <input type="text" placeholder="Adresse" class="input-field" required>
-                    <input type="text" placeholder="Code postal" class="input-field" required>
-                    <input type="text" placeholder="Ville" class="input-field" required>
-
-                    <h4>Paiement Sécurisé</h4>
-                    <input type="text" placeholder="Numéro de carte" class="input-field" maxlength="16" required>
-                    <div class="input-row">
-                        <input type="text" placeholder="MM/AA" class="input-field" maxlength="5" required>
-                        <input type="text" placeholder="CVV" class="input-field" maxlength="3" required>
+            <form id="paymentForm">
+                <div class="order-summary-detail">
+                    <h4>Récapitulatif de votre commande</h4>
+                    <div id="orderSummary"></div>
+                    <div class="summary-total">
+                        <strong>Total à payer sur place:</strong>
+                        <strong id="finalTotal">0,00 €</strong>
                     </div>
-
-                    <div class="order-summary">
-                        <h4>Récapitulatif</h4>
-                        <div id="orderSummary"></div>
-                        <div class="summary-total">
-                            <strong>Total à payer:</strong>
-                            <strong id="finalTotal">0,00 €</strong>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-primary btn-block">Payer Maintenant</button>
-                </form>
-            </div>
+                </div>
+                <p class="payment-info">💳 Le paiement se fera sur place lors de la récupération de votre commande.</p>
+                <button type="submit" class="btn-primary btn-block">Je réserve</button>
+            </form>
         </div>
     </div>
 
-    <!-- Footer -->
+        <!-- Menu Mobile Fixe -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav">
+        <button class="mobile-nav-item active" data-page="accueil" onclick="navigateTo('accueil')">
+            <svg viewBox="0 -960 960 960"><path d="M240-200h120v-200q0-17 11.5-28.5T400-440h160q17 0 28.5 11.5T600-400v200h120v-360L480-740 240-560v360Zm-80 0v-360q0-19 8.5-36t23.5-28l240-180q21-16 48-16t48 16l240 180q15 11 23.5 28t8.5 36v360q0 33-23.5 56.5T720-120H560q-17 0-28.5-11.5T520-160v-200h-80v200q0 17-11.5 28.5T400-120H240q-33 0-56.5-23.5T160-200Z"/></svg>
+            <span>Accueil</span>
+        </button>
+        <button class="mobile-nav-item" data-page="contact" onclick="navigateTo('contact')">
+            <svg viewBox="0 -960 960 960"><path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/></svg>
+            <span>Contact</span>
+        </button>
+        <button class="mobile-nav-item" data-page="commander" onclick="navigateTo('commander')">
+            <svg viewBox="0 -960 960 960"><path d="M240-80q-33 0-56.5-23.5T160-160v-480q0-33 23.5-56.5T240-720h80q0-66 47-113t113-47q66 0 113 47t47 113h80q33 0 56.5 23.5T800-640v480q0 33-23.5 56.5T720-80H240Zm0-80h480v-480h-80v80q0 17-11.5 28.5T600-520q-17 0-28.5-11.5T560-560v-80H400v80q0 17-11.5 28.5T360-520q-17 0-28.5-11.5T320-560v-80h-80v480Zm160-560h160q0-33-23.5-56.5T480-800q-33 0-56.5 23.5T400-720Z"/></svg>
+            <span>Commander</span>
+        </button>
+        <button class="mobile-nav-item" data-page="mon-compte" onclick="handleMobileAccount()">
+            <svg viewBox="0 -960 960 960"><path d="M480-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Z"/></svg>
+            <span>Compte</span>
+        </button>
+        <button class="mobile-nav-item" onclick="toggleCart()">
+            <svg viewBox="0 -960 960 960"><path d="M280-80q-33 0-56.5-23.5T200-160q0-33 23.5-56.5T280-240q33 0 56.5 23.5T360-160q0 33-23.5 56.5T280-80Zm400 0q-33 0-56.5-23.5T600-160q0-33 23.5-56.5T680-240q33 0 56.5 23.5T760-160q0 33-23.5 56.5T680-80ZM246-720l96 200h280l110-200H246Zm-38-80h590q23 0 35 20.5t1 41.5L692-482q-11 20-29.5 31T622-440H324l-44 80h440q17 0 28.5 11.5T760-320q0 17-11.5 28.5T720-280H280q-45 0-68-39.5t-2-78.5l54-98-144-304H80q-17 0-28.5-11.5T40-840q0-17 11.5-28.5T80-880h65q11 0 21 6t15 17l27 57Zm134 280h280-280Z"/></svg>
+            <span id="mobileCartCount" class="mobile-cart-badge">0</span>
+        </button>
+    </nav>
+
+
+
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
-                <div class="footer-section">
-                    <h4>Paniers du Jardin</h4>
-                    <p>Des fruits et légumes frais, locaux et de saison, livrés directement chez vous.</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Navigation</h4>
-                    <ul>
-                        <li><a href="#accueil" onclick="navigateTo('accueil')">Accueil</a></li>
-                        <li><a href="#commander" onclick="navigateTo('commander')">Commander</a></li>
-                        <li><a href="#apropos" onclick="navigateTo('apropos')">À Propos</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Informations</h4>
-                    <ul>
-                        <li><a href="#cgv" onclick="navigateTo('cgv')">CGV</a></li>
-                        <li><a href="#mentions" onclick="navigateTo('mentions')">Mentions Légales</a></li>
-                        <li><a href="#admin" onclick="navigateTo('admin')">Admin</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <p>📍 Route des Vergers, 44000 Nantes</p>
-                    <p>📞 02 40 XX XX XX</p>
-                    <p>✉️ contact@paniersdujardin.fr</p>
-                </div>
+                <div><h4>Paniers du Jardin</h4><p>Fruits & légumes locaux</p></div>
+                <div><h4>Navigation</h4><a href="#accueil">Accueil</a><a href="#commander">Commander</a></div>
+                <div><h4>Contact</h4><p id="footerAddress"></p><p id="footerPhone"></p></div>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Paniers du Jardin. Tous droits réservés.</p>
-            </div>
+            <p class="footer-bottom">© 2026 Paniers du Jardin</p>
         </div>
     </footer>
 
-    <!-- Firebase v12 Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
         import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-analytics.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-storage.js";
 
-        window.firebaseApp = { initializeApp };
-        window.firebaseDatabase = { getDatabase, ref, set, get, onValue };
-        window.firebaseAnalytics = { getAnalytics };
-
-        setTimeout(() => {
-            if (window.initializeFirebaseApp) {
-                window.initializeFirebaseApp(
-                    window.firebaseApp,
-                    window.firebaseDatabase,
-                    window.firebaseAnalytics
-                );
-            }
-        }, 100);
+        window.firebase = { initializeApp, getDatabase, ref, set, get, onValue, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, getStorage, storageRef, uploadBytes, getDownloadURL };
     </script>
-
     <script src="script.js"></script>
 </body>
 </html>

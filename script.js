@@ -1,809 +1,964 @@
-// ===== IMPORTS FIREBASE (chargés depuis le module principal) =====
-// Les imports sont gérés dans index.html avec type="module"
-
-// Configuration Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyCFeVRcxq_YOc2EuNcMZExtZvyQn919wog",
     authDomain: "sitecommercejardin-b348e.firebaseapp.com",
-    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.europe-west1.firebasedatabase.app/", // À vérifier dans Firebase Console
+    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "sitecommercejardin-b348e",
     storageBucket: "sitecommercejardin-b348e.firebasestorage.app",
     messagingSenderId: "468169255056",
-    appId: "1:468169255056:web:33ba4593dac84b41c6d015",
-    measurementId: "G-X8V2SGWXKQ"
+    appId: "1:468169255056:web:33ba4593dac84b41c6d015"
 };
 
-// Variables Firebase
-let app;
-let database;
-let analytics;
+let app, db, auth, storage, currentUser = null;
+const DATA = { products: [], baskets: [], promotions: [], orders: [], settings: {} };
+const STATE = { cart: [], firebaseReady: false };
+let currentSlide = 0, carouselImages = [], autoplayInterval, currentMonth = new Date().getMonth() + 1;
 
-// Données du site (structure par défaut)
-const DATA = {
-    seasonalFruits: [
-        { name: 'Pommes', icon: '🍎', description: 'Variétés locales croquantes', stock: 50 },
-        { name: 'Poires', icon: '🍐', description: 'Juteuses et sucrées', stock: 30 },
-        { name: 'Carottes', icon: '🥕', description: 'Fraîches du jardin', stock: 100 },
-        { name: 'Tomates', icon: '🍅', description: 'Gorgées de soleil', stock: 15 },
-        { name: 'Courgettes', icon: '🥒', description: 'Tendres et savoureuses', stock: 45 },
-        { name: 'Salades', icon: '🥬', description: 'Croquantes et bio', stock: 80 }
-    ],
+// Init Firebase
+setTimeout(async () => {
+    if (!window.firebase) return;
+    app = window.firebase.initializeApp(firebaseConfig);
+    db = window.firebase.getDatabase(app);
+    auth = window.firebase.getAuth(app);
+    storage = window.firebase.getStorage(app);
+    STATE.firebaseReady = true;
     
-    baskets: [
+    window.firebase.onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+        updateAuthUI(!!user);
+        if (user) loadUserData(user.uid);
+    });
+    
+    await loadAllData();
+    loadCart();  // Ajouter cette ligne
+    initCarousel();
+    checkShopStatus();
+}, 200);
+
+
+async function loadAllData() {
+    try {
+        const snapshot = await window.firebase.get(window.firebase.ref(db, 'paniers-du-jardin'));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            DATA.products = data.products ? Object.entries(data.products).map(([id, p]) => ({id, ...p})) : [];
+            
+            // Corriger le chargement des paniers
+            if (data.baskets && typeof data.baskets === 'object') {
+                DATA.baskets = [
+                    {id: 'petit', name: 'Petit', price: data.baskets.petit?.price || 1, stock: data.baskets.petit?.stock || 1},
+                    {id: 'moyen', name: 'Moyen', price: data.baskets.moyen?.price || 2, stock: data.baskets.moyen?.stock || 2},
+                    {id: 'grand', name: 'Grand', price: data.baskets.grand?.price || 3, stock: data.baskets.grand?.stock || 3}
+                ];
+            } else {
+                // Valeurs par défaut
+                DATA.baskets = [
+                    {id: 'petit', name: 'Petit', price: 0, stock: 0},
+                    {id: 'moyen', name: 'Moyen', price: 0, stock: 0},
+                    {id: 'grand', name: 'Grand', price: 0, stock: 0}
+                ];
+            }
+            
+            DATA.promotions = data.promotions || [];
+            DATA.orders = data.orders ? Object.values(data.orders) : [];
+            DATA.settings = data.settings || {};
+            carouselImages = data.media?.carouselImages || ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
+
+
+        } else {
+            // Données par défaut si rien dans Firebase
+            DATA.baskets = [
+                {id: 'petit', name: 'Petit', price: 0, stock: 0},
+                {id: 'moyen', name: 'Moyen', price: 0, stock: 0},
+                {id: 'grand', name: 'Grand', price: 0, stock: 0}
+            ];
+            carouselImages = ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
+        }
+        renderAll();
+        loadSettings();
+    } catch (err) {
+        console.error('Erreur:', err);
+        // Valeurs par défaut en cas d'erreur
+        DATA.baskets = [
+            {id: 'petit', name: 'Petit', price: 0, stock: 0},
+            {id: 'moyen', name: 'Moyen', price: 0, stock: 0},
+            {id: 'grand', name: 'Grand', price: 0, stock: 0}
+        ];
+        carouselImages = ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
+        renderAll();
+    }
+}
+
+function renderAll() {
+    renderCarousel();
+    renderHomeBasketsPreview();
+    renderSeasonalProducts();
+    renderBaskets();
+    renderCustomProducts();
+}
+
+function renderHomeBasketsPreview() {
+    const container = document.getElementById('homeBasketsPreview');
+    if (!container) return;
+    
+    const basketsInfo = [
         {
             id: 'petit',
-            name: 'Panier Petit',
-            icon: '🧺',
-            subtitle: 'Idéal pour 1-2 personnes',
-            price: 15,
-            content: ['3 variétés de fruits', '4 variétés de légumes', 'Environ 3kg'],
-            stock: 25
+            name: 'Petit Panier',
+            icon: '🥬',
+            persons: '1-2 pers.',
+            description: 'L\'essentiel pour cuisiner frais au quotidien',
+            highlights: ['3kg de produits', '7 variétés'],
+            color: '#e8f5e9'
         },
         {
             id: 'moyen',
-            name: 'Panier Moyen',
-            icon: '🧺',
-            subtitle: 'Parfait pour 3-4 personnes',
-            price: 25,
-            content: ['5 variétés de fruits', '6 variétés de légumes', 'Environ 5kg', '1 surprise du jardin'],
-            stock: 30,
-            featured: true
+            name: 'Panier Familial',
+            icon: '🥗',
+            persons: '3-4 pers.',
+            description: 'Le choix préféré de nos clients, varié et généreux',
+            highlights: ['5kg de produits', '11 variétés', '+ 1 surprise'],
+            popular: true,
+            color: '#fff3e0'
         },
         {
             id: 'grand',
-            name: 'Panier Grand',
-            icon: '🧺',
-            subtitle: 'Pour famille nombreuse',
-            price: 40,
-            content: ['7 variétés de fruits', '8 variétés de légumes', 'Environ 8kg', '2 surprises du jardin', 'Herbes aromatiques'],
-            stock: 15
+            name: 'Grand Panier',
+            icon: '🍎',
+            persons: '5+ pers.',
+            description: 'L\'abondance du jardin pour les grandes tablées',
+            highlights: ['8kg de produits', '15 variétés', '+ herbes fraîches'],
+            color: '#fce4ec'
         }
-    ],
+    ];
     
-    promotions: [],
-    orders: []
-};
-
-// État de l'application (local à chaque utilisateur)
-const STATE = {
-    cart: [],
-    adminLoggedIn: false,
-    firebaseReady: false
-};
-
-// Mot de passe admin
-const ADMIN_PASSWORD = 'admin123';
-
-// ===== INITIALISATION FIREBASE =====
-// Cette fonction sera appelée depuis le module principal
-window.initializeFirebaseApp = async function(firebaseApp, firebaseDatabase, firebaseAnalytics) {
-    try {
-        // Initialiser Firebase
-        app = firebaseApp.initializeApp(firebaseConfig);
-        database = firebaseDatabase.getDatabase(app);
+    container.innerHTML = basketsInfo.map(basket => {
+        const firebaseBasket = DATA.baskets.find(b => b.id === basket.id);
+        const price = firebaseBasket?.price || 0;
+        const stock = firebaseBasket?.stock || 0;
         
-        // Analytics optionnel
-        if (firebaseAnalytics) {
-            analytics = firebaseAnalytics.getAnalytics(app);
-        }
-        
-        STATE.firebaseReady = true;
-        console.log('✅ Firebase initialisé avec succès');
-        
-        // Charger les données depuis Firebase
-        await loadDataFromFirebase(firebaseDatabase);
-        
-        // Écouter les changements en temps réel
-        setupRealtimeListeners(firebaseDatabase);
-        
-    } catch (error) {
-        console.error('❌ Erreur Firebase:', error);
-        console.log('⚠️ Mode hors ligne - utilisation du localStorage');
-        loadFromLocalStorage();
-    }
-};
-
-// ===== CHARGEMENT DES DONNÉES DEPUIS FIREBASE =====
-async function loadDataFromFirebase(firebaseDatabase) {
-    const dbRef = firebaseDatabase.ref(database, 'paniers-du-jardin');
-    
-    try {
-        // Charger les paniers
-        const basketsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/baskets');
-        const basketsSnapshot = await firebaseDatabase.get(basketsRef);
-        
-        if (basketsSnapshot.exists()) {
-            const baskets = basketsSnapshot.val();
-            baskets.forEach(basket => {
-                const localBasket = DATA.baskets.find(b => b.id === basket.id);
-                if (localBasket) {
-                    localBasket.stock = basket.stock;
-                }
-            });
-            renderBaskets();
-        } else {
-            // Initialiser Firebase avec les données par défaut
-            await initializeFirebaseData(firebaseDatabase);
-        }
-        
-        // Charger les promotions
-        const promosRef = firebaseDatabase.ref(database, 'paniers-du-jardin/promotions');
-        const promosSnapshot = await firebaseDatabase.get(promosRef);
-        
-        if (promosSnapshot.exists()) {
-            DATA.promotions = promosSnapshot.val() || [];
-            renderBaskets();
-        }
-        
-        // Charger les fruits de saison
-        const fruitsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/seasonalFruits');
-        const fruitsSnapshot = await firebaseDatabase.get(fruitsRef);
-        
-        if (fruitsSnapshot.exists()) {
-            const fruits = fruitsSnapshot.val();
-            fruits.forEach(fruit => {
-                const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
-                if (localFruit) {
-                    localFruit.stock = fruit.stock;
-                }
-            });
-            renderSeasonalFruits();
-        }
-        
-        // Charger les commandes
-        const ordersRef = firebaseDatabase.ref(database, 'paniers-du-jardin/orders');
-        const ordersSnapshot = await firebaseDatabase.get(ordersRef);
-        
-        if (ordersSnapshot.exists()) {
-            DATA.orders = ordersSnapshot.val() || [];
-        }
-        
-    } catch (error) {
-        console.error('❌ Erreur chargement données:', error);
-        loadFromLocalStorage();
-    }
-    
-    // Charger le panier local (reste en localStorage pour chaque utilisateur)
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-        STATE.cart = JSON.parse(savedCart);
-        updateCartDisplay();
-    }
-}
-
-// ===== INITIALISER FIREBASE AVEC LES DONNÉES PAR DÉFAUT =====
-async function initializeFirebaseData(firebaseDatabase) {
-    try {
-        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/baskets'), DATA.baskets);
-        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/promotions'), DATA.promotions);
-        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/seasonalFruits'), DATA.seasonalFruits);
-        await firebaseDatabase.set(firebaseDatabase.ref(database, 'paniers-du-jardin/orders'), DATA.orders);
-        console.log('✅ Données initiales enregistrées dans Firebase');
-    } catch (error) {
-        console.error('❌ Erreur initialisation données:', error);
-    }
-}
-
-// ===== ÉCOUTE EN TEMPS RÉEL =====
-function setupRealtimeListeners(firebaseDatabase) {
-    // Écouter les changements de stocks de paniers
-    const basketsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/baskets');
-    firebaseDatabase.onValue(basketsRef, (snapshot) => {
-        if (snapshot.exists()) {
-            const baskets = snapshot.val();
-            baskets.forEach(basket => {
-                const localBasket = DATA.baskets.find(b => b.id === basket.id);
-                if (localBasket) {
-                    localBasket.stock = basket.stock;
-                }
-            });
-            renderBaskets();
-        }
-    });
-    
-    // Écouter les changements de promotions
-    const promosRef = firebaseDatabase.ref(database, 'paniers-du-jardin/promotions');
-    firebaseDatabase.onValue(promosRef, (snapshot) => {
-        if (snapshot.exists()) {
-            DATA.promotions = snapshot.val() || [];
-            renderBaskets();
-        }
-    });
-    
-    // Écouter les changements de stocks de fruits
-    const fruitsRef = firebaseDatabase.ref(database, 'paniers-du-jardin/seasonalFruits');
-    firebaseDatabase.onValue(fruitsRef, (snapshot) => {
-        if (snapshot.exists()) {
-            const fruits = snapshot.val();
-            fruits.forEach(fruit => {
-                const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
-                if (localFruit) {
-                    localFruit.stock = fruit.stock;
-                }
-            });
-            renderSeasonalFruits();
-        }
-    });
-}
-
-// ===== SAUVEGARDE DANS FIREBASE =====
-async function saveToFirebase(firebaseDatabase, path, data) {
-    if (STATE.firebaseReady && database) {
-        try {
-            const dbRef = firebaseDatabase.ref(database, `paniers-du-jardin/${path}`);
-            await firebaseDatabase.set(dbRef, data);
-            console.log(`✅ ${path} sauvegardé dans Firebase`);
-        } catch (error) {
-            console.error(`❌ Erreur sauvegarde ${path}:`, error);
-            saveToLocalStorage();
-        }
-    }
-}
-
-// ===== NAVIGATION =====
-function navigateTo(pageId) {
-    document.querySelectorAll('.page').forEach(page => {
-        page.classList.remove('active');
-    });
-    
-    const targetPage = document.getElementById(pageId);
-    if (targetPage) {
-        targetPage.classList.add('active');
-    }
-    
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === `#${pageId}`) {
-            link.classList.add('active');
-        }
-    });
-    
-    window.scrollTo(0, 0);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const pageId = link.getAttribute('href').substring(1);
-            navigateTo(pageId);
-        });
-    });
-    
-    initializePage();
-});
-
-// ===== INITIALISATION =====
-function initializePage() {
-    renderSeasonalFruits();
-    renderBaskets();
-    updateCartDisplay();
-    
-    // Firebase sera initialisé depuis le module principal
-    if (!STATE.firebaseReady) {
-        console.log('⏳ En attente de Firebase...');
-        loadFromLocalStorage();
-    }
-}
-
-function loadFromLocalStorage() {
-    const savedCart = localStorage.getItem('cart');
-    const savedPromotions = localStorage.getItem('promotions');
-    const savedOrders = localStorage.getItem('orders');
-    const savedBaskets = localStorage.getItem('baskets');
-    const savedFruits = localStorage.getItem('seasonalFruits');
-    
-    if (savedCart) {
-        STATE.cart = JSON.parse(savedCart);
-        updateCartDisplay();
-    }
-    
-    if (savedPromotions) {
-        DATA.promotions = JSON.parse(savedPromotions);
-        renderBaskets();
-    }
-    
-    if (savedOrders) {
-        DATA.orders = JSON.parse(savedOrders);
-    }
-    
-    if (savedBaskets) {
-        const baskets = JSON.parse(savedBaskets);
-        baskets.forEach(basket => {
-            const localBasket = DATA.baskets.find(b => b.id === basket.id);
-            if (localBasket) {
-                localBasket.stock = basket.stock;
-            }
-        });
-        renderBaskets();
-    }
-    
-    if (savedFruits) {
-        const fruits = JSON.parse(savedFruits);
-        fruits.forEach(fruit => {
-            const localFruit = DATA.seasonalFruits.find(f => f.name === fruit.name);
-            if (localFruit) {
-                localFruit.stock = fruit.stock;
-            }
-        });
-        renderSeasonalFruits();
-    }
-}
-
-function saveToLocalStorage() {
-    localStorage.setItem('cart', JSON.stringify(STATE.cart));
-    localStorage.setItem('promotions', JSON.stringify(DATA.promotions));
-    localStorage.setItem('orders', JSON.stringify(DATA.orders));
-    localStorage.setItem('baskets', JSON.stringify(DATA.baskets));
-    localStorage.setItem('seasonalFruits', JSON.stringify(DATA.seasonalFruits));
-}
-
-// ===== AFFICHAGE DES FRUITS DE SAISON =====
-function renderSeasonalFruits() {
-    const container = document.getElementById('seasonalFruits');
-    
-    container.innerHTML = DATA.seasonalFruits.map(fruit => {
-        let stockClass = 'available';
-        let stockText = 'En stock';
-        
-        if (fruit.stock < 20) {
-            stockClass = 'limited';
-            stockText = `Stock limité (${fruit.stock})`;
-        }
-        if (fruit.stock === 0) {
-            stockClass = 'out';
-            stockText = 'Rupture';
-        }
-        
-        return `
-            <div class="seasonal-card">
-                <div class="seasonal-icon">${fruit.icon}</div>
-                <h3>${fruit.name}</h3>
-                <p>${fruit.description}</p>
-                <span class="stock-badge ${stockClass}">${stockText}</span>
+            return `
+            <div class="home-basket-card" style="--card-accent: ${basket.color}">
+                <div class="home-basket-header">
+                    <span class="home-basket-icon">${basket.icon}</span>
+                    <div class="home-basket-title">
+                        <h3>${basket.name}</h3>
+                        <span class="home-basket-persons">${basket.persons}</span>
+                    </div>
+                </div>
+                <p class="home-basket-desc">${basket.description}</p>
+                <ul class="home-basket-highlights">
+                    ${basket.highlights.map(h => `<li><span class="check">✓</span> ${h}</li>`).join('')}
+                </ul>
+                <div class="home-basket-footer">
+                    <div class="home-basket-price">
+                        <span class="price-value">${price}€</span>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
 }
 
-// ===== AFFICHAGE DES PANIERS =====
+
+
+function loadSettings() {
+    document.getElementById('shopAddress').textContent = DATA.settings.address || 'Route des Vergers, 44000 Nantes';
+    document.getElementById('shopPhone').textContent = DATA.settings.phone || '02 40 XX XX XX';
+    document.getElementById('shopEmail').textContent = DATA.settings.email || 'contact@paniersdujardin.fr';
+    document.getElementById('footerAddress').textContent = '📍 ' + (DATA.settings.address || 'Route des Vergers');
+    document.getElementById('footerPhone').textContent = '📞 ' + (DATA.settings.phone || '02 40 XX XX XX');
+    
+    // Adresse page accueil
+    const homeAddress = document.getElementById('homeAddress');
+    if (homeAddress) homeAddress.textContent = DATA.settings.address || 'Route des Vergers, 44000 Nantes';
+    
+    // Maps
+    if (DATA.settings.latitude && DATA.settings.longitude) {
+        const mapIframe = `<iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps?q=${DATA.settings.latitude},${DATA.settings.longitude}&z=12&output=embed"></iframe>`;
+        document.getElementById('map').innerHTML = mapIframe;
+        const homeMap = document.getElementById('homeMap');
+        if (homeMap) homeMap.innerHTML = mapIframe;
+    }
+
+}
+
+
+// Carrousel
+function renderCarousel() {
+    const track = document.getElementById('carouselTrack');
+    const dots = document.getElementById('carouselDots');
+    track.innerHTML = carouselImages.map((img, i) => `<div class="carousel-slide ${i===0?'active':''}" style="background-image:url('${img}')"></div>`).join('');
+    dots.innerHTML = carouselImages.map((_, i) => `<button class="carousel-dot ${i===0?'active':''}" onclick="goToSlide(${i})"></button>`).join('');
+}
+
+function initCarousel() {
+    autoplayInterval = setInterval(nextSlide, 10000);
+}
+
+function nextSlide() {
+    currentSlide = (currentSlide + 1) % carouselImages.length;
+    updateCarousel();
+}
+
+function prevSlide() {
+    currentSlide = (currentSlide - 1 + carouselImages.length) % carouselImages.length;
+    updateCarousel();
+}
+
+function goToSlide(i) {
+    currentSlide = i;
+    updateCarousel();
+}
+
+function updateCarousel() {
+    document.querySelectorAll('.carousel-slide').forEach((s, i) => s.classList.toggle('active', i === currentSlide));
+    document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+}
+
+// Produits saisonniers - Nouveau design
+function renderSeasonalProducts() {
+    setupMonthsSelector();
+    filterByMonth(currentMonth);
+}
+
+function setupMonthsSelector() {
+    const months = [
+        { short: 'Jan', full: 'Janvier' },
+        { short: 'Fév', full: 'Février' },
+        { short: 'Mar', full: 'Mars' },
+        { short: 'Avr', full: 'Avril' },
+        { short: 'Mai', full: 'Mai' },
+        { short: 'Juin', full: 'Juin' },
+        { short: 'Juil', full: 'Juillet' },
+        { short: 'Août', full: 'Août' },
+        { short: 'Sep', full: 'Septembre' },
+        { short: 'Oct', full: 'Octobre' },
+        { short: 'Nov', full: 'Novembre' },
+        { short: 'Déc', full: 'Décembre' }
+    ];
+    
+    const container = document.getElementById('monthsSelector');
+    if (!container) return;
+    
+    container.innerHTML = months.map((m, i) => `
+        <button class="month-chip ${i + 1 === currentMonth ? 'active' : ''}" 
+                onclick="filterByMonth(${i + 1})" 
+                data-month="${i + 1}">
+            ${m.short}
+        </button>
+    `).join('');
+}
+
+function filterByMonth(month) {
+    currentMonth = month;
+    
+    // Mettre à jour les boutons actifs
+    document.querySelectorAll('.month-chip').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
+    });
+    
+    // Mettre à jour le label du mois
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const labelContainer = document.getElementById('currentMonthLabel');
+    if (labelContainer) {
+        labelContainer.innerHTML = `
+            <span class="month-icon">📅</span>
+            <span>Produits disponibles en <strong>${monthNames[month - 1]}</strong></span>
+        `;
+    }
+    
+    // Filtrer et afficher les produits
+    const products = DATA.products.filter(p => p.availableMonths?.includes(month));
+    const grid = document.getElementById('seasonalGrid');
+    const empty = document.getElementById('seasonalEmpty');
+    
+    if (products.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'flex';
+    } else {
+        grid.style.display = 'grid';
+        empty.style.display = 'none';
+        
+        grid.innerHTML = products.map(p => `
+            <div class="seasonal-product-card">
+                <div class="seasonal-product-img" style="background-image: url('${p.imageUrl || 'https://via.placeholder.com/200'}')">
+                    <span class="seasonal-product-category">${p.category === 'fruits' ? '🍎 Fruit' : '🥬 Légume'}</span>
+                </div>
+                <div class="seasonal-product-info">
+                    <h4>${p.name}</h4>
+                    <div class="seasonal-product-price">${p.price}€<span>/kg</span></div>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// Supprimer toggleSeasonal car plus nécessaire
+
+
+// Paniers prédéfinis
 function renderBaskets() {
     const container = document.getElementById('basketsGrid');
+    if (!container) return;
     
-    container.innerHTML = DATA.baskets.map(basket => {
-        const promo = DATA.promotions.find(p => p.basketId === basket.id);
-        const hasPromo = promo && promo.discount > 0;
-        const finalPrice = hasPromo ? basket.price * (1 - promo.discount / 100) : basket.price;
-        
-        let stockClass = 'available';
-        let stockText = `${basket.stock} disponibles`;
-        
-        if (basket.stock < 10) {
-            stockClass = 'limited';
-            stockText = `Plus que ${basket.stock} !`;
+    const basketsInfo = [
+        {
+            id: 'petit',
+            name: 'Petit Panier',
+            icon: '🥬',
+            persons: '1-2 pers.',
+            description: 'L\'essentiel pour cuisiner frais au quotidien',
+            highlights: ['3kg de produits', '7 variétés'],
+            color: '#e8f5e9'
+        },
+        {
+            id: 'moyen',
+            name: 'Panier Familial',
+            icon: '🥗',
+            persons: '3-4 pers.',
+            description: 'Le choix préféré de nos clients, varié et généreux',
+            highlights: ['5kg de produits', '11 variétés', '+ 1 surprise'],
+            popular: true,
+            color: '#fff3e0'
+        },
+        {
+            id: 'grand',
+            name: 'Grand Panier',
+            icon: '🍎',
+            persons: '5+ pers.',
+            description: 'L\'abondance du jardin pour les grandes tablées',
+            highlights: ['8kg de produits', '15 variétés', '+ herbes fraîches'],
+            color: '#fce4ec'
         }
-        if (basket.stock === 0) {
-            stockClass = 'out';
-            stockText = 'Rupture de stock';
-        }
+    ];
+    
+    container.innerHTML = basketsInfo.map(basket => {
+        const firebaseBasket = DATA.baskets.find(b => b.id === basket.id);
+        const price = firebaseBasket?.price || 0;
+        const stock = firebaseBasket?.stock || 0;
+        const stockText = stock === 0 ? 'Rupture' : stock < 10 ? `Plus que ${stock}` : `${stock} dispo.`;
+        const stockClass = stock === 0 ? 'out' : stock < 10 ? 'limited' : 'available';
         
         return `
-            <div class="basket-card ${basket.featured ? 'featured' : ''}">
-                ${basket.featured ? '<div class="featured-badge">Populaire</div>' : ''}
-                <div class="basket-icon">${basket.icon}</div>
-                <h3>${basket.name}</h3>
-                <p class="basket-subtitle">${basket.subtitle}</p>
-                
-                <div class="basket-price">
-                    ${hasPromo ? `<span class="price-original">${basket.price}€</span>` : ''}
-                    <span class="price-current ${hasPromo ? 'price-promo' : ''}">${finalPrice.toFixed(2)}€</span>
-                    ${hasPromo ? `<div style="color: var(--orange); font-weight: 600;">-${promo.discount}% 🎉</div>` : ''}
-                </div>
-                
-                <div class="basket-content">
-                    <h4>Contenu du panier:</h4>
-                    <ul>
-                        ${basket.content.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <div class="basket-stock">
-                    <span class="stock-badge ${stockClass}">${stockText}</span>
-                </div>
-                
-                <div class="basket-actions">
-                    <div class="quantity-selector">
-                        <button class="quantity-btn" onclick="changeQuantity('${basket.id}', -1)">-</button>
-                        <span class="quantity-value" id="qty-${basket.id}">1</span>
-                        <button class="quantity-btn" onclick="changeQuantity('${basket.id}', 1)">+</button>
+            <div class="home-basket-card" style="--card-accent: ${basket.color}">
+                <div class="home-basket-header">
+                    <span class="home-basket-icon">${basket.icon}</span>
+                    <div class="home-basket-title2">
+                        <h3>${basket.name}</h3>
+                        <span class="home-basket-persons">${basket.persons}</span>
                     </div>
-                    <button class="btn-primary add-to-cart" onclick="addToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
-                        ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
+                </div>
+                <p class="home-basket-desc">${basket.description}</p>
+                <ul class="home-basket-highlights">
+                    ${basket.highlights.map(h => `<li><span class="check">✓</span> ${h}</li>`).join('')}
+                </ul>
+                    <div class="home-basket-price2">
+                        <span class="price-value">${price}€</span>
+                        <span class="stock-badge ${stockClass}">${stockText}</span>
+                    </div>
+                <div class="basket-order-controls">
+                    <div class="qty-selector-mini">
+                        <button class="qty-btn-mini" onclick="changeQty('${basket.id}', -1)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
+                        <span id="qty-${basket.id}">1</span>
+                        <button class="qty-btn-mini" onclick="changeQty('${basket.id}', 1)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg></button>
+                    </div>
+                    <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${stock === 0 ? 'disabled' : ''}>
+                        ${stock === 0 ? 'Épuisé' : 'Ajouter'}
                     </button>
                 </div>
             </div>
+            </div>
         `;
     }).join('');
 }
 
-// ===== GESTION DES QUANTITÉS =====
-function changeQuantity(basketId, change) {
-    const qtyElement = document.getElementById(`qty-${basketId}`);
-    let currentQty = parseInt(qtyElement.textContent);
-    const basket = DATA.baskets.find(b => b.id === basketId);
-    
-    currentQty += change;
-    
-    if (currentQty < 1) currentQty = 1;
-    if (currentQty > basket.stock) currentQty = basket.stock;
-    
-    qtyElement.textContent = currentQty;
+
+function changeQty(id, change) {
+    const el = document.getElementById(`qty-${id}`);
+    let qty = parseInt(el.textContent) + change;
+    if (qty < 1) qty = 1;
+    el.textContent = qty;
 }
 
-// ===== GESTION DU PANIER =====
-function addToCart(basketId) {
-    const basket = DATA.baskets.find(b => b.id === basketId);
-    const qtyElement = document.getElementById(`qty-${basketId}`);
-    const quantity = parseInt(qtyElement.textContent);
+function addBasketToCart(id) {
+    const basket = DATA.baskets.find(b => b.id === id);
+    const qty = parseInt(document.getElementById(`qty-${id}`).textContent);
+    const promo = DATA.promotions.find(p => p.basketId === id);
+    const price = promo ? basket.price * (1 - promo.discount / 100) : basket.price;
     
-    if (basket.stock < quantity) {
-        alert('Stock insuffisant !');
-        return;
-    }
-    
-    const existingItem = STATE.cart.find(item => item.id === basketId);
-    
-    if (existingItem) {
-        existingItem.quantity += quantity;
+    const existing = STATE.cart.find(c => c.id === id && c.type === 'basket');
+    if (existing) {
+        existing.quantity += qty;
     } else {
-        const promo = DATA.promotions.find(p => p.basketId === basket.id);
-        const finalPrice = promo ? basket.price * (1 - promo.discount / 100) : basket.price;
-        
-        STATE.cart.push({
-            id: basket.id,
-            name: basket.name,
-            icon: basket.icon,
-            price: finalPrice,
-            originalPrice: basket.price,
-            quantity: quantity
-        });
+        STATE.cart.push({ id, name: `Panier ${basket.name}`, price, quantity: qty, type: 'basket', icon: '🧺' });
     }
-    
-    qtyElement.textContent = '1';
-    
-    updateCartDisplay();
-    localStorage.setItem('cart', JSON.stringify(STATE.cart));
-    
-    const cartButton = document.querySelector('.cart-button');
-    cartButton.classList.add('pulse');
-    setTimeout(() => cartButton.classList.remove('pulse'), 600);
+    updateCart();
+    document.getElementById(`qty-${id}`).textContent = '1';
+    showToast(`${qty} Panier ${basket.name} ajouté à votre panier !`);
 }
 
-function removeFromCart(basketId) {
-    STATE.cart = STATE.cart.filter(item => item.id !== basketId);
-    updateCartDisplay();
-    localStorage.setItem('cart', JSON.stringify(STATE.cart));
-}
-
-function updateCartDisplay() {
-    const cartCount = document.getElementById('cartCount');
-    const cartItems = document.getElementById('cartItems');
-    const totalPrice = document.getElementById('totalPrice');
-    
-    const totalItems = STATE.cart.reduce((sum, item) => sum + item.quantity, 0);
-    cartCount.textContent = totalItems;
-    
-    if (STATE.cart.length === 0) {
-        cartItems.innerHTML = '<p class="empty-cart">Votre panier est vide</p>';
-        totalPrice.textContent = '0,00 €';
-        return;
-    }
-    
-    const total = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    totalPrice.textContent = `${total.toFixed(2)} €`;
-    
-    cartItems.innerHTML = STATE.cart.map(item => `
-        <div class="cart-item">
-            <div class="cart-item-icon">${item.icon}</div>
-            <div class="cart-item-details">
-                <h4>${item.name}</h4>
-                <p class="cart-item-price">${item.price.toFixed(2)}€ × ${item.quantity}</p>
+// Panier personnalisé
+function renderCustomProducts() {
+    document.getElementById('customGrid').innerHTML = DATA.products.map(p => `
+        <div class="custom-card" data-category="${p.category}">
+            <div class="custom-card-img" style="background: url('${p.imageUrl || 'https://via.placeholder.com/150'}') center/cover no-repeat;">
+                <div class="custom-card-header">
+                    <h4>${p.name}</h4>
+                    <p>${p.price}€/kg</p>
+                </div>
             </div>
-            <button class="cart-item-remove" onclick="removeFromCart('${item.id}')">×</button>
+            <div class="custom-card-content">
+                <div class="qty-selector">
+                    <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
+                    <div class="input-wrapper">
+                        <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0.5" readonly class="input-qty" data-price="${p.price}">
+                        <span class="unit">kg</span>
+                    </div>
+                    <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
+                </div>
+                <div class="custom-card-total">
+                    <span>Total :</span>
+                    <strong id="total-${p.id}">${p.price.toFixed(2)}€</strong>
+                </div>
+                <button class="btn-primary" onclick="addCustomToCart('${p.id}')">Ajouter</button>
+            </div>
         </div>
     `).join('');
+}
+
+function changeCustomQty(id, change) {
+    const input = document.getElementById(`custom-${id}`);
+    let qty = parseFloat(input.value) + change;
+    if (qty < 0.5) qty = 0.5;
+    input.value = qty;
+    
+    // Mettre à jour le prix total
+    const price = parseFloat(input.dataset.price);
+    const total = (qty * price).toFixed(2);
+    document.getElementById(`total-${id}`).textContent = `${total}€`;
+}
+
+
+
+function filterProducts(cat) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(cat === 'all' ? 'tous' : cat)));
+    document.querySelectorAll('.custom-card').forEach(c => {
+        c.style.display = cat === 'all' || c.dataset.category === cat ? 'block' : 'none';
+    });
+}
+
+function addCustomToCart(id) {
+    const product = DATA.products.find(p => p.id === id);
+    const qty = parseFloat(document.getElementById(`custom-${id}`).value);
+    if (qty <= 0) return;
+    
+    const existing = STATE.cart.find(c => c.id === id && c.type === 'product');
+    if (existing) {
+        existing.quantity += qty;
+    } else {
+        STATE.cart.push({ id, name: product.name, price: product.price, quantity: qty, type: 'product', icon: product.category === 'fruits' ? '🍎' : '🥕' });
+    }
+    updateCart();
+    document.getElementById(`custom-${id}`).value = '0';
+    showToast(`${qty}kg de ${product.name} ajouté à votre panier !`);
+}
+
+
+function loadCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+        STATE.cart = JSON.parse(savedCart);
+        updateCart();
+    }
+}
+
+
+
+// Panier
+function updateCart() {
+    const count = document.getElementById('cartCount');
+    const items = document.getElementById('cartItems');
+    const total = document.getElementById('totalPrice');
+    
+    // Sauvegarder dans localStorage
+    localStorage.setItem('cart', JSON.stringify(STATE.cart));
+    
+    count.textContent = STATE.cart.length;
+    
+    if (STATE.cart.length === 0) {
+        items.innerHTML = '<p>Votre panier est vide</p>';
+        total.textContent = '0€';
+        return;
+    }
+    
+    const totalPrice = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    total.textContent = totalPrice.toFixed(2) + '€';
+    
+    items.innerHTML = STATE.cart.map((item, i) => {
+        const itemTotal = (item.price * item.quantity).toFixed(2);
+        if (item.type === 'product') {
+            return `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <span class="cart-item-name">${item.name}</span>
+                        <span class="cart-item-details">${item.quantity} kg × ${item.price}€/kg</span>
+                    </div>
+                    <div class="cart-item-total">${itemTotal}€</div>
+                    <button onclick="removeFromCart(${i})">×</button>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <span class="cart-item-name">${item.name}</span>
+                        <span class="cart-item-details">× ${item.quantity}</span>
+                    </div>
+                    <div class="cart-item-total">${itemTotal}€</div>
+                    <button onclick="removeFromCart(${i})">×</button>
+                </div>
+            `;
+        }
+    }).join('');
+}
+
+
+
+function removeFromCart(index) {
+    STATE.cart.splice(index, 1);
+    updateCart();
 }
 
 function toggleCart() {
-    const sidebar = document.getElementById('cartSidebar');
-    const overlay = document.getElementById('cartOverlay');
-    
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('active');
+    document.getElementById('cartSidebar').classList.toggle('open');
+    document.getElementById('cartOverlay').classList.toggle('active');
 }
 
-// ===== PAIEMENT =====
 function checkout() {
-    if (STATE.cart.length === 0) {
-        alert('Votre panier est vide !');
+    if (STATE.cart.length === 0) return alert('Votre panier est vide');
+    
+    if (!currentUser) {
+        alert('⚠️ Vous devez être connecté pour réserver une commande');
+        openAuthModal();
         return;
     }
     
-    toggleCart();
-    openPaymentModal();
-}
-
-function openPaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    const orderSummary = document.getElementById('orderSummary');
-    const finalTotal = document.getElementById('finalTotal');
+    document.getElementById('paymentModal').classList.add('active');
     
-    const total = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalPrice = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    document.getElementById('finalTotal').textContent = totalPrice.toFixed(2) + ' €';
     
-    orderSummary.innerHTML = STATE.cart.map(item => `
-        <div class="summary-item">
-            <span>${item.name} × ${item.quantity}</span>
-            <span>${(item.price * item.quantity).toFixed(2)}€</span>
+    document.getElementById('orderSummary').innerHTML = STATE.cart.map(item => `
+        <div class="order-item">
+            <div class="order-item-info">
+                <span class="order-item-icon">${item.icon}</span>
+                <span class="order-item-name">${item.name}</span>
+            </div>
+            <div class="order-item-details">
+                <span>${item.quantity} × ${item.price.toFixed(2)}€</span>
+                <strong>${(item.quantity * item.price).toFixed(2)}€</strong>
+            </div>
         </div>
     `).join('');
-    
-    finalTotal.textContent = `${total.toFixed(2)} €`;
-    
-    modal.classList.add('active');
 }
 
 function closePaymentModal() {
-    const modal = document.getElementById('paymentModal');
-    modal.classList.remove('active');
+    document.getElementById('paymentModal').classList.remove('active');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const paymentForm = document.getElementById('paymentForm');
-    
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            processPayment();
-        });
+document.getElementById('paymentForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+        alert('⚠️ Vous devez être connecté');
+        return;
     }
-});
-
-async function processPayment() {
-    const orderId = `CMD-${Date.now()}`;
+    
     const order = {
-        id: orderId,
-        date: new Date().toLocaleString('fr-FR'),
-        items: [...STATE.cart],
-        total: STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        id: `CMD-${Date.now()}`,
+        userId: currentUser.uid,
+        items: STATE.cart,
+        total: STATE.cart.reduce((s, i) => s + (i.price * i.quantity), 0),
+        date: new Date().toISOString(),
+        status: 'reserved'
     };
     
-    DATA.orders.push(order);
+    try {
+        const ordersRef = window.firebase.ref(db, `paniers-du-jardin/orders/${order.id}`);
+        await window.firebase.set(ordersRef, order);
+        STATE.cart = [];
+        updateCart();
+        closePaymentModal();
+        showToast('✅ Commande réservée avec succès ! Vous recevrez une confirmation par email.', 'success');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+});
+
+// Auth
+function openAuthModal() {
+    document.getElementById('authModal').classList.add('active');
+}
+
+function closeAuthModal() {
+    document.getElementById('authModal').classList.remove('active');
+}
+
+function showAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    try {
+        await window.firebase.signInWithEmailAndPassword(auth, e.target[0].value, e.target[1].value);
+        closeAuthModal();
+        alert('Connecté !');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const firstName = e.target[0].value;
+    const lastName = e.target[1].value;
+    const email = e.target[2].value;
+    const phone = e.target[3].value;
+    const password = e.target[4].value;
     
-    // Réduire les stocks
-    STATE.cart.forEach(cartItem => {
-        const basket = DATA.baskets.find(b => b.id === cartItem.id);
-        if (basket) {
-            basket.stock -= cartItem.quantity;
+    try {
+        const userCredential = await window.firebase.createUserWithEmailAndPassword(auth, email, password);
+        
+        // Sauvegarder les infos utilisateur
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/users/${userCredential.user.uid}`),
+            {
+                firstName,
+                lastName,
+                email,
+                phone: phone || '',
+                created: new Date().toISOString()
+            }
+        );
+        
+        closeAuthModal();
+        alert('✅ Compte créé avec succès !');
+    } catch (error) {
+        alert('Erreur d\'inscription : ' + error.message);
+    }
+}
+
+function updateAuthUI(loggedIn) {
+    const btn = document.getElementById('authBtn');
+    btn.innerHTML = loggedIn ? 'Mon Compte' : 'Connexion';
+    btn.onclick = loggedIn ? () => navigateTo('mon-compte') : openAuthModal;
+}
+
+async function loadUserData(uid) {
+    try {
+        const snapshot = await window.firebase.get(window.firebase.ref(db, `paniers-du-jardin/users/${uid}`));
+        if (snapshot.exists()) {
+            const user = snapshot.val();
+            document.getElementById('userName').textContent = `${user.firstName} ${user.lastName}`;
+            document.getElementById('userInitials').textContent = (user.firstName[0] + (user.lastName[0] || '')).toUpperCase();
+            
+            // Pré-remplir les champs du formulaire
+            const firstNameField = document.getElementById('userFirstName');
+            const lastNameField = document.getElementById('userLastName');
+            const emailField = document.getElementById('userEmail');
+            const phoneField = document.getElementById('userPhone');
+            
+            if (firstNameField) firstNameField.value = user.firstName || '';
+            if (lastNameField) lastNameField.value = user.lastName || '';
+            if (emailField) emailField.value = user.email || '';
+            if (phoneField) phoneField.value = user.phone || '';
+        }
+    } catch (err) {
+        console.error('Erreur:', err);
+    }
+}
+
+async function logout() {
+    await window.firebase.signOut(auth);
+    navigateTo('accueil');
+}
+
+// Mettre à jour le menu mobile actif
+function updateMobileNav(page) {
+    document.querySelectorAll('.mobile-nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.page === page) {
+            item.classList.add('active');
         }
     });
-    
-    // Sauvegarder dans Firebase
-    if (STATE.firebaseReady && window.firebaseDatabase) {
-        await saveToFirebase(window.firebaseDatabase, 'baskets', DATA.baskets);
-        await saveToFirebase(window.firebaseDatabase, 'orders', DATA.orders);
-    } else {
-        saveToLocalStorage();
-    }
-    
-    STATE.cart = [];
-    
-    renderBaskets();
-    updateCartDisplay();
-    closePaymentModal();
-    localStorage.setItem('cart', JSON.stringify(STATE.cart));
-    
-    alert(`✅ Commande validée !\n\nNuméro de commande : ${orderId}\nVous recevrez un email de confirmation.\n\nMerci de votre confiance !`);
 }
 
-// ===== ADMINISTRATION =====
-function adminLogin() {
-    const password = document.getElementById('adminPassword').value;
-    
-    if (password === ADMIN_PASSWORD) {
-        STATE.adminLoggedIn = true;
-        document.getElementById('adminLogin').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'block';
-        renderAdminPanel();
+// Synchroniser le compteur panier mobile
+function updateCartCount() {
+    const count = STATE.cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = count;
+    const mobileCount = document.getElementById('mobileCartCount');
+    if (mobileCount) mobileCount.textContent = count;
+}
+
+
+
+// Navigation
+function navigateTo(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(page).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.querySelector(`[href="#${page}"]`)?.classList.add('active');
+    window.scrollTo(0, 0);
+    updateMobileNav(page);
+}
+
+function handleMobileAccount() {
+    if (currentUser) {
+        navigateTo('mon-compte');
     } else {
-        alert('Mot de passe incorrect !');
+        openAuthModal();
     }
 }
 
-function adminLogout() {
-    STATE.adminLoggedIn = false;
-    document.getElementById('adminLogin').style.display = 'block';
-    document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('adminPassword').value = '';
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateTo(link.getAttribute('href').substring(1));
+    });
+});
+
+function toggleMobileMenu() {
+    document.getElementById('navMenu').classList.toggle('active');
 }
 
-function renderAdminPanel() {
-    renderStockManagement();
-    renderPromotionsManagement();
-    renderOrdersList();
-}
-
-function renderStockManagement() {
-    const container = document.getElementById('stockManagement');
+function showAccount(section) {
+    document.querySelectorAll('.account-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`section-${section}`).classList.add('active');
+    document.querySelectorAll('.account-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
     
-    container.innerHTML = DATA.baskets.map(basket => `
-        <div class="stock-item">
-            <div>
-                <strong>${basket.name}</strong>
-                <p style="color: var(--text-gray); font-size: 0.9rem;">Stock actuel: ${basket.stock}</p>
-            </div>
-            <div class="stock-controls">
-                <input type="number" class="stock-input" id="stock-${basket.id}" value="${basket.stock}" min="0">
-                <button class="btn-secondary" onclick="updateStock('${basket.id}')">Mettre à jour</button>
-            </div>
-        </div>
-    `).join('');
+    // Charger les commandes si on affiche l'onglet commandes
+    if (section === 'orders' && currentUser) {
+        loadUserOrders();
+    }
 }
 
-async function updateStock(basketId) {
-    const input = document.getElementById(`stock-${basketId}`);
-    const newStock = parseInt(input.value);
+
+document.getElementById('userForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/users/${currentUser.uid}`), {
+            firstName: document.getElementById('userFirstName').value,
+            lastName: document.getElementById('userLastName').value,
+            email: document.getElementById('userEmail').value,
+            phone: document.getElementById('userPhone').value || ''
+        });
+        alert('✅ Informations enregistrées !');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+});
+
+
+
+async function loadUserOrders() {
+    const container = document.getElementById('userOrders');
+    if (!container || !currentUser) return;
     
-    const basket = DATA.baskets.find(b => b.id === basketId);
-    if (basket) {
-        basket.stock = newStock;
-        
-        // Sauvegarder dans Firebase
-        if (STATE.firebaseReady && window.firebaseDatabase) {
-            await saveToFirebase(window.firebaseDatabase, 'baskets', DATA.baskets);
+    container.innerHTML = '<p style="text-align:center;color:#999;">Chargement...</p>';
+    
+    try {
+        const snapshot = await window.firebase.get(window.firebase.ref(db, 'paniers-du-jardin/orders'));
+        if (snapshot.exists()) {
+            const allOrders = snapshot.val();
+            const userOrders = Object.entries(allOrders)
+                .map(([id, order]) => ({ id, ...order }))
+                .filter(order => order.userId === currentUser.uid)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (userOrders.length === 0) {
+                container.innerHTML = '<p class="no-orders">Vous n\'avez pas encore passé de commande.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="user-orders-list">
+                    ${userOrders.map(order => `
+                        <div class="user-order-card" onclick="showUserOrderDetails('${order.id}')">
+                            <div class="user-order-header">
+                                <span class="user-order-id">#${order.id}</span>
+                                <span class="user-order-status ${order.treated ? 'treated' : 'pending'}">
+                                    ${order.treated ? '✓ Traitée' : '⏳ En cours'}
+                                </span>
+                            </div>
+                            <div class="user-order-info">
+                                <div class="user-order-date">
+                                     ${new Date(order.date).toLocaleDateString('fr-FR', { 
+                                        day: 'numeric', 
+                                        month: 'long', 
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                                <div class="user-order-items">
+                                    ${order.items?.length || 0} article(s)
+                                </div>
+                            </div>
+                            <div class="user-order-footer">
+                                <span class="user-order-total">${order.total?.toFixed(2) || '0.00'}€</span>
+                                <span class="user-order-view">Voir détails →</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         } else {
-            saveToLocalStorage();
+            container.innerHTML = '<p class="no-orders">Vous n\'avez pas encore passé de commande.</p>';
+        }
+    } catch (err) {
+        console.error('Erreur chargement commandes:', err);
+        container.innerHTML = '<p style="color:#c62828;">Erreur lors du chargement des commandes.</p>';
+    }
+}
+
+function showUserOrderDetails(orderId) {
+    const order = null;
+    
+    // Récupérer la commande depuis Firebase
+    window.firebase.get(window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}`)).then(snapshot => {
+        if (!snapshot.exists()) return;
+        const order = snapshot.val();
+        
+        // Créer ou récupérer le modal
+        let modal = document.getElementById('userOrderModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'userOrderModal';
+            modal.className = 'modal';
+            modal.innerHTML = '<div class="modal-content"><div id="userOrderContent"></div></div>';
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
         }
         
-        renderBaskets();
-        renderStockManagement();
-        alert('Stock mis à jour !');
-    }
-}
-
-function renderPromotionsManagement() {
-    const promoList = document.getElementById('promoList');
-    
-    if (DATA.promotions.length === 0) {
-        promoList.innerHTML = '<p class="text-muted">Aucune promotion active</p>';
-        return;
-    }
-    
-    promoList.innerHTML = DATA.promotions.map((promo, index) => {
-        const basket = DATA.baskets.find(b => b.id === promo.basketId);
-        return `
-            <div class="promo-item">
-                <div>
-                    <strong>${basket.name}</strong>
-                    <span style="color: var(--orange); margin-left: 1rem;">-${promo.discount}%</span>
+        document.getElementById('userOrderContent').innerHTML = `
+            <div class="order-detail-header">
+                <h3>Commande #${orderId}</h3>
+                <button class="close-btn" onclick="document.getElementById('userOrderModal').classList.remove('active')">×</button>
+            </div>
+            <div class="order-detail-status ${order.treated ? 'treated' : 'pending'}">
+                ${order.treated ? '✓ Commande traitée' : '⏳ Commande en cours de traitement'}
+            </div>
+            <div class="order-detail-date">
+                📅 Commandé le ${new Date(order.date).toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
+            </div>
+            <div class="order-detail-section">
+                <h4>Articles commandés</h4>
+                <div class="order-items-list">
+                    ${order.items?.map(item => `
+                        <div class="order-item-row">
+                            <span class="order-item-name">${item.name}</span>
+                            <span class="order-item-qty">${item.type === 'product' ? item.quantity + ' kg' : '× ' + item.quantity}</span>
+                            <span class="order-item-price">${(item.price * item.quantity).toFixed(2)}€</span>
+                        </div>
+                    `).join('') || '<p>Aucun article</p>'}
                 </div>
-                <button class="btn-secondary" onclick="removePromotion(${index})">Supprimer</button>
+            </div>
+            <div class="order-detail-total">
+                <span>Total</span>
+                <strong>${order.total?.toFixed(2) || '0.00'}€</strong>
             </div>
         `;
-    }).join('');
-}
-
-async function addPromotion() {
-    const basketId = document.getElementById('promoBasket').value;
-    const discount = parseInt(document.getElementById('promoDiscount').value);
-    
-    if (!discount || discount <= 0 || discount > 100) {
-        alert('Veuillez entrer une réduction valide (1-100%)');
-        return;
-    }
-    
-    DATA.promotions = DATA.promotions.filter(p => p.basketId !== basketId);
-    DATA.promotions.push({ basketId, discount });
-    
-    // Sauvegarder dans Firebase
-    if (STATE.firebaseReady && window.firebaseDatabase) {
-        await saveToFirebase(window.firebaseDatabase, 'promotions', DATA.promotions);
-    } else {
-        saveToLocalStorage();
-    }
-    
-    renderBaskets();
-    renderPromotionsManagement();
-    
-    document.getElementById('promoDiscount').value = '';
-}
-
-async function removePromotion(index) {
-    DATA.promotions.splice(index, 1);
-    
-    // Sauvegarder dans Firebase
-    if (STATE.firebaseReady && window.firebaseDatabase) {
-        await saveToFirebase(window.firebaseDatabase, 'promotions', DATA.promotions);
-    } else {
-        saveToLocalStorage();
-    }
-    
-    renderBaskets();
-    renderPromotionsManagement();
-}
-
-function renderOrdersList() {
-    const container = document.getElementById('ordersList');
-    
-    if (DATA.orders.length === 0) {
-        container.innerHTML = '<p class="text-muted">Aucune commande pour le moment</p>';
-        return;
-    }
-    
-    container.innerHTML = DATA.orders.slice(-10).reverse().map(order => `
-        <div class="order-item">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <strong>${order.id}</strong>
-                <span style="color: var(--text-gray);">${order.date}</span>
-            </div>
-            <div style="color: var(--text-gray);">
-                ${order.items.map(item => `${item.name} × ${item.quantity}`).join(', ')}
-            </div>
-            <div style="margin-top: 0.5rem; font-weight: 600; color: var(--primary-green);">
-                Total: ${order.total.toFixed(2)}€
-            </div>
-        </div>
-    `).join('');
-}
-
-// ===== ANIMATIONS ET EFFETS =====
-document.addEventListener('mousemove', (e) => {
-    const vegetables = document.querySelectorAll('.floating-veg');
-    
-    vegetables.forEach((veg, index) => {
-        const speed = (index + 1) * 0.05;
-        const x = (window.innerWidth - e.pageX * speed) / 100;
-        const y = (window.innerHeight - e.pageY * speed) / 100;
         
-        veg.style.transform = `translate(${x}px, ${y}px)`;
+        modal.classList.add('active');
     });
-});
+}
 
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        const cartSidebar = document.getElementById('cartSidebar');
-        if (cartSidebar.classList.contains('open')) {
-            toggleCart();
+
+
+
+// ===== AUTHENTIFICATION GOOGLE =====
+async function signInWithGoogle() {
+    try {
+        const provider = new window.firebase.GoogleAuthProvider();
+        const result = await window.firebase.signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        const userRef = window.firebase.ref(db, `paniers-du-jardin/users/${user.uid}`);
+        const snapshot = await window.firebase.get(userRef);
+        
+        if (!snapshot.exists()) {
+            const names = user.displayName?.split(' ') || ['', ''];
+            await window.firebase.set(userRef, {
+                firstName: names[0],
+                lastName: names.slice(1).join(' ') || names[0],
+                email: user.email,
+                created: new Date().toISOString(),
+                photoURL: user.photoURL
+            });
         }
         
-        const modal = document.getElementById('paymentModal');
-        if (modal.classList.contains('active')) {
-            closePaymentModal();
-        }
+        closeAuthModal();
+        alert('✅ Connecté avec Google !');
+    } catch (error) {
+        alert('Erreur: ' + error.message);
     }
-});
+}
 
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
+// ===== VÉRIFICATION OUVERTURE BOUTIQUE =====
+async function checkShopStatus() {
+    try {
+        const statusRef = window.firebase.ref(db, 'paniers-du-jardin/settings/shopStatus');
+        const snapshot = await window.firebase.get(statusRef);
+        
+        if (snapshot.exists()) {
+            const status = snapshot.val();
+            if (!status.isOpen) {
+                document.getElementById('shopClosedMessage').style.display = 'block';
+                document.getElementById('orderSection').style.display = 'none';
+                document.querySelector('.divider').style.display = 'none';
+                document.querySelector('.custom-basket-section').style.display = 'none';
+                
+                const days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+                const reopenDay = status.reopenDay ? days[status.reopenDay] : 'bientôt';
+                document.getElementById('reopeningMessage').textContent = `Repassez ${reopenDay} !`;
+            } else {
+                document.getElementById('shopClosedMessage').style.display = 'none';
+                document.getElementById('orderSection').style.display = 'block';
+                document.querySelector('.divider').style.display = 'block';
+                document.querySelector('.custom-basket-section').style.display = 'block';
+            }
         }
-    });
-}, observerOptions);
+    } catch (err) {
+        console.error('Erreur vérification boutique:', err);
+    }
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-    const animatedElements = document.querySelectorAll('.seasonal-card, .basket-card, .benefit-card');
+// ===== NOTIFICATION TOAST =====
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
     
-    animatedElements.forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.6s, transform 0.6s';
-        observer.observe(el);
-    });
-});
-
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
