@@ -3890,8 +3890,11 @@ input[type=number] {
 @media (max-width: 768px) {
 
     .admin-sidebar {
+        box-shadow: 1px 0 0px var(--shadow);
+        background: linear-gradient(to top,rgba(255, 0, 0, 0) 0%,rgba(255, 255, 255, 0.5) 5%,white 30%,white 5%,white 70%,rgba(255, 255, 255, 0.5) 95%,rgba(0, 0, 0, 0) 100%);
+        border: solid 1px none;
         width: 72px;
-        position: relative;
+        position: fixed;
     }
 
     .admin-nav-btn {
@@ -3904,7 +3907,7 @@ input[type=number] {
 
 
     .admin-content {
-        margin-left: 0;
+        margin-left: 72px;
         width: 100%;
         padding: 1rem;
     }
