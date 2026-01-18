@@ -170,26 +170,44 @@ function renderDashboard() {
     const todayOrders = DATA.orders.filter(o => o.date?.startsWith(today));
     const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
     
+    // Commandes non traitées (nouvelles)
+    const pendingOrders = DATA.orders.filter(o => !o.treated);
+    const newOrdersAlert = document.getElementById('newOrdersAlert');
+    const newOrdersCount = document.getElementById('newOrdersCount');
+    
+    if (pendingOrders.length > 0) {
+        newOrdersAlert.style.display = 'flex';
+        newOrdersCount.textContent = pendingOrders.length;
+    } else {
+        newOrdersAlert.style.display = 'none';
+    }
+    
+    // Stats de base
     document.getElementById('todayOrders').textContent = todayOrders.length;
     document.getElementById('todayRevenue').textContent = todayRevenue.toFixed(2) + '€';
-    document.getElementById('totalProducts').textContent = DATA.products.length;
     document.getElementById('totalUsers').textContent = DATA.users.length;
     
-    const dashboardOrders = document.getElementById('dashboardOrders');
-    if (todayOrders.length === 0) {
-        dashboardOrders.innerHTML = '<p style="text-align:center;color:#999;">Aucune commande aujourd\'hui</p>';
-    } else {
-        dashboardOrders.innerHTML = todayOrders.slice(0, 5).map(order => `
-            <div style="padding:1rem;border-bottom:1px solid #ddd;cursor:pointer;transition:0.3s;" 
-                 onclick="showOrderDetailsFromDashboard('${order.id}')"
-                 onmouseover="this.style.background='#f5f5f5'"
-                 onmouseout="this.style.background='white'">
-                <strong>${order.id}</strong> - ${order.total?.toFixed(2)}€
-                <div style="font-size:0.9rem;color:#666;">${order.items?.length || 0} article(s)</div>
-            </div>
-        `).join('');
-    }
+    // Stock disponible (somme des stocks des paniers en kg)
+    const totalStock = DATA.baskets.reduce((sum, b) => sum + (b.stock || 0), 0);
+    document.getElementById('totalStockKg').textContent = totalStock + ' kg';
+    
+    // Produits vendus (somme des quantités dans toutes les commandes)
+    let totalSold = 0;
+    DATA.orders.forEach(order => {
+        if (order.items) {
+            order.items.forEach(item => {
+                if (item.type === 'product') {
+                    totalSold += item.quantity || 0;
+                }
+            });
+        }
+    });
+    document.getElementById('totalSoldKg').textContent = totalSold.toFixed(1) + ' kg';
+    
+    // Total commandes
+    document.getElementById('totalOrdersCount').textContent = DATA.orders.length;
 }
+
 
 function showOrderDetailsFromDashboard(orderId) {
     showAdminSection('orders');
