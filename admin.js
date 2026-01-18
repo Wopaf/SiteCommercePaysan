@@ -16,7 +16,7 @@ let ordersSortField = 'date';
 let ordersSortOrder = 'desc';
 
 let app, db, auth, storage, currentAdmin = null;
-const DATA = { products: [], baskets: [], promotions: [], orders: [], users: [], settings: {}, carouselImages: [], videoUrl: '' };
+const DATA = { products: [], baskets: [], promotions: [], orders: [], users: [], settings: {}, carouselImages: [] };
 
 // Init Firebase (Logique identique à script.js)
 setTimeout(async () => {
@@ -131,7 +131,6 @@ async function loadAllAdminData() {
             DATA.users = data.users ? Object.entries(data.users).map(([id, u]) => ({id, ...u})) : [];
             DATA.settings = data.settings || {};
             DATA.carouselImages = data.media?.carouselImages || [];
-            DATA.videoUrl = data.media?.videoUrl || '';
         }
         renderDashboard();
         renderProducts();

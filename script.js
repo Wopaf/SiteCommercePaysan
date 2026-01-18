@@ -29,9 +29,11 @@ setTimeout(async () => {
     });
     
     await loadAllData();
+    loadCart();  // Ajouter cette ligne
     initCarousel();
     checkShopStatus();
 }, 200);
+
 
 async function loadAllData() {
     try {
@@ -60,8 +62,7 @@ async function loadAllData() {
             DATA.orders = data.orders ? Object.values(data.orders) : [];
             DATA.settings = data.settings || {};
             carouselImages = data.media?.carouselImages || ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
-            const videoEl = document.getElementById('exploitationVideo');
-            if (data.media?.videoUrl && videoEl) videoEl.src = data.media.videoUrl;
+
 
         } else {
             // Données par défaut si rien dans Firebase
@@ -166,10 +167,21 @@ function loadSettings() {
     document.getElementById('shopEmail').textContent = DATA.settings.email || 'contact@paniersdujardin.fr';
     document.getElementById('footerAddress').textContent = '📍 ' + (DATA.settings.address || 'Route des Vergers');
     document.getElementById('footerPhone').textContent = '📞 ' + (DATA.settings.phone || '02 40 XX XX XX');
+    
+    // Adresse page accueil
+    const homeAddress = document.getElementById('homeAddress');
+    if (homeAddress) homeAddress.textContent = DATA.settings.address || 'Route des Vergers, 44000 Nantes';
+    
+    // Maps
     if (DATA.settings.latitude && DATA.settings.longitude) {
-        document.getElementById('map').innerHTML = `<iframe width="100%" height="400" frameborder="0" src="https://www.google.com/maps?q=${DATA.settings.latitude},${DATA.settings.longitude}&output=embed"></iframe>`;
+        const mapIframe = `<iframe width="100%" height="100%" frameborder="0" src="https://www.google.com/maps?q=${DATA.settings.latitude},${DATA.settings.longitude}&z=12&output=embed"></iframe>`;
+        document.getElementById('map').innerHTML = mapIframe;
+        const homeMap = document.getElementById('homeMap');
+        if (homeMap) homeMap.innerHTML = mapIframe;
     }
+
 }
+
 
 // Carrousel
 function renderCarousel() {
@@ -396,14 +408,18 @@ function renderCustomProducts() {
                     <p>${p.price}€/kg</p>
                 </div>
             </div>
-            <div class="custom-card-content" >
+            <div class="custom-card-content">
                 <div class="qty-selector">
                     <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
                     <div class="input-wrapper">
-                    <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0" readonly class="input-qty">
-                    <span class="unit">kg</span>
+                        <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0.5" readonly class="input-qty" data-price="${p.price}">
+                        <span class="unit">kg</span>
                     </div>
                     <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
+                </div>
+                <div class="custom-card-total">
+                    <span>Total :</span>
+                    <strong id="total-${p.id}">${p.price.toFixed(2)}€</strong>
                 </div>
                 <button class="btn-primary" onclick="addCustomToCart('${p.id}')">Ajouter</button>
             </div>
@@ -411,18 +427,25 @@ function renderCustomProducts() {
     `).join('');
 }
 
+function changeCustomQty(id, change) {
+    const input = document.getElementById(`custom-${id}`);
+    let qty = parseFloat(input.value) + change;
+    if (qty < 0.5) qty = 0.5;
+    input.value = qty;
+    
+    // Mettre à jour le prix total
+    const price = parseFloat(input.dataset.price);
+    const total = (qty * price).toFixed(2);
+    document.getElementById(`total-${id}`).textContent = `${total}€`;
+}
+
+
+
 function filterProducts(cat) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(cat === 'all' ? 'tous' : cat)));
     document.querySelectorAll('.custom-card').forEach(c => {
         c.style.display = cat === 'all' || c.dataset.category === cat ? 'block' : 'none';
     });
-}
-
-function changeCustomQty(id, change) {
-    const el = document.getElementById(`custom-${id}`);
-    let val = parseFloat(el.value) + change;
-    if (val < 0) val = 0;
-    el.value = val.toFixed(1);
 }
 
 function addCustomToCart(id) {
@@ -441,13 +464,27 @@ function addCustomToCart(id) {
     showToast(`${qty}kg de ${product.name} ajouté à votre panier !`);
 }
 
+
+function loadCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+        STATE.cart = JSON.parse(savedCart);
+        updateCart();
+    }
+}
+
+
+
 // Panier
 function updateCart() {
     const count = document.getElementById('cartCount');
     const items = document.getElementById('cartItems');
     const total = document.getElementById('totalPrice');
     
-    count.textContent = STATE.cart.reduce((sum, item) => sum + item.quantity, 0);
+    // Sauvegarder dans localStorage
+    localStorage.setItem('cart', JSON.stringify(STATE.cart));
+    
+    count.textContent = STATE.cart.length;
     
     if (STATE.cart.length === 0) {
         items.innerHTML = '<p>Votre panier est vide</p>';
@@ -458,14 +495,35 @@ function updateCart() {
     const totalPrice = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     total.textContent = totalPrice.toFixed(2) + '€';
     
-    items.innerHTML = STATE.cart.map((item, i) => `
-        <div class="cart-item">
-            <span>${item.icon} ${item.name}</span>
-            <span>${item.quantity}×${item.price}€</span>
-            <button onclick="removeFromCart(${i})">×</button>
-        </div>
-    `).join('');
+    items.innerHTML = STATE.cart.map((item, i) => {
+        const itemTotal = (item.price * item.quantity).toFixed(2);
+        if (item.type === 'product') {
+            return `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <span class="cart-item-name">${item.name}</span>
+                        <span class="cart-item-details">${item.quantity} kg × ${item.price}€/kg</span>
+                    </div>
+                    <div class="cart-item-total">${itemTotal}€</div>
+                    <button onclick="removeFromCart(${i})">×</button>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <span class="cart-item-name">${item.name}</span>
+                        <span class="cart-item-details">× ${item.quantity}</span>
+                    </div>
+                    <div class="cart-item-total">${itemTotal}€</div>
+                    <button onclick="removeFromCart(${i})">×</button>
+                </div>
+            `;
+        }
+    }).join('');
 }
+
+
 
 function removeFromCart(index) {
     STATE.cart.splice(index, 1);
@@ -667,8 +725,6 @@ function handleMobileAccount() {
     }
 }
 
-
-
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
@@ -685,7 +741,13 @@ function showAccount(section) {
     document.getElementById(`section-${section}`).classList.add('active');
     document.querySelectorAll('.account-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
+    
+    // Charger les commandes si on affiche l'onglet commandes
+    if (section === 'orders' && currentUser) {
+        loadUserOrders();
+    }
 }
+
 
 document.getElementById('userForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -702,6 +764,133 @@ document.getElementById('userForm')?.addEventListener('submit', async (e) => {
         alert('Erreur: ' + err.message);
     }
 });
+
+
+
+async function loadUserOrders() {
+    const container = document.getElementById('userOrders');
+    if (!container || !currentUser) return;
+    
+    container.innerHTML = '<p style="text-align:center;color:#999;">Chargement...</p>';
+    
+    try {
+        const snapshot = await window.firebase.get(window.firebase.ref(db, 'paniers-du-jardin/orders'));
+        if (snapshot.exists()) {
+            const allOrders = snapshot.val();
+            const userOrders = Object.entries(allOrders)
+                .map(([id, order]) => ({ id, ...order }))
+                .filter(order => order.userId === currentUser.uid)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (userOrders.length === 0) {
+                container.innerHTML = '<p class="no-orders">Vous n\'avez pas encore passé de commande.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="user-orders-list">
+                    ${userOrders.map(order => `
+                        <div class="user-order-card" onclick="showUserOrderDetails('${order.id}')">
+                            <div class="user-order-header">
+                                <span class="user-order-id">#${order.id}</span>
+                                <span class="user-order-status ${order.treated ? 'treated' : 'pending'}">
+                                    ${order.treated ? '✓ Traitée' : '⏳ En cours'}
+                                </span>
+                            </div>
+                            <div class="user-order-info">
+                                <div class="user-order-date">
+                                     ${new Date(order.date).toLocaleDateString('fr-FR', { 
+                                        day: 'numeric', 
+                                        month: 'long', 
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                                <div class="user-order-items">
+                                    ${order.items?.length || 0} article(s)
+                                </div>
+                            </div>
+                            <div class="user-order-footer">
+                                <span class="user-order-total">${order.total?.toFixed(2) || '0.00'}€</span>
+                                <span class="user-order-view">Voir détails →</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            container.innerHTML = '<p class="no-orders">Vous n\'avez pas encore passé de commande.</p>';
+        }
+    } catch (err) {
+        console.error('Erreur chargement commandes:', err);
+        container.innerHTML = '<p style="color:#c62828;">Erreur lors du chargement des commandes.</p>';
+    }
+}
+
+function showUserOrderDetails(orderId) {
+    const order = null;
+    
+    // Récupérer la commande depuis Firebase
+    window.firebase.get(window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}`)).then(snapshot => {
+        if (!snapshot.exists()) return;
+        const order = snapshot.val();
+        
+        // Créer ou récupérer le modal
+        let modal = document.getElementById('userOrderModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'userOrderModal';
+            modal.className = 'modal';
+            modal.innerHTML = '<div class="modal-content"><div id="userOrderContent"></div></div>';
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        }
+        
+        document.getElementById('userOrderContent').innerHTML = `
+            <div class="order-detail-header">
+                <h3>Commande #${orderId}</h3>
+                <button class="close-btn" onclick="document.getElementById('userOrderModal').classList.remove('active')">×</button>
+            </div>
+            <div class="order-detail-status ${order.treated ? 'treated' : 'pending'}">
+                ${order.treated ? '✓ Commande traitée' : '⏳ Commande en cours de traitement'}
+            </div>
+            <div class="order-detail-date">
+                📅 Commandé le ${new Date(order.date).toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
+            </div>
+            <div class="order-detail-section">
+                <h4>Articles commandés</h4>
+                <div class="order-items-list">
+                    ${order.items?.map(item => `
+                        <div class="order-item-row">
+                            <span class="order-item-name">${item.name}</span>
+                            <span class="order-item-qty">${item.type === 'product' ? item.quantity + ' kg' : '× ' + item.quantity}</span>
+                            <span class="order-item-price">${(item.price * item.quantity).toFixed(2)}€</span>
+                        </div>
+                    `).join('') || '<p>Aucun article</p>'}
+                </div>
+            </div>
+            <div class="order-detail-total">
+                <span>Total</span>
+                <strong>${order.total?.toFixed(2) || '0.00'}€</strong>
+            </div>
+        `;
+        
+        modal.classList.add('active');
+    });
+}
+
+
+
 
 // ===== AUTHENTIFICATION GOOGLE =====
 async function signInWithGoogle() {
