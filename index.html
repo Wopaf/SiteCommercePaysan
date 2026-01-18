@@ -32,51 +32,113 @@
     </nav>
 
 
-    <section id="accueil" class="page active">
-        <div class="hero-section">
-            <div class="carousel" id="carousel">
-                <div class="carousel-track" id="carouselTrack"></div>
-                <button class="carousel-btn prev" onclick="prevSlide()">‹</button>
-                <button class="carousel-btn next" onclick="nextSlide()">›</button>
-                <div class="carousel-dots" id="carouselDots"></div>
-            </div>
-            <div class="hero-content">
-                <h2>Fruits & Légumes Frais de nos Jardins</h2>
-                <p>Des produits locaux, cultivés avec passion</p>
-                <button class="btn-primary" onclick="navigateTo('commander')">Commander</button>
-            </div>
-        </div>
-
+    <    <section id="accueil" class="page active">
+        
+        <!-- Hero Section - Carrousel + Texte côte à côte -->
         <div class="container">
-            <h2 class="section-title">Produits de Saison</h2>
-            <div class="seasonal-horizontal" id="seasonalHorizontal"></div>
-            <button class="btn-see-more" id="btnSeeMore" onclick="toggleSeasonal()">
-                <span id="seeMoreText">Voir plus</span> <span class="arrow">↓</span>
-            </button>
-            <div class="seasonal-expanded" id="seasonalExpanded" style="display:none;">
-                <div class="months-filter" id="monthsFilter"></div>
-                <div class="seasonal-grid" id="seasonalGrid"></div>
+            <div class="hero-grid">
+                <div class="hero-text">
+                    <h1>Des paniers frais, <br><span>directement du jardin</span></h1>
+                    <p>Fruits et légumes de saison cultivés avec passion à moins de 30km. Commandez en ligne, récupérez à la ferme.</p>
+                    <div class="hero-actions">
+                        <button class="btn-primary-large" onclick="navigateTo('commander')">
+                            Voir les paniers
+                        </button>
+                        <div class="hero-stats">
+                            <div class="stat">
+                                <strong>30+</strong>
+                                <span>Produits</span>
+                            </div>
+                            <div class="stat">
+                                <strong>100%</strong>
+                                <span>Local</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-carousel-wrapper">
+                    <div class="carousel" id="carousel">
+                        <div class="carousel-track" id="carouselTrack"></div>
+                        <div class="carousel-dots" id="carouselDots"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="video-section">
+        <!-- Barre d'avantages -->
+        <div class="benefits-strip">
             <div class="container">
-                <h2 class="section-title">Notre Exploitation</h2>
-                <video id="exploitationVideo" controls autoplay muted loop>
-                    <source src="" type="video/mp4">
-                </video>
+                <div class="benefits-row">
+                    <div class="benefit-mini">
+                        <span>🌿</span>
+                        <div><strong>100% Local</strong><small>Moins de 30km</small></div>
+                    </div>
+                    <div class="benefit-mini">
+                        <span>📦</span>
+                        <div><strong>Retrait Facile</strong><small>À la ferme</small></div>
+                    </div>
+                    <div class="benefit-mini">
+                        <span>♻️</span>
+                        <div><strong>Éco-Responsable</strong><small>Zéro plastique</small></div>
+                    </div>
+                    <div class="benefit-mini">
+                        <span>👨‍🌾</span>
+                        <div><strong>Agriculture Raisonnée</strong><small>Sans pesticides</small></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="container">
-            <div class="benefits-grid">
-                <div class="benefit-card"><span>🌿</span><h3>100% Local</h3><p>Moins de 30km</p></div>
-                <div class="benefit-card"><span>🚚</span><h3>Livraison Rapide</h3><p>En 24h</p></div>
-                <div class="benefit-card"><span>♻️</span><h3>Éco-Responsable</h3><p>Emballages bio</p></div>
-                <div class="benefit-card"><span>👨‍🌾</span><h3>Agriculture Raisonnée</h3><p>Sans pesticides</p></div>
+        <!-- Section Paniers -->
+        <div class="container section-padding">
+            <div class="section-intro">
+                <h2>Nos Paniers</h2>
+                <p>Choisissez la formule qui correspond à vos besoins</p>
+            </div>
+            <div class="home-baskets-grid" id="homeBasketsPreview">
+                <!-- Rempli par JS -->
+            </div>
+            <div class="section-cta">
+                <button class="btn-outline" onclick="navigateTo('commander')">
+                    Voir tous les produits →
+                </button>
             </div>
         </div>
+
+        <!-- Section Produits de Saison -->
+        <div class="seasonal-section">
+            <div class="container">
+                <div class="section-intro">
+                    <h2>🍂 En ce moment au jardin</h2>
+                    <p>Les produits disponibles ce mois-ci</p>
+                </div>
+                <div class="seasonal-horizontal" id="seasonalHorizontal"></div>
+                <button class="btn-outline" id="btnSeeMore" onclick="toggleSeasonal()">
+                    <span id="seeMoreText">Voir plus de produits</span>
+                    <span class="arrow">↓</span>
+                </button>
+                <div class="seasonal-expanded" id="seasonalExpanded" style="display:none;">
+                    <div class="months-filter" id="monthsFilter"></div>
+                    <div class="seasonal-grid" id="seasonalGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section CTA Final -->
+        <div class="container section-padding">
+            <div class="cta-box">
+                <div class="cta-box-content">
+                    <h3>Envie de manger local ?</h3>
+                    <p>Passez votre commande en quelques clics et récupérez votre panier à la ferme.</p>
+                </div>
+                <button class="btn-primary-large" onclick="navigateTo('commander')">
+                    Commander maintenant
+                </button>
+            </div>
+        </div>
+
     </section>
+
 
     <section id="commander" class="page">
         <div class="container">

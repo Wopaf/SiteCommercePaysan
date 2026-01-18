@@ -229,35 +229,46 @@ function renderBaskets() {
         return `
             <div class="basket-card ${basket.featured ? 'featured' : ''}">
                 <div class="basket-f-content">
-                    <div class="basket-icon">${basket.icon}</div>
-                    <h3>${basket.name}</h3>
-                    <p class="basket-subtitle">${basket.subtitle}</p>
-                    
-                    <div>
-                        <span class="basket-price">${basket.price}€</span>
+                    <div class="basket-f-content2">
+                        <div class="basket-icon">${basket.icon}</div>
+                        <h3>${basket.name}</h3>                       
+                        <div>
+                            <span class="basket-price">${basket.price}€</span>
+                            <p class="basket-subtitle">${basket.subtitle}</p>
+                        </div>
                     </div>
-                    
-                    <div class="basket-content">
+                    <div class="basket-f-content2">
+                        <div class="basket-content">
+                            <h4>Contenu :</h4>
+                            <ul>
+                                ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="basket-actions">
+                    <div class="basket-content2">
                         <h4>Contenu :</h4>
                         <ul>
                             ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
                         </ul>
                     </div>
-                </div>
-                <div class="basket-actions">
-                    <div class="basket-stock">
-                        <span class="stock-badge ${stockClass}">${stockText}</span>
+
+                    <div>
+                        <div class="basket-stock">
+                            <span class="stock-badge ${stockClass}">${stockText}</span>
+                        </div>
+                        <div class="basket-actions2">
+                            <div class="qty-selector">
+                                <button onclick="changeQty('${basket.id}', -1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
+                                <span id="qty-${basket.id}" class="input-qty">1</span>
+                                <button onclick="changeQty('${basket.id}', 1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg>
+                            </div>                        
+                        </div>
+                        <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
+                                ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
+                        </button>
                     </div>
-                    <div class="basket-actions2">
-                        <div class="qty-selector">
-                            <button onclick="changeQty('${basket.id}', -1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
-                            <span id="qty-${basket.id}" class="input-qty">1</span>
-                            <button onclick="changeQty('${basket.id}', 1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg>
-                        </div>                        
-                    </div>
-                    <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
-                            ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
-                    </button>
                 </div>
             </div>
         `;
