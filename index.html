@@ -89,40 +89,60 @@
             </div>
         </div>
 
+
+
+
+
         <!-- Section Paniers -->
-        <div class="container section-padding">
-            <div class="section-intro">
-                <h2>Nos Paniers</h2>
-                <p>Choisissez la formule qui correspond à vos besoins</p>
-            </div>
-            <div class="home-baskets-grid" id="homeBasketsPreview">
-                <!-- Rempli par JS -->
-            </div>
-            <div class="section-cta">
-                <button class="btn-outline" onclick="navigateTo('commander')">
-                    Voir tous les produits →
-                </button>
+        <div class="home-baskets-section">
+            <div class="container">
+                <div class="section-intro">
+                    <h2>Nos Paniers Fraîcheur</h2>
+                    <p>Des paniers composés chaque semaine avec les meilleurs produits de saison</p>
+                </div>
+                <div class="home-baskets-showcase" id="homeBasketsPreview">
+                    <!-- Rempli par JS -->
+                </div>
+                <div class="section-cta">
+                    <button class="btn-primary btn-lg" onclick="navigateTo('commander')">
+                        Commander mon panier →
+                    </button>
+                </div>
             </div>
         </div>
+
+
+
+
 
         <!-- Section Produits de Saison -->
         <div class="seasonal-section">
             <div class="container">
-                <div class="section-intro">
-                    <h2>🍂 En ce moment au jardin</h2>
-                    <p>Les produits disponibles ce mois-ci</p>
+                <div class="seasonal-header">
+                    <div class="seasonal-title">
+                        <h2>🌿 En ce moment au jardin</h2>
+                        <p>Découvrez les produits frais disponibles</p>
+                    </div>
+                    <div class="months-selector" id="monthsSelector">
+                        <!-- Rempli par JS -->
+                    </div>
                 </div>
-                <div class="seasonal-horizontal" id="seasonalHorizontal"></div>
-                <button class="btn-outline" id="btnSeeMore" onclick="toggleSeasonal()">
-                    <span id="seeMoreText">Voir plus de produits</span>
-                    <span class="arrow">↓</span>
-                </button>
-                <div class="seasonal-expanded" id="seasonalExpanded" style="display:none;">
-                    <div class="months-filter" id="monthsFilter"></div>
-                    <div class="seasonal-grid" id="seasonalGrid"></div>
+                
+                <div class="seasonal-content">
+                    <div class="current-month-label" id="currentMonthLabel">
+                        <!-- Rempli par JS -->
+                    </div>
+                    <div class="seasonal-products-grid" id="seasonalGrid">
+                        <!-- Rempli par JS -->
+                    </div>
+                    <div class="seasonal-empty" id="seasonalEmpty" style="display:none;">
+                        <span>🍂</span>
+                        <p>Aucun produit disponible ce mois-ci</p>
+                    </div>
                 </div>
             </div>
         </div>
+
 
         <!-- Section CTA Final -->
         <div class="container section-padding">
@@ -152,9 +172,12 @@
             </div>
             
             <div class="order-section" id="orderSection">
-                <h3>Paniers Prédéfinis</h3>
-                <div class="baskets-grid" id="basketsGrid"></div>
+                <div class="section-intro">
+                    <p>Choisissez la formule qui vous correspond</p>
+                </div>
+                <div class="home-baskets-showcase" id="basketsGrid"></div>
             </div>
+
             <div class="divider"><span>OU</span></div>
             <div class="order-section custom-basket-section">
                 <h3>Créez Votre Panier Personnalisé</h3>

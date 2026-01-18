@@ -60,7 +60,9 @@ async function loadAllData() {
             DATA.orders = data.orders ? Object.values(data.orders) : [];
             DATA.settings = data.settings || {};
             carouselImages = data.media?.carouselImages || ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
-            if (data.media?.videoUrl) document.getElementById('exploitationVideo').src = data.media.videoUrl;
+            const videoEl = document.getElementById('exploitationVideo');
+            if (data.media?.videoUrl && videoEl) videoEl.src = data.media.videoUrl;
+
         } else {
             // Données par défaut si rien dans Firebase
             DATA.baskets = [
@@ -87,11 +89,76 @@ async function loadAllData() {
 
 function renderAll() {
     renderCarousel();
+    renderHomeBasketsPreview();
     renderSeasonalProducts();
     renderBaskets();
     renderCustomProducts();
-    setupMonthsFilter();
 }
+
+function renderHomeBasketsPreview() {
+    const container = document.getElementById('homeBasketsPreview');
+    if (!container) return;
+    
+    const basketsInfo = [
+        {
+            id: 'petit',
+            name: 'Petit Panier',
+            icon: '🥬',
+            persons: '1-2 pers.',
+            description: 'L\'essentiel pour cuisiner frais au quotidien',
+            highlights: ['3kg de produits', '7 variétés'],
+            color: '#e8f5e9'
+        },
+        {
+            id: 'moyen',
+            name: 'Panier Familial',
+            icon: '🥗',
+            persons: '3-4 pers.',
+            description: 'Le choix préféré de nos clients, varié et généreux',
+            highlights: ['5kg de produits', '11 variétés', '+ 1 surprise'],
+            popular: true,
+            color: '#fff3e0'
+        },
+        {
+            id: 'grand',
+            name: 'Grand Panier',
+            icon: '🍎',
+            persons: '5+ pers.',
+            description: 'L\'abondance du jardin pour les grandes tablées',
+            highlights: ['8kg de produits', '15 variétés', '+ herbes fraîches'],
+            color: '#fce4ec'
+        }
+    ];
+    
+    container.innerHTML = basketsInfo.map(basket => {
+        const firebaseBasket = DATA.baskets.find(b => b.id === basket.id);
+        const price = firebaseBasket?.price || 0;
+        const stock = firebaseBasket?.stock || 0;
+        
+            return `
+            <div class="home-basket-card" style="--card-accent: ${basket.color}">
+                <div class="home-basket-header">
+                    <span class="home-basket-icon">${basket.icon}</span>
+                    <div class="home-basket-title">
+                        <h3>${basket.name}</h3>
+                        <span class="home-basket-persons">${basket.persons}</span>
+                    </div>
+                </div>
+                <p class="home-basket-desc">${basket.description}</p>
+                <ul class="home-basket-highlights">
+                    ${basket.highlights.map(h => `<li><span class="check">✓</span> ${h}</li>`).join('')}
+                </ul>
+                <div class="home-basket-footer">
+                    <div class="home-basket-price">
+                        <span class="price-value">${price}€</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+
 
 function loadSettings() {
     document.getElementById('shopAddress').textContent = DATA.settings.address || 'Route des Vergers, 44000 Nantes';
@@ -136,144 +203,164 @@ function updateCarousel() {
     document.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === currentSlide));
 }
 
-// Produits saisonniers
+// Produits saisonniers - Nouveau design
 function renderSeasonalProducts() {
-    const products = DATA.products.filter(p => p.availableMonths?.includes(currentMonth));
-    document.getElementById('seasonalHorizontal').innerHTML = products.slice(0, 6).map(p => `
-        <div class="seasonal-card">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/150'}" alt="${p.name}">
-            <h4>${p.name}</h4>
-            <p>${p.price}€/kg</p>
-        </div>
+    setupMonthsSelector();
+    filterByMonth(currentMonth);
+}
+
+function setupMonthsSelector() {
+    const months = [
+        { short: 'Jan', full: 'Janvier' },
+        { short: 'Fév', full: 'Février' },
+        { short: 'Mar', full: 'Mars' },
+        { short: 'Avr', full: 'Avril' },
+        { short: 'Mai', full: 'Mai' },
+        { short: 'Juin', full: 'Juin' },
+        { short: 'Juil', full: 'Juillet' },
+        { short: 'Août', full: 'Août' },
+        { short: 'Sep', full: 'Septembre' },
+        { short: 'Oct', full: 'Octobre' },
+        { short: 'Nov', full: 'Novembre' },
+        { short: 'Déc', full: 'Décembre' }
+    ];
+    
+    const container = document.getElementById('monthsSelector');
+    if (!container) return;
+    
+    container.innerHTML = months.map((m, i) => `
+        <button class="month-chip ${i + 1 === currentMonth ? 'active' : ''}" 
+                onclick="filterByMonth(${i + 1})" 
+                data-month="${i + 1}">
+            ${m.short}
+        </button>
     `).join('');
-}
-
-function setupMonthsFilter() {
-    const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
-    document.getElementById('monthsFilter').innerHTML = months.map((m, i) => 
-        `<button class="month-btn ${i+1===currentMonth?'active':''}" onclick="filterByMonth(${i+1})">${m}</button>`
-    ).join('');
-}
-
-function toggleSeasonal() {
-    const expanded = document.getElementById('seasonalExpanded');
-    const btn = document.getElementById('btnSeeMore');
-    const isExpanded = expanded.style.display !== 'none';
-    expanded.style.display = isExpanded ? 'none' : 'block';
-    btn.querySelector('#seeMoreText').textContent = isExpanded ? 'Voir plus' : 'Voir moins';
-    btn.querySelector('.arrow').textContent = isExpanded ? '↓' : '↑';
-    if (!isExpanded) filterByMonth(currentMonth);
 }
 
 function filterByMonth(month) {
     currentMonth = month;
-    document.querySelectorAll('.month-btn').forEach((b, i) => b.classList.toggle('active', i+1 === month));
+    
+    // Mettre à jour les boutons actifs
+    document.querySelectorAll('.month-chip').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
+    });
+    
+    // Mettre à jour le label du mois
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const labelContainer = document.getElementById('currentMonthLabel');
+    if (labelContainer) {
+        labelContainer.innerHTML = `
+            <span class="month-icon">📅</span>
+            <span>Produits disponibles en <strong>${monthNames[month - 1]}</strong></span>
+        `;
+    }
+    
+    // Filtrer et afficher les produits
     const products = DATA.products.filter(p => p.availableMonths?.includes(month));
-    document.getElementById('seasonalGrid').innerHTML = products.map(p => `
-        <div class="product-card">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/200'}" alt="${p.name}">
-            <h4>${p.name}</h4>
-            <p>${p.price}€/kg</p>
-        </div>
-    `).join('');
+    const grid = document.getElementById('seasonalGrid');
+    const empty = document.getElementById('seasonalEmpty');
+    
+    if (products.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'flex';
+    } else {
+        grid.style.display = 'grid';
+        empty.style.display = 'none';
+        
+        grid.innerHTML = products.map(p => `
+            <div class="seasonal-product-card">
+                <div class="seasonal-product-img" style="background-image: url('${p.imageUrl || 'https://via.placeholder.com/200'}')">
+                    <span class="seasonal-product-category">${p.category === 'fruits' ? '🍎 Fruit' : '🥬 Légume'}</span>
+                </div>
+                <div class="seasonal-product-info">
+                    <h4>${p.name}</h4>
+                    <div class="seasonal-product-price">${p.price}€<span>/kg</span></div>
+                </div>
+            </div>
+        `).join('');
+    }
 }
+
+// Supprimer toggleSeasonal car plus nécessaire
+
 
 // Paniers prédéfinis
 function renderBaskets() {
-    const basketsData = [
+    const container = document.getElementById('basketsGrid');
+    if (!container) return;
+    
+    const basketsInfo = [
         {
             id: 'petit',
-            name: 'Panier Petit',
-            icon: '🧺',
-            subtitle: 'Idéal pour 1-2 personnes',
-            price: 0,
-            stock: 0,
-            content: ['3 variétés de fruits', '4 variétés de légumes', 'Environ 3kg']
+            name: 'Petit Panier',
+            icon: '🥬',
+            persons: '1-2 pers.',
+            description: 'L\'essentiel pour cuisiner frais au quotidien',
+            highlights: ['3kg de produits', '7 variétés'],
+            color: '#e8f5e9'
         },
         {
             id: 'moyen',
-            name: 'Panier Moyen',
-            icon: '🧺',
-            subtitle: 'Parfait pour 3-4 personnes',
-            price: 0,
-            stock: 0,
-            content: ['5 variétés de fruits', '6 variétés de légumes', 'Environ 5kg', '1 surprise du jardin'],
-            featured: true
+            name: 'Panier Familial',
+            icon: '🥗',
+            persons: '3-4 pers.',
+            description: 'Le choix préféré de nos clients, varié et généreux',
+            highlights: ['5kg de produits', '11 variétés', '+ 1 surprise'],
+            popular: true,
+            color: '#fff3e0'
         },
         {
             id: 'grand',
-            name: 'Panier Grand',
-            icon: '🧺',
-            subtitle: 'Pour famille nombreuse',
-            price: 0,
-            stock: 0,
-            content: ['7 variétés de fruits', '8 variétés de légumes', 'Environ 8kg', '2 surprises du jardin', 'Herbes aromatiques']
+            name: 'Grand Panier',
+            icon: '🍎',
+            persons: '5+ pers.',
+            description: 'L\'abondance du jardin pour les grandes tablées',
+            highlights: ['8kg de produits', '15 variétés', '+ herbes fraîches'],
+            color: '#fce4ec'
         }
     ];
     
-    // Mettre à jour avec les données Firebase si disponibles
-    basketsData.forEach(basket => {
+    container.innerHTML = basketsInfo.map(basket => {
         const firebaseBasket = DATA.baskets.find(b => b.id === basket.id);
-        if (firebaseBasket) {
-            basket.price = firebaseBasket.price;
-            basket.stock = firebaseBasket.stock;
-        }
-    });
-    
-    document.getElementById('basketsGrid').innerHTML = basketsData.map(basket => {
-        const promo = DATA.promotions.find(p => p.basketId === basket.id);
-        const finalPrice = promo ? basket.price * (1 - promo.discount / 100) : basket.price;
-        const stockClass = basket.stock < 10 ? 'limited' : basket.stock === 0 ? 'out' : 'available';
-        const stockText = basket.stock === 0 ? 'Rupture' : basket.stock < 10 ? `Plus que ${basket.stock}` : `${basket.stock} disponibles`;
+        const price = firebaseBasket?.price || 0;
+        const stock = firebaseBasket?.stock || 0;
+        const stockText = stock === 0 ? 'Rupture' : stock < 10 ? `Plus que ${stock}` : `${stock} dispo.`;
+        const stockClass = stock === 0 ? 'out' : stock < 10 ? 'limited' : 'available';
         
         return `
-            <div class="basket-card ${basket.featured ? 'featured' : ''}">
-                <div class="basket-f-content">
-                    <div class="basket-f-content2">
-                        <div class="basket-icon">${basket.icon}</div>
-                        <h3>${basket.name}</h3>                       
-                        <div>
-                            <span class="basket-price">${basket.price}€</span>
-                            <p class="basket-subtitle">${basket.subtitle}</p>
-                        </div>
-                    </div>
-                    <div class="basket-f-content2">
-                        <div class="basket-content">
-                            <h4>Contenu :</h4>
-                            <ul>
-                                ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
-                            </ul>
-                        </div>
+            <div class="home-basket-card" style="--card-accent: ${basket.color}">
+                <div class="home-basket-header">
+                    <span class="home-basket-icon">${basket.icon}</span>
+                    <div class="home-basket-title2">
+                        <h3>${basket.name}</h3>
+                        <span class="home-basket-persons">${basket.persons}</span>
                     </div>
                 </div>
-                <div class="basket-actions">
-                    <div class="basket-content2">
-                        <h4>Contenu :</h4>
-                        <ul>
-                            ${basket.content.map(item => `<li>✓ ${item}</li>`).join('')}
-                        </ul>
+                <p class="home-basket-desc">${basket.description}</p>
+                <ul class="home-basket-highlights">
+                    ${basket.highlights.map(h => `<li><span class="check">✓</span> ${h}</li>`).join('')}
+                </ul>
+                    <div class="home-basket-price2">
+                        <span class="price-value">${price}€</span>
+                        <span class="stock-badge ${stockClass}">${stockText}</span>
                     </div>
-
-                    <div>
-                        <div class="basket-stock">
-                            <span class="stock-badge ${stockClass}">${stockText}</span>
-                        </div>
-                        <div class="basket-actions2">
-                            <div class="qty-selector">
-                                <button onclick="changeQty('${basket.id}', -1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
-                                <span id="qty-${basket.id}" class="input-qty">1</span>
-                                <button onclick="changeQty('${basket.id}', 1)"><svg class="icon-qty" height="14px" viewBox="0 -960 960 960" width="14px" fill="#151414"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg>
-                            </div>                        
-                        </div>
-                        <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${basket.stock === 0 ? 'disabled' : ''}>
-                                ${basket.stock === 0 ? 'Indisponible' : 'Ajouter'}
-                        </button>
+                <div class="basket-order-controls">
+                    <div class="qty-selector-mini">
+                        <button class="qty-btn-mini" onclick="changeQty('${basket.id}', -1)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
+                        <span id="qty-${basket.id}">1</span>
+                        <button class="qty-btn-mini" onclick="changeQty('${basket.id}', 1)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg></button>
                     </div>
+                    <button class="btn-primary" onclick="addBasketToCart('${basket.id}')" ${stock === 0 ? 'disabled' : ''}>
+                        ${stock === 0 ? 'Épuisé' : 'Ajouter'}
+                    </button>
                 </div>
+            </div>
             </div>
         `;
     }).join('');
 }
+
 
 function changeQty(id, change) {
     const el = document.getElementById(`qty-${id}`);
