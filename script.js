@@ -294,7 +294,11 @@ function filterByMonth(month) {
     }
 }
 
-// Supprimer toggleSeasonal car plus nécessaire
+
+
+
+
+
 
 
 // Paniers prédéfinis
@@ -398,34 +402,397 @@ function addBasketToCart(id) {
     showToast(`${qty} Panier ${basket.name} ajouté à votre panier !`);
 }
 
-// Panier personnalisé
-function renderCustomProducts() {
-    document.getElementById('customGrid').innerHTML = DATA.products.map(p => `
-        <div class="custom-card" data-category="${p.category}">
-            <div class="custom-card-img" style="background: url('${p.imageUrl || 'https://via.placeholder.com/150'}') center/cover no-repeat;">
-                <div class="custom-card-header">
-                    <h4>${p.name}</h4>
-                    <p>${p.price}€/kg</p>
-                </div>
-            </div>
-            <div class="custom-card-content">
-                <div class="qty-selector">
-                    <button onclick="changeCustomQty('${p.id}', -0.5)">-</button>
-                    <div class="input-wrapper">
-                        <input type="number" id="custom-${p.id}" value="1" step="0.5" min="0.5" readonly class="input-qty" data-price="${p.price}">
-                        <span class="unit">kg</span>
-                    </div>
-                    <button onclick="changeCustomQty('${p.id}', 0.5)">+</button>
-                </div>
-                <div class="custom-card-total">
-                    <span>Total :</span>
-                    <strong id="total-${p.id}">${p.price.toFixed(2)}€</strong>
-                </div>
-                <button class="btn-primary" onclick="addCustomToCart('${p.id}')">Ajouter</button>
-            </div>
+
+
+
+
+
+
+
+// Paniers personnalisés sauvegardés
+let userBaskets = [];
+let currentBasketId = null;
+let customBasket = [];
+
+// Charger les paniers de l'utilisateur depuis Firebase
+async function loadUserBaskets() {
+    if (!currentUser) {
+        userBaskets = [];
+        renderBasketDropdown();
+        return;
+    }
+    
+    try {
+        const snapshot = await window.firebase.get(
+            window.firebase.ref(db, `paniers-du-jardin/users/${currentUser.uid}/customBaskets`)
+        );
+        
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            userBaskets = Object.entries(data).map(([id, basket]) => ({
+                id,
+                ...basket
+            }));
+        } else {
+            userBaskets = [];
+        }
+        
+        renderBasketDropdown();
+        
+        // Charger le premier panier ou créer un nouveau
+        if (userBaskets.length > 0) {
+            selectBasket(userBaskets[0].id);
+        } else {
+            createDefaultBasket();
+        }
+    } catch (err) {
+        console.error('Erreur chargement paniers:', err);
+        userBaskets = [];
+        renderBasketDropdown();
+    }
+}
+
+function createDefaultBasket() {
+    currentBasketId = 'temp_' + Date.now();
+    customBasket = [];
+    document.getElementById('currentBasketName').textContent = 'Mon Panier';
+    renderBasketSummary();
+}
+
+function renderBasketDropdown() {
+    const container = document.getElementById('basketDropdownList');
+    if (!container) return;
+    
+    if (userBaskets.length === 0) {
+        container.innerHTML = '<p class="dropdown-empty">Aucun panier sauvegardé</p>';
+        return;
+    }
+    
+    container.innerHTML = userBaskets.map(basket => `
+        <div class="basket-dropdown-item ${basket.id === currentBasketId ? 'active' : ''}" 
+             onclick="selectBasket('${basket.id}')">
+            <span class="basket-item-name">${basket.name}</span>
+            <span class="basket-item-count">${basket.items?.length || 0} produits</span>
         </div>
     `).join('');
 }
+
+function toggleBasketDropdown() {
+    const dropdown = document.getElementById('basketDropdown');
+    dropdown.classList.toggle('open');
+}
+
+// Fermer le dropdown si on clique ailleurs
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('basketDropdown');
+    const header = document.querySelector('.basket-summary-title');
+    if (dropdown && !dropdown.contains(e.target) && !header.contains(e.target)) {
+        dropdown.classList.remove('open');
+    }
+});
+
+function selectBasket(basketId) {
+    const basket = userBaskets.find(b => b.id === basketId);
+    if (!basket) return;
+    
+    currentBasketId = basketId;
+    customBasket = basket.items ? [...basket.items] : [];
+    document.getElementById('currentBasketName').textContent = basket.name;
+    
+    renderBasketSummary();
+    renderBasketDropdown();
+    toggleBasketDropdown();
+}
+
+function openNewBasketModal() {
+    document.getElementById('newBasketModal').classList.add('active');
+    document.getElementById('newBasketName').value = '';
+    document.getElementById('newBasketName').focus();
+    toggleBasketDropdown();
+}
+
+function closeNewBasketModal() {
+    document.getElementById('newBasketModal').classList.remove('active');
+}
+
+async function createNewBasket() {
+    const name = document.getElementById('newBasketName').value.trim();
+    if (!name) {
+        alert('Veuillez entrer un nom pour le panier');
+        return;
+    }
+    
+    if (!currentUser) {
+        alert('Vous devez être connecté pour sauvegarder un panier');
+        closeNewBasketModal();
+        return;
+    }
+    
+    const newBasketId = 'basket_' + Date.now();
+    const newBasket = {
+        name: name,
+        items: [],
+        createdAt: new Date().toISOString()
+    };
+    
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/users/${currentUser.uid}/customBaskets/${newBasketId}`),
+            newBasket
+        );
+        
+        userBaskets.push({ id: newBasketId, ...newBasket });
+        currentBasketId = newBasketId;
+        customBasket = [];
+        document.getElementById('currentBasketName').textContent = name;
+        
+        renderBasketDropdown();
+        renderBasketSummary();
+        closeNewBasketModal();
+        showToast(`Panier "${name}" créé !`);
+    } catch (err) {
+        alert('Erreur lors de la création: ' + err.message);
+    }
+}
+
+async function saveCurrentBasket() {
+    if (!currentUser) {
+        alert('Vous devez être connecté pour sauvegarder un panier');
+        return;
+    }
+    
+    // Si c'est un panier temporaire, ouvrir le modal pour le nommer
+    if (currentBasketId.startsWith('temp_')) {
+        openNewBasketModal();
+        return;
+    }
+    
+    const basket = userBaskets.find(b => b.id === currentBasketId);
+    if (!basket) return;
+    
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/users/${currentUser.uid}/customBaskets/${currentBasketId}/items`),
+            customBasket
+        );
+        
+        // Mettre à jour localement
+        basket.items = [...customBasket];
+        renderBasketDropdown();
+        showToast('Panier sauvegardé !');
+    } catch (err) {
+        alert('Erreur lors de la sauvegarde: ' + err.message);
+    }
+}
+
+async function deleteCurrentBasket() {
+    if (!currentUser || currentBasketId.startsWith('temp_')) {
+        customBasket = [];
+        renderBasketSummary();
+        return;
+    }
+    
+    const basket = userBaskets.find(b => b.id === currentBasketId);
+    if (!basket) return;
+    
+    if (!confirm(`Supprimer le panier "${basket.name}" ?`)) return;
+    
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/users/${currentUser.uid}/customBaskets/${currentBasketId}`),
+            null
+        );
+        
+        userBaskets = userBaskets.filter(b => b.id !== currentBasketId);
+        
+        if (userBaskets.length > 0) {
+            selectBasket(userBaskets[0].id);
+        } else {
+            createDefaultBasket();
+        }
+        
+        renderBasketDropdown();
+        showToast('Panier supprimé');
+    } catch (err) {
+        alert('Erreur lors de la suppression: ' + err.message);
+    }
+}
+
+function addToCustomBasket(productId) {
+    const product = DATA.products.find(p => p.id === productId);
+    if (!product) return;
+    
+    const existing = customBasket.find(item => item.id === productId);
+    if (existing) {
+        existing.quantity += 0.5;
+    } else {
+        customBasket.push({
+            id: productId,
+            name: product.name,
+            price: product.price,
+            quantity: 0.5
+        });
+    }
+    
+    renderBasketSummary();
+}
+
+function removeFromCustomBasket(productId) {
+    customBasket = customBasket.filter(item => item.id !== productId);
+    renderBasketSummary();
+}
+
+function changeCustomBasketQty(productId, change) {
+    const item = customBasket.find(i => i.id === productId);
+    if (!item) return;
+    
+    item.quantity += change;
+    if (item.quantity <= 0) {
+        removeFromCustomBasket(productId);
+        return;
+    }
+    
+    renderBasketSummary();
+}
+
+function renderBasketSummary() {
+    const container = document.getElementById('basketSummaryItems');
+    const totalEl = document.getElementById('basketSummaryTotal');
+    if (!container) return;
+    
+    if (customBasket.length === 0) {
+        container.innerHTML = '<p class="basket-empty">Votre panier est vide</p>';
+        totalEl.textContent = '0€';
+        return;
+    }
+    
+    let total = 0;
+    container.innerHTML = customBasket.map(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+        return `
+            <div class="basket-summary-row">
+                <span class="item-name">${item.name}</span>
+                <span class="item-price">${item.price}€/kg</span>
+                <div class="item-qty-controls">
+                    <button class="qty-btn-mini" onclick="changeCustomBasketQty('${item.id}', -0.5)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
+                    <span>${item.quantity} kg</span>
+                    <button class="qty-btn-mini" onclick="changeCustomBasketQty('${item.id}', 0.5)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg></button>
+                </div>
+                <span class="item-total">${itemTotal.toFixed(2)}€</span>
+            </div>
+        `;
+    }).join('');
+    
+    totalEl.textContent = total.toFixed(2) + '€';
+}
+
+
+function renderCustomProducts() {
+    const container = document.getElementById('productsTable');
+    if (!container) return;
+    
+    container.innerHTML = DATA.products.map(p => `
+        <div class="product-row" data-category="${p.category}">
+            <span class="product-name">${p.name}</span>
+            <span class="product-price">${p.price}€/kg</span>
+            <button class="btn-secondary" onclick="addToCustomBasket('${p.id}')">Ajouter</button>
+        </div>
+    `).join('');
+    
+    // Charger les paniers utilisateur
+    loadUserBaskets();
+}
+
+function scrollToProducts() {
+    document.querySelector('.products-list-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function validateCustomBasket() {
+    if (customBasket.length === 0) {
+        alert('Votre panier est vide');
+        return;
+    }
+    
+    customBasket.forEach(item => {
+        const existing = STATE.cart.find(c => c.id === item.id && c.type === 'product');
+        if (existing) {
+            existing.quantity += item.quantity;
+        } else {
+            STATE.cart.push({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                type: 'product'
+            });
+        }
+    });
+    
+    updateCart();
+    showToast('Panier ajouté à la commande !');
+    toggleCart();
+}
+
+// Navigation mobile entre panneaux
+function showProductsPanel() {
+    if (window.innerWidth <= 900) {
+        document.getElementById('basketSummaryPanel').classList.add('mobile-hidden');
+        document.getElementById('productsListPanel').classList.add('mobile-visible');
+    } else {
+        scrollToProducts();
+    }
+}
+
+function showBasketPanel() {
+    document.getElementById('productsListPanel').classList.remove('mobile-visible');
+    document.getElementById('basketSummaryPanel').classList.remove('mobile-hidden');
+}
+
+function addToCustomBasket(productId) {
+    const product = DATA.products.find(p => p.id === productId);
+    if (!product) return;
+    
+    const existing = customBasket.find(item => item.id === productId);
+    if (existing) {
+        existing.quantity += 0.5;
+    } else {
+        customBasket.push({
+            id: productId,
+            name: product.name,
+            price: product.price,
+            quantity: 0.5
+        });
+    }
+    
+    renderBasketSummary();
+    
+    // Sur mobile, retourner au panier
+    if (window.innerWidth <= 900) {
+        showBasketPanel();
+    }
+}
+
+function filterProducts(cat) {
+    document.querySelectorAll('.filter-btn').forEach(b => 
+        b.classList.toggle('active', b.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(cat === 'all' ? 'tous' : cat))
+    );
+
+    document.querySelectorAll('.product-row').forEach(row => {
+        row.style.display = cat === 'all' || row.dataset.category === cat ? 'flex' : 'none';
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
 
 function changeCustomQty(id, change) {
     const input = document.getElementById(`custom-${id}`);
@@ -440,13 +807,6 @@ function changeCustomQty(id, change) {
 }
 
 
-
-function filterProducts(cat) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(cat === 'all' ? 'tous' : cat)));
-    document.querySelectorAll('.custom-card').forEach(c => {
-        c.style.display = cat === 'all' || c.dataset.category === cat ? 'block' : 'none';
-    });
-}
 
 function addCustomToCart(id) {
     const product = DATA.products.find(p => p.id === id);

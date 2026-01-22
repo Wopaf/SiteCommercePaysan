@@ -90,28 +90,6 @@
         </div>
 
 
-
-
-
-        <!-- Section Paniers -->
-        <div class="home-baskets-section">
-            <div class="container">
-                <div class="section-intro">
-                    <h2>Nos Paniers Fraîcheur</h2>
-                    <p>Des paniers composés chaque semaine avec les meilleurs produits de saison</p>
-                </div>
-                <div class="home-baskets-showcase" id="homeBasketsPreview">
-                    <!-- Rempli par JS -->
-                </div>
-                <div class="section-cta">
-                    <button class="btn-primary btn-lg" onclick="navigateTo('commander')">
-                        Commander mon panier →
-                    </button>
-                </div>
-            </div>
-        </div>
-
-
         <!-- Section Où nous trouver -->
         <div class="location-section">
             <div class="container">
@@ -159,40 +137,110 @@
                 </div>
             </div>
         </div>
-
-        
-
     </section>
 
 
-    <section id="commander" class="page">
+   
+            <section id="commander" class="page">
         <div class="container">
-            <h2 class="page-title">Choisissez Votre Panier</h2>
-            
-            <!-- Message boutique fermée -->
-            <div class="shop-closed-message" id="shopClosedMessage" style="display:none;">
-                <div class="closed-icon">🔒</div>
-                <h3>Oups, la boutique n'est pas encore ouverte !</h3>
-                <p id="reopeningMessage">Repassez bientôt !</p>
-            </div>
-            
-            <div class="order-section" id="orderSection">
-                <div class="section-intro">
-                    <p>Choisissez la formule qui vous correspond</p>
-                </div>
-                <div class="home-baskets-showcase" id="basketsGrid"></div>
-            </div>
 
-            <div class="divider"><span>OU</span></div>
-            <div class="order-section custom-basket-section">
-                <h3>Créez Votre Panier Personnalisé</h3>
-                <div class="filters">
+
+<!-- Section Panier Personnalisé -->
+<div class="custom-basket-builder">
+    <h3 class="builder-title">Je créer mon Panier</h3>
+    
+    <div class="builder-layout">
+        <!-- Liste des produits -->
+        <div class="products-list-panel" id="productsListPanel">
+            <div class="filters">
+                <button id="filter-back-btn" class="filter-btn" style="margin-right: 10px;" onclick="showBasketPanel()">← Retour</button>
+                <div>
                     <button class="filter-btn active" onclick="filterProducts('all')">Tous</button>
                     <button class="filter-btn" onclick="filterProducts('fruits')">Fruits</button>
                     <button class="filter-btn" onclick="filterProducts('legumes')">Légumes</button>
                 </div>
-                <div class="custom-grid" id="customGrid"></div>
             </div>
+                <div class="products-table" id="productsTable">
+                    <!-- Rempli par JS -->
+                </div>
+        </div>
+        
+        <!-- Panier récapitulatif -->
+        <div class="basket-summary-panel" id="basketSummaryPanel">
+            <div class="basket-summary-header">
+                <div class="basket-summary-title" onclick="toggleBasketDropdown()">
+                    <span class="basket-icon-summary">🛒</span>
+                    <span id="currentBasketName">Mon Panier</span>
+                    <span class="basket-dropdown-arrow">▼</span>
+                </div>
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                        <button class="btn-secondary btn-save-basket" onclick="saveCurrentBasket()" title="Sauvegarder ce panier">💾</button>
+                        <button class="btn-secondary btn-delete-basket" onclick="deleteCurrentBasket()" title="Supprimer ce panier">🗑️</button>
+                    </div>
+                <!-- Menu déroulant des paniers -->
+                <div class="basket-dropdown" id="basketDropdown">
+                    <div class="basket-dropdown-list" id="basketDropdownList">
+                        <!-- Rempli par JS -->
+                    </div>
+                    <div class="basket-dropdown-new" onclick="openNewBasketModal()">
+                        <span>+ Créer un nouveau panier</span>
+                    </div>
+                </div>
+            </div>
+            
+            
+            <div class="basket-summary-content">
+                <div class="basket-summary-table-header">
+                    <span>Nom</span>
+                    <span>Prix/kg</span>
+                    <span></span>
+                    <span>Total</span>
+                </div>
+                <div class="basket-summary-items" id="basketSummaryItems">
+                    <!-- Rempli par JS -->
+                </div>
+                <div class="basket-summary-add">
+                    <button class="btn-add-product" onclick="showProductsPanel()">+ Ajouter un produit</button>
+                </div>
+            </div>
+            <div class="basket-summary-footer">
+                <div class="basket-total">
+                    <span>Total</span>
+                    <strong id="basketSummaryTotal">0€</strong>
+                </div>
+                <div class="basket-footer-actions">
+                    <button class="btn-primary" onclick="validateCustomBasket()">Valider mon panier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+        <!-- Modal nouveau panier -->
+        <div class="modal" id="newBasketModal">
+            <div class="modal-content small-modal">
+                <div class="modal-header">
+                    <h3>Nouveau Panier</h3>
+                    <button onclick="closeNewBasketModal()" class="close-btn">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nom du panier</label>
+                        <input type="text" id="newBasketName" class="input-field" placeholder="Ex: Panier semaine, Panier fête...">
+                    </div>
+                    <button class="btn-primary btn-block" onclick="createNewBasket()">Créer le panier</button>
+                </div>
+            </div>
+        </div>
+
+            </div>
+        </div>
+
         </div>
     </section>
 
