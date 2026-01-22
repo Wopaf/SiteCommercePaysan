@@ -2199,6 +2199,7 @@ body {
 
 /* Mobile */
 @media (max-width: 950px) {
+
     .builder-layout {
         grid-template-columns: 1fr;
     }
@@ -4536,14 +4537,10 @@ input[type=number] {
     right: 0;
     background: white;
     box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
-    z-index: 1000;
-    padding: 0.5rem 0;
-    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
-}
-
-.mobile-bottom-nav {
-    display: none;
     grid-template-columns: repeat(5, 1fr);
+    z-index: 1000;
+    padding: 0.5rem 2rem;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
 }
 
 .mobile-nav-item {

@@ -1067,7 +1067,6 @@ function updateCartCount() {
 
 
 
-// Navigation
 function navigateTo(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(page).classList.add('active');
@@ -1075,7 +1074,21 @@ function navigateTo(page) {
     document.querySelector(`[href="#${page}"]`)?.classList.add('active');
     window.scrollTo(0, 0);
     updateMobileNav(page);
+    
+    // Cacher/afficher le footer et navbar selon la page
+    const footer = document.querySelector('.footer');
+    const navbar = document.querySelector('.navbar');
+    const pagesToHide = ['commander', 'contact', 'mon-compte'];
+    
+    if (footer) {
+        footer.style.display = pagesToHide.includes(page) ? 'none' : '';
+    }
+    if (navbar) {
+        navbar.style.display = pagesToHide.includes(page) ? 'none' : '';
+    }
 }
+
+
 
 function handleMobileAccount() {
     if (currentUser) {
