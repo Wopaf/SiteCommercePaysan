@@ -32,6 +32,16 @@ setTimeout(async () => {
     loadCart();  // Ajouter cette ligne
     initCarousel();
     checkShopStatus();
+
+    // Vérifier l'affichage footer/navbar au chargement
+    setTimeout(() => {
+        const activePage = document.querySelector('.page.active')?.id;
+        if (activePage) {
+            navigateTo(activePage);
+        }
+    }, 300);
+
+
 }, 200);
 
 
@@ -1067,6 +1077,30 @@ function updateCartCount() {
 
 
 
+function updateFooterNavbarVisibility() {
+    const activePage = document.querySelector('.page.active')?.id;
+    const footer = document.querySelector('.footer');
+    const navbar = document.querySelector('.navbar');
+    const pagesToHide = ['commander', 'contact', 'mon-compte'];
+    const isSmallScreen = window.innerWidth < 950;
+    
+    const shouldHide = activePage && pagesToHide.includes(activePage) && isSmallScreen;
+    
+    console.log('Page:', activePage, 'Width:', window.innerWidth, 'shouldHide:', shouldHide);
+    console.log('Footer trouvé:', footer, 'Navbar trouvé:', navbar);
+    
+    if (footer) {
+        footer.style.display = shouldHide ? 'none' : '';
+        console.log('Footer display après:', footer.style.display);
+    }
+    if (navbar) {
+        navbar.style.display = shouldHide ? 'none' : '';
+        console.log('Navbar display après:', navbar.style.display);
+    }
+}
+
+
+
 function navigateTo(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(page).classList.add('active');
@@ -1074,19 +1108,16 @@ function navigateTo(page) {
     document.querySelector(`[href="#${page}"]`)?.classList.add('active');
     window.scrollTo(0, 0);
     updateMobileNav(page);
-    
-    // Cacher/afficher le footer et navbar selon la page
-    const footer = document.querySelector('.footer');
-    const navbar = document.querySelector('.navbar');
-    const pagesToHide = ['commander', 'contact', 'mon-compte'];
-    
-    if (footer) {
-        footer.style.display = pagesToHide.includes(page) ? 'none' : '';
-    }
-    if (navbar) {
-        navbar.style.display = pagesToHide.includes(page) ? 'none' : '';
-    }
+    updateFooterNavbarVisibility();
 }
+
+window.addEventListener('resize', updateFooterNavbarVisibility);
+
+// Appeler au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(updateFooterNavbarVisibility, 500);
+});
+
 
 
 
