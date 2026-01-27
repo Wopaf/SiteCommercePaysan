@@ -139,25 +139,14 @@
         </div>
 
 
-            <!-- Section Produits & Paniers -->
+            <!-- Section Produits -->
             <div class="admin-section" id="admin-products">
-                <h2 style="padding-left: 20px; margin-bottom:20px; color: var(--primary);">Paniers Prédéfinis</h2>
-                
-                <!-- Paniers Prédéfinis -->
-                <div class="baskets-section">
-                    <div class="baskets-admin-list" id="basketsAdminList"></div>
+                <div class="admin-products-header">
+                    <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
                 </div>
-                
-                <div class="section-divider"></div>
-                <h2 style="padding-left: 20px; margin-bottom:20px; color: var(--primary);">Produits Individuels</h2>
-                <!-- Produits Individuels -->
-                <div class="products-section">
-                    <div class="section-header">
-                        <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
-                    </div>
-                    <div class="products-grid" id="productsList"></div>
-                </div>
+                <div id="productsList"></div>
             </div>
+
 
             <!-- Section Commandes -->
             <div class="admin-section" id="admin-orders">
@@ -280,7 +269,9 @@
                             <select id="productCategory" class="input-field" required>
                                 <option value="fruits">Fruits</option>
                                 <option value="legumes">Légumes</option>
+                                <option value="herbes">Herbes</option>
                             </select>
+
                         </div>
                     </div>
 
@@ -289,32 +280,7 @@
                             <label>Prix (€/kg) *</label>
                             <input type="number" id="productPrice" class="input-field" step="0.01" required>
                         </div>
-                        
-                        <div class="form-group">
-                            <label>Stock</label>
-                            <div class="stock-controls-inline">
-                                <button type="button" class="qty-btn" onclick="changeProductStock(-10)">-</button>
-                                <input type="number" id="productStock" class="input-field stock-input-inline" value="0">
-                                <button type="button" class="qty-btn" onclick="changeProductStock(10)">+</button>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="productInStock" onchange="toggleInStock()">
-                                    <span>En Stock Illimité</span>
-                                </label>
-                            </div>
-                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <label>Image du Produit</label>
-                        <input type="hidden" id="productImageUrl">
-                        <div class="image-selector">
-                            <div class="image-preview" id="productImagePreview" onclick="openImagePicker()">
-                                <span class="upload-placeholder">Cliquez pour choisir une image</span>
-                            </div>
-                            <button type="button" class="btn-secondary" onclick="openImagePicker()">📁 Parcourir les images</button>
-                        </div>
-                    </div>
-
 
                     <div class="form-group">
                         <label>Disponibilité (Mois de l'année)</label>

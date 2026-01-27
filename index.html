@@ -65,6 +65,9 @@
             </div>
         </div>
 
+
+        
+
         <!-- Barre d'avantages -->
         <div class="benefits-strip">
             <div class="container">
@@ -90,6 +93,33 @@
         </div>
 
 
+         <!-- Section Produits de Saison -->
+        <div class="seasonal-section">
+            <div class="container">
+                <div class="seasonal-hero">
+                    <p class="seasonal-hero-subtitle">Découvrez les produits frais disponibles selon la saison</p>
+                </div>
+
+                <div class="seasonal-wrapper">
+                    <div class="seasonal-wrapper-header">
+                        <h3 class="seasonal-wrapper-title">En ce moment au jardin</h3>
+                        <div class="months-selector" id="monthsSelector">
+                            <!-- Rempli par JS -->
+                        </div>
+                    </div>
+                    <div class="seasonal-wrapper-body">
+                        <div class="seasonal-products-grid" id="seasonalGrid">
+                            <!-- Rempli par JS -->
+                        </div>
+                        <div class="seasonal-empty" id="seasonalEmpty" style="display:none;">
+                            <span>🍂</span>
+                            <p>Aucun produit disponible ce mois-ci</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Section Où nous trouver -->
         <div class="location-section">
             <div class="container">
@@ -109,34 +139,6 @@
             </div>
         </div>
 
-
-        <!-- Section Produits de Saison -->
-        <div class="seasonal-section">
-            <div class="container">
-                <div class="seasonal-header">
-                    <div class="seasonal-title">
-                        <h2>🌿 En ce moment au jardin</h2>
-                        <p>Découvrez les produits frais disponibles</p>
-                    </div>
-                    <div class="months-selector" id="monthsSelector">
-                        <!-- Rempli par JS -->
-                    </div>
-                </div>
-                
-                <div class="seasonal-content">
-                    <div class="current-month-label" id="currentMonthLabel">
-                        <!-- Rempli par JS -->
-                    </div>
-                    <div class="seasonal-products-grid" id="seasonalGrid">
-                        <!-- Rempli par JS -->
-                    </div>
-                    <div class="seasonal-empty" id="seasonalEmpty" style="display:none;">
-                        <span>🍂</span>
-                        <p>Aucun produit disponible ce mois-ci</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </section>
 
 
@@ -147,19 +149,32 @@
 
 <!-- Section Panier Personnalisé -->
 <div class="custom-basket-builder">
-    <h3 class="builder-title">Je créer mon Panier</h3>
+        <div class="about-hero">
+            <h2 class="about-hero-title">Mon Panier</h2>
+            <p class="about-hero-subtitle">Créez votre panier Personnalisé</p>
+        </div>
     
     <div class="builder-layout">
         <!-- Liste des produits -->
         <div class="products-list-panel" id="productsListPanel">
             <div class="filters">
-                <button id="filter-back-btn" class="filter-btn" style="margin-right: 10px;" onclick="showBasketPanel()">← Retour</button>
+                <button id="filter-back-btn" class="btn-secondary" style="margin-right: 10px; width: 100%; margin-bottom: 10px; justify-content: center;" onclick="showBasketPanel()">Fermer</button>
                 <div>
                     <button class="filter-btn active" onclick="filterProducts('all')">Tous</button>
                     <button class="filter-btn" onclick="filterProducts('fruits')">Fruits</button>
                     <button class="filter-btn" onclick="filterProducts('legumes')">Légumes</button>
+                    <button class="filter-btn" onclick="filterProducts('herbes')">Herbes</button>
+
                 </div>
             </div>
+
+            <div class="products-search">
+                <svg class="products-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="productSearchInput" placeholder="Rechercher un produit..." oninput="searchProducts(this.value)">
+            </div>
+
                 <div class="products-table" id="productsTable">
                     <!-- Rempli par JS -->
                 </div>
@@ -169,14 +184,36 @@
         <div class="basket-summary-panel" id="basketSummaryPanel">
             <div class="basket-summary-header">
                 <div class="basket-summary-title" onclick="toggleBasketDropdown()">
-                    <span class="basket-icon-summary">🛒</span>
+                    <span class="basket-icon-summary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                        </svg>
+                    </span>
+
                     <span id="currentBasketName">Mon Panier</span>
                     <span class="basket-dropdown-arrow">▼</span>
                 </div>
-                <div style="display: flex; flex-direction: row; gap: 10px;">
-                        <button class="btn-secondary btn-save-basket" onclick="saveCurrentBasket()" title="Sauvegarder ce panier">💾</button>
-                        <button class="btn-secondary btn-delete-basket" onclick="deleteCurrentBasket()" title="Supprimer ce panier">🗑️</button>
-                    </div>
+                <div class="basket-actions">
+                    <button class="basket-action-btn basket-action-save" onclick="saveCurrentBasket()">
+                        <svg class="basket-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        <span class="basket-action-label">Sauvegarder ce panier</span>
+                    </button>
+                    <button class="basket-action-btn basket-action-delete" onclick="deleteCurrentBasket()">
+                        <svg class="basket-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <line x1="10" y1="11" x2="10" y2="17"/>
+                            <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
+                        <span class="basket-action-label">Supprimer  ce panier</span>
+                    </button>
+                </div>
+
                 <!-- Menu déroulant des paniers -->
                 <div class="basket-dropdown" id="basketDropdown">
                     <div class="basket-dropdown-list" id="basketDropdownList">
@@ -246,62 +283,170 @@
 
     <section id="contact" class="page">
         <div class="container">
-            <h2 class="page-title">Contactez-Nous</h2>
-            <div class="contact-grid">
-                <div class="contact-info">
-                    <div class="contact-card"><div>📍</div><h3>Adresse</h3><p id="shopAddress"></p></div>
-                    <div class="contact-card"><div>📞</div><h3>Téléphone</h3><p id="shopPhone"></p></div>
-                    <div class="contact-card"><div>✉️</div><h3>Email</h3><p id="shopEmail"></p></div>
+            <div class="contact-hero">
+                <h2 class="contact-hero-title">Contactez-Nous</h2>
+                <p class="contact-hero-subtitle">Une question, une suggestion ? N'hésitez pas à nous contacter, nous serons ravis de vous répondre.</p>
+            </div>
+
+            <div class="contact-cards-row">
+                <div class="contact-card-item">
+                    <div class="contact-card-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    </div>
+                    <div class="contact-card-item-content" >
+                        <h3>Adresse</h3>
+                        <p id="shopAddress"></p>
+                    </div>
                 </div>
+                <div class="contact-card-item">
+                    <div class="contact-card-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    </div>
+                    <div class="contact-card-item-content" >
+                        <h3>Téléphone</h3>
+                        <p id="shopPhone"></p>
+                    </div>
+                </div>
+                <div class="contact-card-item">
+                    <div class="contact-card-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    </div>
+                    <div class="contact-card-item-content" >
+                        <h3>Email</h3>
+                        <p id="shopEmail"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-map-wrapper">
+                <h3 class="contact-map-title">Nous trouver</h3>
                 <div class="map-container" id="map"></div>
             </div>
         </div>
     </section>
 
-    <section id="apropos" class="page">
-        <div class="container">
-            <h2 class="page-title">À Propos</h2>
-            <div class="about-content">
-                <div><h3>Notre Histoire</h3><p>Fondée en 2015, entreprise familiale passionnée par l'agriculture locale.</p></div>
-                <div class="about-img">🌾</div>
-            </div>
-        </div>
-    </section>
 
-    <section id="mon-compte" class="page">
-        <div class="container">
-            <div class="account-grid">
-                <div class="account-sidebar">
-                    <div class="profile"><div class="avatar" id="userInitials">U</div><h3 id="userName">User</h3></div>
-                    <button class="account-btn active" onclick="showAccount('infos')">
-                        <svg class="icon-admin" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M40-272q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v32q0 33-23.5 56.5T600-160H120q-33 0-56.5-23.5T40-240v-32Zm800 112H738q11-18 16.5-38.5T760-240v-40q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v40q0 33-23.5 56.5T840-160ZM360-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm400-160q0 66-47 113t-113 47q-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm240-320q33 0 56.5-23.5T440-640q0-33-23.5-56.5T360-720q-33 0-56.5 23.5T280-640q0 33 23.5 56.5T360-560Zm0 320Zm0-400Z"/></svg> Informations
-                    </button>
-                    <button class="account-btn" onclick="showAccount('orders')">
-                        <svg class="icon-admin" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M240-80q-33 0-56.5-23.5T160-160v-480q0-33 23.5-56.5T240-720h80q0-66 47-113t113-47q66 0 113 47t47 113h80q33 0 56.5 23.5T800-640v480q0 33-23.5 56.5T720-80H240Zm0-80h480v-480h-80v80q0 17-11.5 28.5T600-520q-17 0-28.5-11.5T560-560v-80H400v80q0 17-11.5 28.5T360-520q-17 0-28.5-11.5T320-560v-80h-80v480Zm160-560h160q0-33-23.5-56.5T480-800q-33 0-56.5 23.5T400-720ZM240-160v-480 480Z"/></svg> Commandes
-                    </button>
-                    <button class="account-btn logout" onclick="logout()">
-                        <svg class="icon-admin2" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="m127-833 73 73h-40v440h368L56-792q-11-11-11-28t11-28q11-11 28-11t28 11l736 736q11 11 11 28t-11 28q-11 11-28 11t-28-11L608-240h72l28 28q6 6 9 13.5t3 15.5v23q0 17-11.5 28.5T680-120H280q-17 0-28.5-11.5T240-160v-23q0-8 3-15.5t9-13.5l28-28H160q-33 0-56.5-23.5T80-320v-440q0-37 23.5-55l23.5-18Zm673-7q17 0 31.5 6.5t25 17q10.5 10.5 17 25T880-760v474q0 17-11.5 28.5T840-246q-17 0-28.5-11.5T800-286v-474H331q-20 0-30-12.5T291-800q0-15 10-27.5t30-12.5h469ZM557-517Zm-213 13Z"/></svg> Déconnexion
-                    </button>
+        <section id="apropos" class="page">
+            <div class="container">
+                <div class="about-hero">
+                    <h2 class="about-hero-title">À Propos</h2>
+                    <p class="about-hero-subtitle">Découvrez notre histoire, nos valeurs et notre engagement pour une alimentation locale et responsable.</p>
                 </div>
-                <div class="account-content">
-                    <div class="account-section active" id="section-infos">
-                        <h3>Informations</h3>
-                        <form id="userForm">
-                            <input type="text" class="input-field" placeholder="Prénom" id="userFirstName">
-                            <input type="text" class="input-field" placeholder="Nom" id="userLastName">
-                            <input type="email" class="input-field" placeholder="Email" id="userEmail">
-                            <input type="tel" class="input-field" placeholder="Téléphone" id="userPhone">
-                            <button type="submit" class="btn-primary">Enregistrer</button>
-                        </form>
+
+                <div class="about-cards-row">
+                    <div class="about-card-item">
+                        <div class="about-card-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </div>
+                        <div class="about-card-item-content">
+                            <h3>Notre Mission</h3>
+                            <p>Proposer des fruits et légumes frais, cultivés localement et récoltés à maturité pour garantir qualité et saveur à chaque panier.</p>
+                        </div>
                     </div>
-                    <div class="account-section" id="section-orders">
-                        <h3>Mes Commandes</h3>
-                        <div id="userOrders"></div>
+                    <div class="about-card-item">
+                        <div class="about-card-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                        </div>
+                        <div class="about-card-item-content">
+                            <h3>Nos Valeurs</h3>
+                            <p>Respect de la terre, circuits courts et transparence. Nous cultivons sans pesticides et privilégions des méthodes durables.</p>
+                        </div>
+                    </div>
+                    <div class="about-card-item">
+                        <div class="about-card-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                        </div>
+                        <div class="about-card-item-content">
+                            <h3>Notre Engagement</h3>
+                            <p>Créer du lien entre producteurs et consommateurs en offrant une expérience simple, humaine et accessible à tous.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="about-story-wrapper">
+                    <h3 class="about-story-title">Notre Histoire</h3>
+                    <div class="about-story-content">
+                        <p>Passionnés par la terre et le goût des bonnes choses, nous avons lancé <strong>Les Paniers du Jardin</strong> avec une idée simple : rendre accessible à tous des produits frais, locaux et de saison.</p>
+                        <p>Chaque semaine, nous sélectionnons avec soin les meilleurs fruits et légumes cultivés à proximité, pour composer des paniers variés et savoureux. De la récolte à votre table, nous garantissons fraîcheur et traçabilité.</p>
+                        <p>Rejoignez notre communauté de gourmands engagés et redécouvrez le plaisir de manger local !</p>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+
+
+        <section id="mon-compte" class="page">
+            <div class="container">
+                <div class="account-hero">
+                    <h2 class="account-hero-title">Mon Compte</h2>
+                    <p class="account-hero-subtitle">Gérez vos informations personnelles et suivez vos commandes.</p>
+                </div>
+
+                <div class="account-layout">
+                    <div class="account-sidebar">
+                        <div class="account-profile">
+                            <div class="avatar" id="userInitials">U</div>
+                            <div class="account-profile-info">
+                                <h3 id="userName">Utilisateur</h3>
+                                <p class="account-profile-role">Client</p>
+                            </div>
+                        </div>
+                        <nav class="account-nav">
+                            <button class="account-btn active" onclick="showAccount('infos')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                Informations
+                            </button>
+                            <button class="account-btn" onclick="showAccount('orders')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                                Mes Commandes
+                            </button>
+                            <button class="account-btn logout" onclick="logout()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                Déconnexion
+                            </button>
+                        </nav>
+                    </div>
+                    <div class="account-content">
+                        <div class="account-section active" id="section-infos">
+                            <div class="account-section-header">
+                                <h3>Informations personnelles</h3>
+                                <p>Modifiez vos coordonnées ci-dessous.</p>
+                            </div>
+                            <form id="userForm" class="account-form">
+                                <div class="account-form-row">
+                                    <div class="account-form-group">
+                                        <label for="userFirstName">Prénom</label>
+                                        <input type="text" class="input-field" placeholder="Votre prénom" id="userFirstName">
+                                    </div>
+                                    <div class="account-form-group">
+                                        <label for="userLastName">Nom</label>
+                                        <input type="text" class="input-field" placeholder="Votre nom" id="userLastName">
+                                    </div>
+                                </div>
+                                <div class="account-form-group">
+                                    <label for="userEmail">Email</label>
+                                    <input type="email" class="input-field" placeholder="Votre email" id="userEmail">
+                                </div>
+                                <div class="account-form-group">
+                                    <label for="userPhone">Téléphone</label>
+                                    <input type="tel" class="input-field" placeholder="Votre téléphone" id="userPhone">
+                                </div>
+                                <button type="submit" class="btn-primary">Enregistrer les modifications</button>
+                            </form>
+                        </div>
+                        <div class="account-section" id="section-orders">
+                            <div class="account-section-header">
+                                <h3>Mes Commandes</h3>
+                                <p>Retrouvez l'historique de toutes vos commandes.</p>
+                            </div>
+                            <div id="userOrders"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
 
     <div class="modal" id="authModal">
         <div class="modal-content">
@@ -345,7 +490,7 @@
         <div class="cart-items" id="cartItems"><p>Votre panier est vide</p></div>
         <div class="cart-footer">
             <div class="cart-total"><span>Total:</span><span id="totalPrice">0€</span></div>
-            <button class="btn-primary btn-block" onclick="checkout()">Commander</button>
+            <button class="btn-primary btn-block" onclick="checkout()">Reserver mon panier</button>
         </div>
     </div>
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
@@ -397,16 +542,48 @@
 
 
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div><h4>Paniers du Jardin</h4><p>Fruits & légumes locaux</p></div>
-                <div><h4>Navigation</h4><a href="#accueil">Accueil</a><a href="#commander">Commander</a></div>
-                <div><h4>Contact</h4><p id="footerAddress"></p><p id="footerPhone"></p></div>
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-col">
+                        <div class="footer-brand">
+                            <div class="logo">🌿</div>
+                            <h4>Paniers du Jardin</h4>
+                        </div>
+                        <p class="footer-desc">Fruits & légumes locaux, cultivés avec passion et livrés en circuit court.</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Navigation</h4>
+                        <a href="#accueil">Accueil</a>
+                        <a href="#commander">Commander</a>
+                        <a href="#apropos">À Propos</a>
+                        <a href="#contact">Contact</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Légal</h4>
+                        <a href="cgv.html">Conditions Générales de Vente</a>
+                        <a href="politique-confidentialite.html">Politique de Confidentialité</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Contact</h4>
+                        <div class="footer-contact-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            <span id="footerAddress"></span>
+                        </div>
+                        <div class="footer-contact-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            <span id="footerPhone"></span>
+                        </div>
+                        <div class="footer-contact-item">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            <span id="footerEmail"></span>
+                        </div>
+                    </div>
+                </div>
+                <p class="footer-bottom">© 2026 Paniers du Jardin — <a href="cgv.html">CGV</a> · <a href="politique-confidentialite.html">Confidentialité</a></p>
             </div>
-            <p class="footer-bottom">© 2026 Paniers du Jardin</p>
-        </div>
-    </footer>
+        </footer>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";

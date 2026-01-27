@@ -221,23 +221,69 @@ function renderProducts() {
         container.innerHTML = '<p style="text-align:center;color:#999;padding:3rem;">Aucun produit.</p>';
         return;
     }
-    container.innerHTML = DATA.products.map(product => `
-        <div class="product-card-admin">
-            <img src="${product.imageUrl || 'https://via.placeholder.com/200'}" class="product-img">
-            <div class="product-info">
-                <h4>${product.name}</h4>
-                <div class="product-meta">
-                    <span class="badge">Stock: ${product.inStock ? 'Illimité' : product.stock}</span>
-                    <span class="price-tag">${product.price}€/kg</span>
+
+    const available = DATA.products.filter(p => p.inStock);
+    const unavailable = DATA.products.filter(p => !p.inStock);
+
+
+    const renderList = (products, emptyMsg, isAvailable) => {
+        if (products.length === 0) return `<p class="admin-product-empty">${emptyMsg}</p>`;
+        return products.map(product => `
+            <div class="admin-row">
+                <div class="admin-row-left" onclick="editProduct('${product.id}')">
+                    <span class="admin-row-name">${product.name}</span>
+                </div>
+                <div class="admin-row-right">
+                    <button class="admin-product-toggle ${isAvailable ? 'to-unavailable' : 'to-available'}" onclick="toggleProductAvailability('${product.id}')">
+                        ${isAvailable ? 'Retirer' : 'Rendre disponible'}
+                    </button>
                 </div>
             </div>
-            <div class="product-actions">
-                <button class="btn-secondary" onclick="editProduct('${product.id}')">✏️ Modifier</button>
-                <button class="btn-danger" onclick="deleteProduct('${product.id}')">🗑️</button>
+        `).join('<div class="admin-row-separator"></div>');
+    };
+
+
+
+async function toggleProductAvailability(productId) {
+    const product = DATA.products.find(p => p.id === productId);
+    if (!product) return;
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/products/${productId}/inStock`),
+            !product.inStock
+        );
+        product.inStock = !product.inStock;
+        renderProducts();
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+
+    container.innerHTML = `
+        <div class="admin-product-group">
+            <div class="admin-product-group-header">
+                <span class="admin-product-group-dot available"></span>
+                <h3>Produits disponibles</h3>
+                <span class="admin-product-group-count">${available.length}</span>
+            </div>
+            <div class="admin-product-group-list">
+                ${renderList(available, 'Aucun produit disponible', true)}
             </div>
         </div>
-    `).join('');
+        <div class="admin-product-group">
+            <div class="admin-product-group-header">
+                <span class="admin-product-group-dot unavailable"></span>
+                <h3>Produits indisponibles</h3>
+                <span class="admin-product-group-count">${unavailable.length}</span>
+            </div>
+            <div class="admin-product-group-list">
+                 ${renderList(unavailable, 'Aucun produit indisponible', false)}
+            </div>
+        </div>
+    `;
 }
+
 
 function openProductModal(productId = null) {
     const modal = document.getElementById('productModal');
@@ -252,14 +298,6 @@ function openProductModal(productId = null) {
             document.getElementById('productName').value = product.name;
             document.getElementById('productCategory').value = product.category;
             document.getElementById('productPrice').value = product.price;
-            document.getElementById('productStock').value = product.stock || 0;
-            document.getElementById('productInStock').checked = product.inStock || false;
-            document.getElementById('productImageUrl').value = product.imageUrl || '';
-            
-            if (product.imageUrl) {
-                document.getElementById('productImagePreview').innerHTML = `<img src="${product.imageUrl}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;">`;
-            }
-            
             document.querySelectorAll('.months-checkboxes input').forEach(cb => {
                 cb.checked = product.availableMonths?.includes(parseInt(cb.value)) || false;
             });
@@ -275,15 +313,16 @@ function closeProductModal() {
 async function saveProduct(event) {
     event.preventDefault();
     const productId = document.getElementById('productId').value || `prod_${Date.now()}`;
+    const existingProduct = DATA.products.find(p => p.id === productId);
     const productData = {
         name: document.getElementById('productName').value,
         category: document.getElementById('productCategory').value,
         price: parseFloat(document.getElementById('productPrice').value),
-        stock: parseInt(document.getElementById('productStock').value),
-        inStock: document.getElementById('productInStock').checked,
+        inStock: existingProduct ? (existingProduct.inStock ?? true) : true,
         availableMonths: Array.from(document.querySelectorAll('.months-checkboxes input:checked')).map(cb => parseInt(cb.value)),
-        imageUrl: document.getElementById('productImageUrl').value || 'https://via.placeholder.com/200'
     };
+
+
     
     try {
         await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/products/${productId}`), productData);
@@ -358,7 +397,7 @@ function renderBaskets() {
                 ` : ''}
             </div>
         `;
-    }).join('');
+    }).join('<div class="admin-row-separator"></div>');
 }
 
 function toggleBasketEdit(basketId) {
@@ -413,7 +452,7 @@ function renderPromotions() {
             </div>
             <button class="btn-secondary" onclick="removePromotion(${index})" style="background:#e57373;color:white;border:none;">Supprimer</button>
         </div>
-    `).join('');
+    `).join('<div class="admin-row-separator"></div>');
 }
 
 async function addPromotion() {
@@ -451,7 +490,7 @@ async function removePromotion(index) {
 function renderOrders() {
     const container = document.getElementById('ordersTable');
     if (DATA.orders.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#999;padding:3rem;">Aucune commande</p>';
+        container.innerHTML = '<p class="admin-product-empty">Aucune commande</p>';
         return;
     }
     
@@ -463,28 +502,17 @@ function renderOrders() {
             let valA, valB;
             switch (ordersSortField) {
                 case 'id':
-                    valA = a.id;
-                    valB = b.id;
-                    break;
+                    valA = a.id; valB = b.id; break;
                 case 'client':
                     const userA = DATA.users.find(u => u.id === a.userId);
                     const userB = DATA.users.find(u => u.id === b.userId);
                     valA = userA ? `${userA.firstName} ${userA.lastName}`.toLowerCase() : '';
                     valB = userB ? `${userB.firstName} ${userB.lastName}`.toLowerCase() : '';
                     break;
-                case 'items':
-                    valA = a.items?.length || 0;
-                    valB = b.items?.length || 0;
-                    break;
                 case 'total':
-                    valA = a.total || 0;
-                    valB = b.total || 0;
-                    break;
-                case 'date':
-                default:
-                    valA = new Date(a.date);
-                    valB = new Date(b.date);
-                    break;
+                    valA = a.total || 0; valB = b.total || 0; break;
+                case 'date': default:
+                    valA = new Date(a.date); valB = new Date(b.date); break;
             }
             if (valA < valB) return ordersSortOrder === 'asc' ? -1 : 1;
             if (valA > valB) return ordersSortOrder === 'asc' ? 1 : -1;
@@ -492,77 +520,58 @@ function renderOrders() {
         });
     };
 
-    const sortIcon = (field) => {
-        if (ordersSortField !== field) return '↕';
-        return ordersSortOrder === 'asc' ? '↑' : '↓';
+    const renderOrderList = (orders, emptyMsg) => {
+        if (orders.length === 0) return `<p class="admin-product-empty">${emptyMsg}</p>`;
+        return sortOrders(orders).map(order => {
+            const user = DATA.users.find(u => u.id === order.userId);
+            return `
+                <div class="admin-row" onclick="showOrderDetails('${order.id}')">
+                    <div class="admin-row-left">
+                        <span class="admin-row-id">#${order.id}</span>
+                        <span class="admin-row-name">${user ? `${user.firstName} ${user.lastName}` : 'Inconnu'}</span>
+                    </div>
+                    <div class="admin-row-right">
+                        <span class="admin-row-meta">${order.items?.length || 0} article(s)</span>
+                        <span class="admin-row-value">${order.total?.toFixed(2)}€</span>
+                    </div>
+                </div>
+            `;
+        }).join('<div class="admin-row-separator"></div>');
     };
 
-    const sortBtnStyle = (field) => {
-        const isActive = ordersSortField === field;
-        return `background:${isActive ? 'rgba(255,255,255,0.3)' : 'transparent'};border:none;color:white;cursor:pointer;padding:0.25rem 0.5rem;border-radius:5px;font-size:0.85rem;margin-left:0.5rem;`;
-    };
 
-    const renderTable = (orders, emptyMessage) => {
-        if (orders.length === 0) {
-            return `<p style="text-align:center;color:#999;padding:2rem;">${emptyMessage}</p>`;
-        }
-        return `
-            <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
-                <thead style="background:#4a7c4e;color:white;">
-                    <tr>
-                        <th style="padding:1rem;text-align:left;">
-                            Commande <button style="${sortBtnStyle('id')}" onclick="sortOrdersBy('id')">${sortIcon('id')}</button>
-                        </th>
-                        <th id="c-th-date" style="padding:1rem;text-align:left;">
-                            Date <button style="${sortBtnStyle('date')}" onclick="sortOrdersBy('date')">${sortIcon('date')}</button>
-                        </th>
-                        <th id="c-th-name" style="padding:1rem;text-align:left;">
-                            Client <button style="${sortBtnStyle('client')}" onclick="sortOrdersBy('client')">${sortIcon('client')}</button>
-                        </th>
-                        <th style="padding:1rem;text-align:left;">
-                            Articles <button style="${sortBtnStyle('items')}" onclick="sortOrdersBy('items')">${sortIcon('items')}</button>
-                        </th>
-                        <th style="padding:1rem;text-align:right;">
-                            Total <button style="${sortBtnStyle('total')}" onclick="sortOrdersBy('total')">${sortIcon('total')}</button>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${sortOrders(orders).map(order => {
-                        const user = DATA.users.find(u => u.id === order.userId);
-                        return `
-                            <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showOrderDetails('${order.id}')">
-                                <td style="padding:1rem;">#${order.id}</td>
-                                <td id="c-td-date" tyle="padding:1rem;">${new Date(order.date).toLocaleString('fr-FR')}</td>
-                                <td id="c-td-name" style="padding:1rem;">${user ? `${user.firstName} ${user.lastName}` : 'Inconnu'}</td>
-                                <td style="padding:1rem;">${order.items?.length || 0} article(s)</td>
-                                <td style="padding:1rem;text-align:right;font-weight:600;">${order.total?.toFixed(2)}€</td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            </table>
-        `;
-    };
+    const sortIcon = (field) => ordersSortField === field ? (ordersSortOrder === 'asc' ? '↑' : '↓') : '↕';
 
     container.innerHTML = `
-        <div style="margin-bottom:2rem;">
-            <h3 style="color:#e57373;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
-                <span style="background:#e57373;color:white;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.9rem;">${pendingOrders.length}</span>
-                Commandes à traiter
-            </h3>
-            ${renderTable(pendingOrders, 'Aucune commande en attente 🎉')}
+        <div class="admin-list-sort">
+            <span>Trier par :</span>
+            <button class="admin-sort-btn ${ordersSortField === 'date' ? 'active' : ''}" onclick="sortOrdersBy('date')">Date ${sortIcon('date')}</button>
+            <button class="admin-sort-btn ${ordersSortField === 'client' ? 'active' : ''}" onclick="sortOrdersBy('client')">Client ${sortIcon('client')}</button>
+            <button class="admin-sort-btn ${ordersSortField === 'total' ? 'active' : ''}" onclick="sortOrdersBy('total')">Total ${sortIcon('total')}</button>
         </div>
-        
-        <div>
-            <h3 style="color:#4a7c4e;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
-                <span style="background:#4a7c4e;color:white;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.9rem;">${treatedOrders.length}</span>
-                Commandes traitées
-            </h3>
-            ${renderTable(treatedOrders, 'Aucune commande traitée')}
+        <div class="admin-product-group">
+            <div class="admin-product-group-header">
+                <span class="admin-product-group-dot unavailable"></span>
+                <h3>Commandes à traiter</h3>
+                <span class="admin-product-group-count">${pendingOrders.length}</span>
+            </div>
+            <div class="admin-product-group-list">
+                ${renderOrderList(pendingOrders, 'Aucune commande en attente')}
+            </div>
+        </div>
+        <div class="admin-product-group">
+            <div class="admin-product-group-header">
+                <span class="admin-product-group-dot available"></span>
+                <h3>Commandes traitées</h3>
+                <span class="admin-product-group-count">${treatedOrders.length}</span>
+            </div>
+            <div class="admin-product-group-list">
+                ${renderOrderList(treatedOrders, 'Aucune commande traitée')}
+            </div>
         </div>
     `;
 }
+
 
 function sortOrdersBy(field) {
     if (ordersSortField === field) {
@@ -678,14 +687,12 @@ function closeOrderDetails() {
 function renderUsers() {
     const container = document.getElementById('usersTable');
     if (DATA.users.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#999;padding:3rem;">Aucun utilisateur inscrit</p>';
+        container.innerHTML = '<p class="admin-product-empty">Aucun utilisateur inscrit</p>';
         return;
     }
     
-    // Fonction pour compter les commandes d'un utilisateur
     const getOrdersCount = (userId) => DATA.orders.filter(o => o.userId === userId).length;
     
-    // Tri des utilisateurs
     let sortedUsers = [...DATA.users].sort((a, b) => {
         let valA, valB;
         switch (usersSortField) {
@@ -694,60 +701,49 @@ function renderUsers() {
                 valB = `${b.firstName} ${b.lastName}`.toLowerCase();
                 break;
             case 'orders':
-                valA = getOrdersCount(a.id);
-                valB = getOrdersCount(b.id);
-                break;
-            case 'created':
-            default:
-                valA = new Date(a.created || 0);
-                valB = new Date(b.created || 0);
-                break;
+                valA = getOrdersCount(a.id); valB = getOrdersCount(b.id); break;
+            case 'created': default:
+                valA = new Date(a.created || 0); valB = new Date(b.created || 0); break;
         }
         if (valA < valB) return usersSortOrder === 'asc' ? -1 : 1;
         if (valA > valB) return usersSortOrder === 'asc' ? 1 : -1;
         return 0;
     });
 
-    const sortIcon = (field) => {
-        if (usersSortField !== field) return '↕';
-        return usersSortOrder === 'asc' ? '↑' : '↓';
-    };
-
-    const sortBtnStyle = (field) => {
-        const isActive = usersSortField === field;
-        return `background:${isActive ? 'rgba(255,255,255,0.3)' : 'transparent'};border:none;color:white;cursor:pointer;padding:0.25rem 0.5rem;border-radius:5px;font-size:0.85rem;margin-left:0.5rem;`;
-    };
+    const sortIcon = (field) => usersSortField === field ? (usersSortOrder === 'asc' ? '↑' : '↓') : '↕';
 
     container.innerHTML = `
-        <table style="width:100%;background:white;border-radius:15px;overflow:hidden;">
-            <thead style="background:#4a7c4e;color:white;">
-                <tr>
-                    <th style="padding:1rem;text-align:left;">
-                        Nom <button style="${sortBtnStyle('name')}" onclick="sortUsers('name')">${sortIcon('name')}</button>
-                    </th>
-                    <th style="padding:1rem;text-align:center;">
-                        Commandes <button style="${sortBtnStyle('orders')}" onclick="sortUsers('orders')">${sortIcon('orders')}</button>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="admin-list-sort">
+            <span>Trier par :</span>
+            <button class="admin-sort-btn ${usersSortField === 'name' ? 'active' : ''}" onclick="sortUsers('name')">Nom ${sortIcon('name')}</button>
+            <button class="admin-sort-btn ${usersSortField === 'orders' ? 'active' : ''}" onclick="sortUsers('orders')">Commandes ${sortIcon('orders')}</button>
+            <button class="admin-sort-btn ${usersSortField === 'created' ? 'active' : ''}" onclick="sortUsers('created')">Inscription ${sortIcon('created')}</button>
+        </div>
+        <div class="admin-product-group">
+            <div class="admin-product-group-header">
+                <span class="admin-product-group-dot available"></span>
+                <h3>Utilisateurs</h3>
+                <span class="admin-product-group-count">${DATA.users.length}</span>
+            </div>
+            <div class="admin-product-group-list">
                 ${sortedUsers.map(user => {
-                    const userOrdersCount = getOrdersCount(user.id);
+                    const count = getOrdersCount(user.id);
                     return `
-                        <tr style="border-bottom:1px solid #eee;cursor:pointer;" onclick="showUserDetails('${user.id}')">
-                            <td style="padding:1rem;">${user.firstName} ${user.lastName}</td>
-                            <td style="padding:1rem;text-align:center;">
-                                <span style="background:${userOrdersCount > 0 ? '#e8f5e9' : '#f5f5f5'};color:${userOrdersCount > 0 ? '#4a7c4e' : '#999'};padding:0.25rem 0.75rem;border-radius:20px;font-weight:600;">
-                                    ${userOrdersCount}
-                                </span>
-                            </td>
-                        </tr>
+                        <div class="admin-row" onclick="showUserDetails('${user.id}')">
+                            <div class="admin-row-left">
+                                <span class="admin-row-name">${user.firstName} ${user.lastName}</span>
+                            </div>
+                            <div class="admin-row-right">
+                                <span class="admin-row-badge ${count > 0 ? 'active' : ''}">${count} commande${count > 1 ? 's' : ''}</span>
+                            </div>
+                        </div>
                     `;
-                }).join('')}
-            </tbody>
-        </table>
+                }).join('<div class="admin-row-separator"></div>')}
+            </div>
+        </div>
     `;
 }
+
 
 
 function sortUsers(field) {
@@ -863,7 +859,8 @@ function renderCarouselImages() {
                 <div class="carousel-image-check">${isSelected ? '✓' : ''}</div>
             </div>
         `;
-    }).join('');
+    }).join('<div class="admin-row-separator"></div>');
+
 }
 
 async function toggleCarouselImage(img) {
@@ -890,7 +887,7 @@ function openImagePicker() {
             <img src="${img}" alt="Image">
             ${currentImage === img ? '<div class="image-picker-check">✓</div>' : ''}
         </div>
-    `).join('');
+    `).join('<div class="admin-row-separator"></div>');
     
     modal.classList.add('active');
     modal.addEventListener('click', (e) => {

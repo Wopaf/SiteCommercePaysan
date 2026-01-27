@@ -1,0 +1,39 @@
+
+# Paniers du Jardin #
+
+Site web de commande de paniers de produits locaux et de saison.
+
+-------------------------------------------------------------------------------------
+
+# Auteur #
+
+Développé par Valentin Lavenir [France]
+
+-------------------------------------------------------------------------------------
+
+# Propriété intellectuelle #
+
+Ce projet est protégé par le droit de la propriété intellectuelle conformément au Code de la propriété
+intellectuelle français et aux conventions internationales applicables.
+
+*Tous droits réservés.*
+
+Toute reproduction, distribution, modification, adaptation, retransmission ou publication de l'ensemble 
+ou d'une partie de ce projet, sous quelque forme que ce soit, 
+est strictement interdite sans l'accord écrit préalable de l'auteur.
+
+Cela inclut, sans s'y limiter :
+
+- L'utilisation à des fins commerciales
+- L'utilisation à des fins personnelles
+- La modification du code source ou des contenus
+- La redistribution, même partielle, du projet
+
+Toute utilisation non autorisée constitue une contrefaçon sanctionnée 
+par les articles L.335-2 et suivants du Code de la propriété intellectuelle français.
+
+Pour toute demande d'autorisation, veuillez contacter l'auteur.
+
+-------------------------------------------------------------------------------------
+
+© 2026 Valentin Lavenir. Tous droits réservés.

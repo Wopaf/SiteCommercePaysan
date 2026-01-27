@@ -175,9 +175,12 @@ function loadSettings() {
     document.getElementById('shopAddress').textContent = DATA.settings.address || 'Route des Vergers, 44000 Nantes';
     document.getElementById('shopPhone').textContent = DATA.settings.phone || '02 40 XX XX XX';
     document.getElementById('shopEmail').textContent = DATA.settings.email || 'contact@paniersdujardin.fr';
-    document.getElementById('footerAddress').textContent = '📍 ' + (DATA.settings.address || 'Route des Vergers');
-    document.getElementById('footerPhone').textContent = '📞 ' + (DATA.settings.phone || '02 40 XX XX XX');
-    
+    document.getElementById('footerAddress').textContent = (DATA.settings.address || 'Route des Vergers');
+    document.getElementById('footerPhone').textContent = (DATA.settings.phone || '02 40 XX XX XX');
+    const footerEmail = document.getElementById('footerEmail');
+    if (footerEmail) footerEmail.textContent = DATA.settings.email || 'contact@paniersdujardin.fr';
+
+
     // Adresse page accueil
     const homeAddress = document.getElementById('homeAddress');
     if (homeAddress) homeAddress.textContent = DATA.settings.address || 'Route des Vergers, 44000 Nantes';
@@ -252,34 +255,16 @@ function setupMonthsSelector() {
     
     container.innerHTML = months.map((m, i) => `
         <button class="month-chip ${i + 1 === currentMonth ? 'active' : ''}" 
-                onclick="filterByMonth(${i + 1})" 
+                onclick="filterByMonth(${i + 1})"
+                onmouseenter="previewMonth(${i + 1})"
+                onmouseleave="endPreview()"
                 data-month="${i + 1}">
             ${m.short}
         </button>
     `).join('');
 }
 
-function filterByMonth(month) {
-    currentMonth = month;
-    
-    // Mettre à jour les boutons actifs
-    document.querySelectorAll('.month-chip').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
-    });
-    
-    // Mettre à jour le label du mois
-    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
-                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-    const labelContainer = document.getElementById('currentMonthLabel');
-    if (labelContainer) {
-        labelContainer.innerHTML = `
-            <span class="month-icon">📅</span>
-            <span>Produits disponibles en <strong>${monthNames[month - 1]}</strong></span>
-        `;
-    }
-    
-    // Filtrer et afficher les produits
-    const products = DATA.products.filter(p => p.availableMonths?.includes(month));
+function renderSeasonalGrid(products, isPreview) {
     const grid = document.getElementById('seasonalGrid');
     const empty = document.getElementById('seasonalEmpty');
     
@@ -291,18 +276,49 @@ function filterByMonth(month) {
         empty.style.display = 'none';
         
         grid.innerHTML = products.map(p => `
-            <div class="seasonal-product-card">
-                <div class="seasonal-product-img" style="background-image: url('${p.imageUrl || 'https://via.placeholder.com/200'}')">
-                    <span class="seasonal-product-category">${p.category === 'fruits' ? '🍎 Fruit' : '🥬 Légume'}</span>
-                </div>
-                <div class="seasonal-product-info">
-                    <h4>${p.name}</h4>
-                    <div class="seasonal-product-price">${p.price}€<span>/kg</span></div>
-                </div>
+            <div class="seasonal-product-tag">
+                <span class="seasonal-tag-emoji">${p.category === 'fruits' ? '🍎' : '🥬'}</span>
+                <span class="seasonal-tag-name">${p.name}</span>
             </div>
         `).join('');
     }
+    
+    grid.classList.toggle('seasonal-preview', isPreview);
 }
+
+function filterByMonth(month) {
+    currentMonth = month;
+    
+    // Mettre à jour les boutons actifs
+    document.querySelectorAll('.month-chip').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.month) === month);
+    });
+    
+    const products = DATA.products.filter(p => p.availableMonths?.includes(month));
+    renderSeasonalGrid(products, false);
+}
+
+function previewMonth(month) {
+    if (month === currentMonth) return;
+    
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const labelContainer = document.getElementById('currentMonthLabel');
+    if (labelContainer) {
+        labelContainer.innerHTML = `
+            <span class="month-icon">👀</span>
+            <span>Aperçu : <strong>${monthNames[month - 1]}</strong></span>
+        `;
+    }
+    
+    const products = DATA.products.filter(p => p.availableMonths?.includes(month));
+    renderSeasonalGrid(products, true);
+}
+
+function endPreview() {
+    filterByMonth(currentMonth);
+}
+
 
 
 
@@ -680,8 +696,8 @@ function renderBasketSummary() {
     container.innerHTML = customBasket.map(item => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
-        return `
-            <div class="basket-summary-row">
+                return `
+            <div class="basket-summary-row" data-id="${item.id}">
                 <span class="item-name">${item.name}</span>
                 <span class="item-price">${item.price}€/kg</span>
                 <div class="item-qty-controls">
@@ -775,7 +791,16 @@ function addToCustomBasket(productId) {
         });
     }
     
-    renderBasketSummary();
+        renderBasketSummary();
+
+    const row = document.querySelector(`.basket-summary-row[data-id="${productId}"]`);
+    if (row) {
+        row.classList.add(existing ? 'basket-row-updated' : 'basket-row-new');
+        row.addEventListener('animationend', () => {
+            row.classList.remove('basket-row-new', 'basket-row-updated');
+        }, { once: true });
+    }
+
     
     // Sur mobile, retourner au panier
     if (window.innerWidth <= 900) {
@@ -788,10 +813,31 @@ function filterProducts(cat) {
         b.classList.toggle('active', b.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(cat === 'all' ? 'tous' : cat))
     );
 
+    const searchInput = document.getElementById('productSearchInput');
+    const search = searchInput ? searchInput.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
+
     document.querySelectorAll('.product-row').forEach(row => {
-        row.style.display = cat === 'all' || row.dataset.category === cat ? 'flex' : 'none';
+        const matchesCategory = cat === 'all' || row.dataset.category === cat;
+        const name = row.querySelector('.product-name').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const matchesSearch = name.includes(search);
+        row.style.display = matchesCategory && matchesSearch ? 'flex' : 'none';
     });
 }
+
+
+
+function searchProducts(query) {
+    const search = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    document.querySelectorAll('.product-row').forEach(row => {
+        const name = row.querySelector('.product-name').textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const matchesSearch = name.includes(search);
+        const activeFilter = document.querySelector('.filter-btn.active:not(#filter-back-btn)');
+        const cat = activeFilter ? activeFilter.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'tous';
+        const matchesCategory = cat === 'tous' || row.dataset.category === cat;
+        row.style.display = matchesSearch && matchesCategory ? 'flex' : 'none';
+    });
+}
+
 
 
 
