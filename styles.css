@@ -110,6 +110,11 @@ body.loaded #pageLoader {
     to { transform: rotate(360deg); }
 }
 
+#commander  {
+    min-height: 900px;
+    height: 100vh;
+}
+
 
 #commander::before {
     content: '';
@@ -138,7 +143,7 @@ body.loaded #pageLoader {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 2rem;
 }
 
 
@@ -2888,6 +2893,8 @@ body.loaded #pageLoader {
         top: 0px;
         max-width: 1200px;
         margin: 0 auto;
+        margin-left: 2rem;
+        margin-right: 2rem;
         padding: 1rem;
     }
 
@@ -6387,13 +6394,13 @@ input[type=number] {
 
 
 
-
-
-
-
-
 /* Responsive */
-@media (max-width: 1300px) {
+@media (max-width: 1400px) {
+
+    html {
+        zoom: 0.8;
+    }
+
     .admin-sidebar {
         width: 200px;
     }
@@ -6416,6 +6423,16 @@ input[type=number] {
 
     #accueil .container{
     padding: 0rem 2rem;
+    }
+
+    h2 {
+        font-size: 2rem !important;
+    }
+
+    .about-hero {
+        margin: 0 !important;
+        padding: 0 !important;
+        margin-bottom: 2rem !important;
     }
 }
 
@@ -6467,6 +6484,16 @@ input[type=number] {
 
 /* Responsive Mobile Admin */
 @media (max-width: 768px) {
+
+    .container {
+        display: fixed;
+        top: 0px;
+        max-width: 1200px;
+        margin: 0 auto;
+        margin-left: 0rem;
+        margin-right: 0rem;
+        padding: 1rem;
+    }
 
     .admin-sidebar {
         z-index: 9999;
