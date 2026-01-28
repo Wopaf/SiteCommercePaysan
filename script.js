@@ -9,7 +9,7 @@ const firebaseConfig = {
 };
 
 let app, db, auth, storage, currentUser = null;
-const DATA = { products: [], baskets: [], promotions: [], orders: [], settings: {} };
+const DATA = { products: [], baskets: [], orders: [], settings: {} };
 const STATE = { cart: [], firebaseReady: false };
 let currentSlide = 0, carouselImages = [], autoplayInterval, currentMonth = new Date().getMonth() + 1;
 
@@ -68,7 +68,6 @@ async function loadAllData() {
                 ];
             }
             
-            DATA.promotions = data.promotions || [];
             DATA.orders = data.orders ? Object.values(data.orders) : [];
             DATA.settings = data.settings || {};
             carouselImages = data.media?.carouselImages || ['https://via.placeholder.com/1200x600/7cb342/ffffff?text=Bienvenue'];
@@ -321,6 +320,14 @@ function endPreview() {
 
 
 
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal || !modal.classList.contains('active')) return;
+    modal.classList.add('closing');
+    modal.addEventListener('animationend', () => {
+        modal.classList.remove('active', 'closing');
+    }, { once: true });
+}
 
 
 
@@ -414,8 +421,6 @@ function changeQty(id, change) {
 function addBasketToCart(id) {
     const basket = DATA.baskets.find(b => b.id === id);
     const qty = parseInt(document.getElementById(`qty-${id}`).textContent);
-    const promo = DATA.promotions.find(p => p.basketId === id);
-    const price = promo ? basket.price * (1 - promo.discount / 100) : basket.price;
     
     const existing = STATE.cart.find(c => c.id === id && c.type === 'basket');
     if (existing) {
@@ -611,7 +616,20 @@ async function saveCurrentBasket() {
     }
 }
 
-async function deleteCurrentBasket() {
+function openConfirmDeleteBasketModal() {
+    const basket = userBaskets.find(b => b.id === currentBasketId);
+    const basketName = basket ? basket.name : 'Mon Panier';
+    document.getElementById('confirmDeleteBasketName').textContent = `Le panier "${basketName}" sera supprimé définitivement.`;
+    document.getElementById('confirmDeleteBasketModal').classList.add('active');
+}
+
+function closeConfirmDeleteBasketModal() {
+    closeModal('confirmDeleteBasketModal');
+}
+
+async function confirmDeleteBasket() {
+    closeConfirmDeleteBasketModal();
+    
     if (!currentUser || currentBasketId.startsWith('temp_')) {
         customBasket = [];
         renderBasketSummary();
@@ -620,8 +638,6 @@ async function deleteCurrentBasket() {
     
     const basket = userBaskets.find(b => b.id === currentBasketId);
     if (!basket) return;
-    
-    if (!confirm(`Supprimer le panier "${basket.name}" ?`)) return;
     
     try {
         await window.firebase.set(
@@ -632,17 +648,30 @@ async function deleteCurrentBasket() {
         userBaskets = userBaskets.filter(b => b.id !== currentBasketId);
         
         if (userBaskets.length > 0) {
-            selectBasket(userBaskets[0].id);
+            currentBasketId = userBaskets[0].id;
+            customBasket = [...userBaskets[0].items];
         } else {
-            createDefaultBasket();
+            currentBasketId = 'temp_' + Date.now();
+            customBasket = [];
         }
         
+        renderBasketSummary();
         renderBasketDropdown();
-        showToast('Panier supprimé');
+        showToast('Panier supprimé', 'success');
     } catch (err) {
-        alert('Erreur lors de la suppression: ' + err.message);
+        alert('Erreur: ' + err.message);
     }
 }
+
+function deleteCurrentBasket() {
+    openConfirmDeleteBasketModal();
+}
+
+document.getElementById('confirmDeleteBasketModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeConfirmDeleteBasketModal();
+});
+
+
 
 function addToCustomBasket(productId) {
     const product = DATA.products.find(p => p.id === productId);
@@ -955,10 +984,11 @@ function checkout() {
     if (STATE.cart.length === 0) return alert('Votre panier est vide');
     
     if (!currentUser) {
-        alert('⚠️ Vous devez être connecté pour réserver une commande');
-        openAuthModal();
+        toggleCart();
+        document.getElementById('loginRequiredModal').classList.add('active');
         return;
     }
+
     
     document.getElementById('paymentModal').classList.add('active');
     
@@ -1019,6 +1049,31 @@ function openAuthModal() {
 function closeAuthModal() {
     document.getElementById('authModal').classList.remove('active');
 }
+
+// closeAuthModal
+function closeAuthModal() {
+    closeModal('authModal');
+}
+
+function closeLoginRequiredModal() {
+    closeModal('loginRequiredModal');
+}
+
+document.getElementById('loginRequiredModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeLoginRequiredModal();
+});
+
+
+document.getElementById('authModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeAuthModal();
+});
+
+
+// closeNewBasketModal
+function closeNewBasketModal() {
+    closeModal('newBasketModal');
+}
+
 
 function showAuthTab(tab) {
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -1161,9 +1216,11 @@ window.addEventListener('resize', updateFooterNavbarVisibility);
 
 // Appeler au chargement
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(updateFooterNavbarVisibility, 500);
+    setTimeout(() => {
+        setTimeout(updateFooterNavbarVisibility, 500);
+        document.body.classList.add('loaded');
+    }, 600);
 });
-
 
 
 
@@ -1410,5 +1467,5 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, 2000);
 }

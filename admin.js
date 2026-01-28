@@ -16,7 +16,7 @@ let ordersSortField = 'date';
 let ordersSortOrder = 'desc';
 
 let app, db, auth, storage, currentAdmin = null;
-const DATA = { products: [], baskets: [], promotions: [], orders: [], users: [], settings: {}, carouselImages: [] };
+const DATA = { products: [], baskets: [], orders: [], users: [], settings: {}, carouselImages: [] };
 
 // Init Firebase (Logique identique à script.js)
 setTimeout(async () => {
@@ -45,7 +45,18 @@ setTimeout(async () => {
 }, 200);
 
 
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal || !modal.classList.contains('active')) return;
+    modal.classList.add('closing');
+    modal.addEventListener('animationend', () => {
+        modal.classList.remove('active', 'closing');
+    }, { once: true });
+}
 
+document.getElementById('productModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeProductModal();
+});
 
 
 
@@ -126,7 +137,6 @@ async function loadAllAdminData() {
                 ];
             }
 
-            DATA.promotions = data.promotions || [];
             DATA.orders = data.orders ? Object.values(data.orders) : [];
             DATA.users = data.users ? Object.entries(data.users).map(([id, u]) => ({id, ...u})) : [];
             DATA.settings = data.settings || {};
@@ -306,9 +316,6 @@ function openProductModal(productId = null) {
     modal.classList.add('active');
 }
 
-function closeProductModal() {
-    document.getElementById('productModal').classList.remove('active');
-}
 
 async function saveProduct(event) {
     event.preventDefault();
@@ -437,54 +444,6 @@ async function saveBasketData(basketId) {
     }
 }
 
-// ===== PROMOTIONS =====
-function renderPromotions() {
-    const container = document.getElementById('promoList');
-    if (DATA.promotions.length === 0) {
-        container.innerHTML = '<p style="color:#999;text-align:center;">Aucune promotion active</p>';
-        return;
-    }
-    container.innerHTML = DATA.promotions.map((promo, index) => `
-        <div style="display:flex;justify-content:space-between;padding:1rem;background:#fff3e0;border-radius:10px;margin-top:0.5rem;">
-            <div>
-                <strong>Panier ${promo.basketId}</strong>
-                <span style="color:#ff8f3c;margin-left:1rem;font-weight:600;">-${promo.discount}%</span>
-            </div>
-            <button class="btn-secondary" onclick="removePromotion(${index})" style="background:#e57373;color:white;border:none;">Supprimer</button>
-        </div>
-    `).join('<div class="admin-row-separator"></div>');
-}
-
-async function addPromotion() {
-    const basketId = document.getElementById('promoBasket').value;
-    const discount = parseInt(document.getElementById('promoDiscount').value);
-    if (!discount || discount <= 0 || discount > 100) {
-        alert('Veuillez entrer une réduction valide (1-100%)');
-        return;
-    }
-    const newPromotions = DATA.promotions.filter(p => p.basketId !== basketId);
-    newPromotions.push({ basketId, discount });
-    try {
-        await window.firebase.set(window.firebase.ref(db, 'paniers-du-jardin/promotions'), newPromotions);
-        DATA.promotions = newPromotions;
-        renderPromotions();
-        document.getElementById('promoDiscount').value = '';
-        alert('✅ Promotion ajoutée');
-    } catch (err) {
-        alert('Erreur: ' + err.message);
-    }
-}
-
-async function removePromotion(index) {
-    DATA.promotions.splice(index, 1);
-    try {
-        await window.firebase.set(window.firebase.ref(db, 'paniers-du-jardin/promotions'), DATA.promotions);
-        renderPromotions();
-        alert('✅ Promotion supprimée');
-    } catch (err) {
-        alert('Erreur: ' + err.message);
-    }
-}
 
 // ===== COMMANDES =====
 function renderOrders() {
@@ -634,8 +593,22 @@ function showOrderDetails(orderId) {
                 ${user.phone ? `<p>📞 ${user.phone}</p>` : ''}
                 <p style="font-size:0.85rem;color:var(--primary);margin-top:0.5rem;">Cliquez pour voir le profil →</p>
             </div>
-        ` : '<div style="background:#f5f5f5;padding:1rem;border-radius:10px;"><p>Utilisateur non trouvé</p></div>'}
+                ` : '<div style="background:#f5f5f5;padding:1rem;border-radius:10px;"><p>Utilisateur non trouvé</p></div>'}
+        
+        <div style="margin-top:1.5rem;">
+            <button class="btn-primary btn-block" onclick="generateInvoicePDF('${order.id}')" style="display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                Éditer la facture
+            </button>
+        </div>
     `;
+
     modal.classList.add('active');
 }
 
@@ -679,9 +652,7 @@ function createOrderDetailsModal() {
 }
 
 
-function closeOrderDetails() {
-    document.getElementById('orderDetailsModal')?.classList.remove('active');
-}
+
 
 // ===== UTILISATEURS =====
 function renderUsers() {
@@ -826,8 +797,10 @@ function createUserDetailsModal() {
 
 
 function closeUserDetails() {
-    document.getElementById('userDetailsModal')?.classList.remove('active');
+    closeModal('userDetailsModal');
 }
+
+
 
 
 
@@ -855,13 +828,22 @@ function renderCarouselImages() {
         const isSelected = DATA.carouselImages.includes(img);
         return `
             <div class="carousel-image-item ${isSelected ? 'selected' : ''}" onclick="toggleCarouselImage('${img}')">
-                <img src="${img}" style="width:100%;height:150px;object-fit:cover;border-radius:10px;">
+                    <img src="${img}">
                 <div class="carousel-image-check">${isSelected ? '✓' : ''}</div>
             </div>
         `;
-    }).join('<div class="admin-row-separator"></div>');
+    }).join('');
 
 }
+
+function closeProductModal() {
+    closeModal('productModal');
+}
+
+function closeOrderDetails() {
+    closeModal('orderDetailsModal');
+}
+
 
 async function toggleCarouselImage(img) {
     const index = DATA.carouselImages.indexOf(img);
@@ -896,7 +878,7 @@ function openImagePicker() {
 }
 
 function closeImagePicker() {
-    document.getElementById('imagePickerModal').classList.remove('active');
+    closeModal('imagePickerModal');
 }
 
 function selectProductImage(img) {
@@ -960,6 +942,132 @@ function renderShopStatusToggle() {
     `;
 }
 
+function generateInvoicePDF(orderId) {
+    const order = DATA.orders.find(o => o.id === orderId);
+    if (!order) return;
+    const user = DATA.users.find(u => u.id === order.userId);
+    const shop = DATA.settings;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const primary = [74, 124, 78];
+    const gray = [90, 108, 90];
+    const lightBg = [232, 245, 233];
+
+    // --- En-tête commerce ---
+    doc.setFontSize(22);
+    doc.setTextColor(...primary);
+    doc.setFont('helvetica', 'bold');
+    doc.text(shop.shopName || 'Paniers du Jardin', 20, 25);
+
+    doc.setFontSize(9);
+    doc.setTextColor(...gray);
+    doc.setFont('helvetica', 'normal');
+    let headerY = 32;
+    if (shop.address) { doc.text(shop.address, 20, headerY); headerY += 5; }
+    if (shop.phone) { doc.text(shop.phone, 20, headerY); headerY += 5; }
+    if (shop.email) { doc.text(shop.email, 20, headerY); headerY += 5; }
+
+    // --- Titre FACTURE ---
+    doc.setFontSize(28);
+    doc.setTextColor(...primary);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FACTURE', 190, 25, { align: 'right' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(...gray);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`N° ${order.id}`, 190, 33, { align: 'right' });
+    doc.text(`Date : ${new Date(order.date).toLocaleDateString('fr-FR')}`, 190, 39, { align: 'right' });
+
+    // --- Ligne séparatrice ---
+    doc.setDrawColor(...primary);
+    doc.setLineWidth(0.5);
+    doc.line(20, 50, 190, 50);
+
+    // --- Client ---
+    doc.setFontSize(10);
+    doc.setTextColor(...primary);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Facturé à :', 20, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+    let clientY = 67;
+    if (user) {
+        doc.text(`${user.firstName || ''} ${user.lastName || ''}`, 20, clientY); clientY += 6;
+        doc.text(user.email || '', 20, clientY); clientY += 6;
+        if (user.phone) { doc.text(user.phone, 20, clientY); clientY += 6; }
+    } else {
+        doc.text('Client inconnu', 20, clientY); clientY += 6;
+    }
+
+    // --- Tableau des articles ---
+    let tableY = clientY + 10;
+
+    // En-tête du tableau
+    doc.setFillColor(...lightBg);
+    doc.roundedRect(20, tableY, 170, 10, 2, 2, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(...primary);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Produit', 25, tableY + 7);
+    doc.text('Qté', 110, tableY + 7, { align: 'center' });
+    doc.text('Prix unit.', 140, tableY + 7, { align: 'center' });
+    doc.text('Total', 185, tableY + 7, { align: 'right' });
+
+    tableY += 14;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+
+    // Lignes des articles
+    order.items.forEach((item, i) => {
+        if (tableY > 260) {
+            doc.addPage();
+            tableY = 20;
+        }
+
+        if (i % 2 === 0) {
+            doc.setFillColor(248, 250, 248);
+            doc.rect(20, tableY - 5, 170, 9, 'F');
+        }
+
+        doc.setFontSize(9);
+        doc.text(item.name, 25, tableY);
+        doc.text(String(item.quantity), 110, tableY, { align: 'center' });
+        doc.text(`${item.price.toFixed(2)} €`, 140, tableY, { align: 'center' });
+        doc.text(`${(item.quantity * item.price).toFixed(2)} €`, 185, tableY, { align: 'right' });
+        tableY += 9;
+    });
+
+    // --- Ligne avant total ---
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(20, tableY, 190, tableY);
+    tableY += 10;
+
+    // --- Total ---
+    doc.setFillColor(...primary);
+    doc.roundedRect(120, tableY - 5, 70, 12, 2, 2, 'F');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total : ${order.total.toFixed(2)} €`, 155, tableY + 3, { align: 'center' });
+
+    // --- Pied de page ---
+    doc.setFontSize(8);
+    doc.setTextColor(...gray);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Merci pour votre commande ! Le paiement se fait sur place lors du retrait.', 105, 280, { align: 'center' });
+    doc.text(`${shop.shopName || 'Paniers du Jardin'} — ${shop.address || ''}`, 105, 286, { align: 'center' });
+
+    // --- Télécharger ---
+    doc.save(`facture-${order.id}.pdf`);
+}
+
+
+
+
 
 async function toggleShopStatus() {
     shopStatus.isOpen = !shopStatus.isOpen;
@@ -993,3 +1101,5 @@ async function removeAdmin(uid) {
     await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/admins/${uid}`), null);
     await loadAdminsList();
 }
+
+

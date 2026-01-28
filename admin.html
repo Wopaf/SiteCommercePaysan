@@ -24,6 +24,7 @@
     </div>
 
 
+    
     <!-- Interface Admin -->
     <div class="admin-dashboard" id="adminDashboard" style="display: none;">
         
@@ -142,7 +143,7 @@
             <!-- Section Produits -->
             <div class="admin-section" id="admin-products">
                 <div class="admin-products-header">
-                    <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
+                    <button class="btn-add-product-admin" onclick="openProductModal()">+ Ajouter un produit</button>
                 </div>
                 <div id="productsList"></div>
             </div>
@@ -166,61 +167,67 @@
 
 
             <!-- Section Paramètres -->
-            <div class="admin-section" id="admin-settings">
+                        <div class="admin-section" id="admin-settings">
 
-                <form class="settings-form" id="settingsForm">
-                    <div class="form-group">
-                        <label>Nom du Commerce</label>
-                        <input type="text" id="shopName" class="input-field" value="Paniers du Jardin">
+                <!-- Informations du commerce -->
+                <div class="admin-product-group">
+                    <div class="admin-product-group-header">
+                        <h3>Informations du commerce</h3>
                     </div>
-
-                    <div class="form-group">
-                        <label>Adresse Physique</label>
-                        <textarea id="shopAddressInput" class="input-field" rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Numéro de Téléphone</label>
-                        <input type="tel" id="shopPhoneInput" class="input-field">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Adresse Email</label>
-                        <input type="email" id="shopEmailInput" class="input-field">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Coordonnées GPS (pour la carte)</label>
-                        <div class="input-row">
-                            <input type="text" id="shopLat" class="input-field" placeholder="Latitude">
-                            <input type="text" id="shopLng" class="input-field" placeholder="Longitude">
+                    <form class="settings-form" id="settingsForm">
+                        <div class="settings-grid">
+                            <div class="settings-field">
+                                <label for="shopName">Nom du commerce</label>
+                                <input type="text" id="shopName" class="input-field" value="Paniers du Jardin">
+                            </div>
+                            <div class="settings-field">
+                                <label for="shopPhoneInput">Téléphone</label>
+                                <input type="tel" id="shopPhoneInput" class="input-field" placeholder="06 12 34 56 78">
+                            </div>
+                            <div class="settings-field">
+                                <label for="shopEmailInput">Email</label>
+                                <input type="email" id="shopEmailInput" class="input-field" placeholder="contact@example.com">
+                            </div>
+                            <div class="settings-field full-width">
+                                <label for="shopAddressInput">Adresse physique</label>
+                                <textarea id="shopAddressInput" class="input-field" rows="2" placeholder="123 rue du Jardin, 75000 Paris"></textarea>
+                            </div>
+                            <div class="settings-field">
+                                <label for="shopLat">Latitude</label>
+                                <input type="text" id="shopLat" class="input-field" placeholder="48.8566">
+                            </div>
+                            <div class="settings-field">
+                                <label for="shopLng">Longitude</label>
+                                <input type="text" id="shopLng" class="input-field" placeholder="2.3522">
+                            </div>
                         </div>
-                        <small>Trouvez vos coordonnées sur <a href="https://www.google.fr/maps" target="_blank">Google Maps</a></small>
-                    </div>
-
-                    <button type="submit" class="btn-primary">Enregistrer les paramètres</button>
-                </form>
-                
+                        <small class="settings-hint">Trouvez vos coordonnées sur <a href="https://www.google.fr/maps" target="_blank">Google Maps</a></small>
+                        <div class="settings-actions">
+                            <button type="submit" class="btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
 
                 <!-- Carrousel d'accueil -->
-                <div class="media-section">
-                    <h3>Images du Carrousel (Accueil)</h3>
-                    <p class="section-description">Sélectionnez les images à afficher dans le carrousel de la page d'accueil</p>
-                    
-                    <div class="carousel-images-grid" id="carouselImagesGrid">
-                        <!-- Images du carrousel -->
+                <div class="admin-product-group">
+                    <div class="admin-product-group-header">
+                        <h3>Images du carrousel</h3>
+                        <span class="admin-row-meta">Page d'accueil</span>
+                    </div>
+                    <div class="settings-carousel-body">
+                        <p class="settings-carousel-desc">Sélectionnez les images à afficher dans le carrousel de la page d'accueil</p>
+                        <div class="carousel-images-grid" id="carouselImagesGrid"></div>
                     </div>
                 </div>
 
-
-                                <!-- Liens utiles -->
+                <!-- Liens utiles -->
                 <div class="settings-links">
                     <h3>Liens utiles</h3>
                     <div class="links-grid">
                         <a href="https://github.com/Wopaf/SiteCommercePaysan/" target="_blank" class="settings-link-card">
                             <div class="link-icon">
                                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                    <path d="M12 .3a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6.1-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 016 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.6.2 2.8.1 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1.2.9 2.3v3.4c0 .3.2.7.8.6A12 12 0 0012 .3"/>
                                 </svg>
                             </div>
                             <div class="link-info">
@@ -242,8 +249,8 @@
                     </div>
                 </div>
 
-
             </div>
+
         </main>
     </div>
 
@@ -355,6 +362,8 @@
         console.log('✅ Firebase modules chargés');
     </script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="admin.js"></script>
+
 </body>
 </html>
