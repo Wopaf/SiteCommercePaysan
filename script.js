@@ -803,7 +803,10 @@ function renderMonPanierWheel() {
         return;
     }
 
-    wheel.innerHTML = available.map(p => {
+    const shadowItem = '<div class="mp-wheel-card mp-wheel-shadow" aria-hidden="true"><div class="mp-wheel-circle"></div></div>';
+    const shadowItems = shadowItem.repeat(3);
+
+    wheel.innerHTML = shadowItems + available.map(p => {
         const meta = mpGetProductMeta(p);
         const circleStyle = p.image
             ? `background-image:url('${p.image}')`
@@ -814,22 +817,77 @@ function renderMonPanierWheel() {
                 <span class="mp-wheel-name">${p.name}</span>
             </div>
         `;
-    }).join('');
+    }).join('') + shadowItems;
 
-    if (!mpSelectedProductId || !available.find(p => p.id === mpSelectedProductId)) {
-        mpSelectedProductId = available[0].id;
-    }
+    mpSelectedProductId = available[Math.min(3, available.length - 1)].id;
     mpSelectProduct(mpSelectedProductId, false);
 
     wheel.removeEventListener('scroll', mpHandleWheelScroll);
     wheel.addEventListener('scroll', mpHandleWheelScroll, { passive: true });
     wheel.removeEventListener('scroll', mpRequestWheelRadialUpdate);
     wheel.addEventListener('scroll', mpRequestWheelRadialUpdate, { passive: true });
+    wheel.removeEventListener('wheel', mpHandleMouseWheel);
+    wheel.addEventListener('wheel', mpHandleMouseWheel, { passive: false });
+    wheel.removeEventListener('pointerdown', mpWheelDragStart);
+    wheel.addEventListener('pointerdown', mpWheelDragStart);
+    wheel.removeEventListener('click', mpWheelClickGuard);
+    wheel.addEventListener('click', mpWheelClickGuard, { capture: true });
 
     mpApplyWheelRadialTransforms();
 
     window.removeEventListener('resize', mpRequestWheelRadialUpdate);
     window.addEventListener('resize', mpRequestWheelRadialUpdate);
+}
+
+const mpWheelDrag = { active: false, moved: false, startX: 0, startScrollLeft: 0 };
+
+function mpWheelDragStart(e) {
+    if (e.pointerType === 'touch') return; // le tactile natif gère déjà le scroll
+    const wheel = e.currentTarget;
+    mpWheelDrag.active = true;
+    mpWheelDrag.moved = false;
+    mpWheelDrag.startX = e.clientX;
+    mpWheelDrag.startScrollLeft = wheel.scrollLeft;
+    wheel.setPointerCapture(e.pointerId);
+    wheel.classList.add('mp-wheel-dragging');
+    wheel.addEventListener('pointermove', mpWheelDragMove);
+    wheel.addEventListener('pointerup', mpWheelDragEnd);
+    wheel.addEventListener('pointercancel', mpWheelDragEnd);
+}
+
+function mpWheelDragMove(e) {
+    if (!mpWheelDrag.active) return;
+    const wheel = e.currentTarget;
+    const dx = e.clientX - mpWheelDrag.startX;
+    if (Math.abs(dx) > 3) mpWheelDrag.moved = true;
+    wheel.scrollLeft = mpWheelDrag.startScrollLeft - dx;
+    mpClampWheelScroll(wheel);
+}
+
+function mpWheelDragEnd(e) {
+    if (!mpWheelDrag.active) return;
+    mpWheelDrag.active = false;
+    const wheel = e.currentTarget;
+    wheel.classList.remove('mp-wheel-dragging');
+    wheel.removeEventListener('pointermove', mpWheelDragMove);
+    wheel.removeEventListener('pointerup', mpWheelDragEnd);
+    wheel.removeEventListener('pointercancel', mpWheelDragEnd);
+}
+
+function mpWheelClickGuard(e) {
+    if (mpWheelDrag.moved) {
+        e.stopPropagation();
+        e.preventDefault();
+        mpWheelDrag.moved = false;
+    }
+}
+
+function mpHandleMouseWheel(e) {
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (!delta) return;
+    e.preventDefault();
+    e.currentTarget.scrollLeft += delta;
+    mpClampWheelScroll(e.currentTarget);
 }
 
 function mpHandleWheelScroll() {
@@ -848,6 +906,7 @@ function mpHandleWheelScroll() {
 }
 
 let mpWheelRafId = null;
+let mpWheelCentered = false;
 
 function mpRequestWheelRadialUpdate() {
     if (mpWheelRafId) return;
@@ -857,6 +916,21 @@ function mpRequestWheelRadialUpdate() {
     });
 }
 
+// Empêche de faire défiler la roue jusqu'aux items shadow (décoratifs, en début/fin de liste).
+function mpClampWheelScroll(wheel) {
+    const realCards = wheel.querySelectorAll('.mp-wheel-card:not(.mp-wheel-shadow)');
+    if (!realCards.length) return;
+
+    const first = realCards[0];
+    const last = realCards[realCards.length - 1];
+    const half = wheel.clientWidth / 2;
+    const min = first.offsetLeft + first.offsetWidth / 2 - half;
+    const max = last.offsetLeft + last.offsetWidth / 2 - half;
+
+    if (wheel.scrollLeft < min) wheel.scrollLeft = min;
+    else if (wheel.scrollLeft > max) wheel.scrollLeft = max;
+}
+
 // Courbe chaque carte le long d'un arc, comme si elle glissait sur la jante d'une roue.
 function mpApplyWheelRadialTransforms() {
     const wheel = document.getElementById('mpWheel');
@@ -864,8 +938,10 @@ function mpApplyWheelRadialTransforms() {
     const cards = wheel.querySelectorAll('.mp-wheel-card');
     if (!cards.length) return;
 
+    mpClampWheelScroll(wheel);
+
     const center = wheel.scrollLeft + wheel.clientWidth / 2;
-    const maxAngle = 46;
+    const maxAngle = 30;
     const range = wheel.clientWidth / 2 + 40;
 
     cards.forEach(card => {
@@ -873,8 +949,8 @@ function mpApplyWheelRadialTransforms() {
         const t = Math.max(-1, Math.min(1, (cardCenter - center) / range));
         const angle = t * maxAngle;
         const rad = angle * Math.PI / 180;
-        const drop = Math.abs(angle*2);
-        const scale = 0.72 + 0.28 * Math.cos(rad);
+        const drop = Math.abs(angle*angle)/15;
+        const scale = 1 - 0 * Math.abs(t);
         const opacity = 0.3 + 0.7 * Math.cos(rad);
         card.style.transform = `translateY(${drop}px) rotate(${angle}deg) scale(${scale})`;
         card.style.opacity = opacity;
@@ -899,28 +975,48 @@ function mpSelectProduct(productId, scrollIntoView) {
     }
 
     mpUpdateBackground(product);
-    mpRefreshQtyControls();
+    mpRefreshQtyControls(false);
 }
 
-function mpRefreshQtyControls() {
+function mpRefreshQtyControls(animate = true, direction = 0) {
     const product = DATA.products.find(p => p.id === mpSelectedProductId);
     const unit = getUnitMeta(product?.unit);
     const labelEl = document.getElementById('mpQtyLabel');
     const valueEl = document.getElementById('mpQtyValue');
     if (labelEl) labelEl.textContent = unit.label;
-    if (valueEl) valueEl.textContent = formatQtyWithUnit(mpPendingQty, product?.unit);
-    mpUpdateQtyInfo();
+    if (valueEl) {
+        const newValue = formatQtyWithUnit(mpPendingQty, product?.unit);
+        if (valueEl.textContent !== newValue) {
+            valueEl.textContent = newValue;
+            valueEl.classList.remove('mp-qty-value-pulse-left', 'mp-qty-value-pulse-right');
+            if (animate) {
+                void valueEl.offsetWidth;
+                valueEl.classList.add(direction < 0 ? 'mp-qty-value-pulse-left' : 'mp-qty-value-pulse-right');
+            }
+        }
+    }
+    mpUpdateQtyInfo(animate);
 }
 
-function mpUpdateQtyInfo() {
+function mpUpdateQtyInfo(animate = true) {
     const priceEl = document.getElementById('mpQtyPrice');
     const subtotalEl = document.getElementById('mpQtySubtotal');
     if (!priceEl || !subtotalEl) return;
 
     const product = DATA.products.find(p => p.id === mpSelectedProductId);
     const price = product?.price || 0;
-    priceEl.textContent = formatUnitPrice(price, product?.unit);
-    subtotalEl.textContent = `${(price * mpPendingQty).toFixed(2)} €`;
+    const [currency, unitSuffix] = getUnitMeta(product?.unit).priceSuffix.split('/');
+    priceEl.innerHTML = `<span class="mp-qty-price-amount">${price.toFixed(2)} ${currency}</span><span class="mp-qty-price-unit">/${unitSuffix}</span>`;
+
+    const newSubtotal = `${(price * mpPendingQty).toFixed(2)} €`;
+    if (subtotalEl.textContent !== newSubtotal) {
+        subtotalEl.textContent = newSubtotal;
+        subtotalEl.classList.remove('mp-qty-subtotal-pulse');
+        if (animate) {
+            void subtotalEl.offsetWidth;
+            subtotalEl.classList.add('mp-qty-subtotal-pulse');
+        }
+    }
 }
 
 let mpBgActiveLayer = 0;
@@ -947,7 +1043,7 @@ function mpChangeQty(direction) {
     const product = DATA.products.find(p => p.id === mpSelectedProductId);
     const step = getUnitMeta(product?.unit).step;
     mpPendingQty = Math.max(step, Math.round((mpPendingQty + direction * step) * 10) / 10);
-    mpRefreshQtyControls();
+    mpRefreshQtyControls(true, direction);
 }
 
 function mpAddToBasket() {
@@ -975,6 +1071,11 @@ function mpAddToBasket() {
     }
 }
 
+function mpFormatItemQty(qty, unit) {
+    if (unit === 'lot250g') return `${qty}x 250g`;
+    return formatQtyWithUnit(qty, unit);
+}
+
 function renderMonPanierGrid() {
     const grid = document.getElementById('mpItemsGrid');
     const totalEl = document.getElementById('mpTotalValue');
@@ -984,24 +1085,54 @@ function renderMonPanierGrid() {
         grid.innerHTML = '<p class="mp-items-empty" id="mpItemsEmpty">Votre panier est vide, choisissez un produit ci-dessous 👇</p>';
     } else {
         grid.innerHTML = customBasket.map(item => {
-            const product = DATA.products.find(p => p.id === item.id);
-            const meta = mpGetProductMeta(product);
             const itemTotal = (item.price * item.quantity).toFixed(2);
             return `
                 <div class="mp-item-card" data-id="${item.id}">
                     <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer">×</button>
-                    <span class="mp-item-icon" style="background:${meta.color1}">${meta.icon}</span>
                     <span class="mp-item-name">${item.name}</span>
-                    <span class="mp-item-qty">${formatQtyWithUnit(item.quantity, item.unit || 'kg')}</span>
+                    <span class="mp-item-qty">${mpFormatItemQty(item.quantity, item.unit || 'kg')}</span>
                     <span class="mp-item-price">${itemTotal}€</span>
                 </div>
             `;
         }).join('');
+        mpArrangeItemsInCircle();
     }
 
     const total = customBasket.reduce((sum, item) => sum + item.price * item.quantity, 0);
     if (totalEl) totalEl.textContent = total.toFixed(2) + '€';
 }
+
+// Dispose les mp-item-card en cercle(s) autour du panier (mp-total-card), fixe au centre.
+function mpArrangeItemsInCircle() {
+    const zone = document.getElementById('mpOrbitZone');
+    if (!zone) return;
+    const cards = zone.querySelectorAll('.mp-item-card');
+    if (!cards.length) return;
+
+    const perRing = 8;
+    const ringGap = 92;
+    const centerY = zone.clientHeight * 0.30;
+    const verticalLimit = Math.min(centerY, zone.clientHeight - centerY) - 60;
+    const horizontalLimit = zone.clientWidth / 2 - 60;
+    const maxRadius = Math.max(130, Math.min(horizontalLimit, verticalLimit));
+    const baseRadius = Math.min(270, maxRadius);
+
+    cards.forEach((card, i) => {
+        const ring = Math.floor(i / perRing);
+        const ringStart = ring * perRing;
+        const ringCount = Math.min(perRing, cards.length - ringStart);
+        const indexInRing = i - ringStart;
+        const radius = Math.min(baseRadius + ring * ringGap, maxRadius + ring * ringGap);
+        const angle = (indexInRing / ringCount) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        card.style.setProperty('--ox', `${x}px`);
+        card.style.setProperty('--oy', `${y}px`);
+    });
+}
+
+window.removeEventListener('resize', mpArrangeItemsInCircle);
+window.addEventListener('resize', mpArrangeItemsInCircle);
 
 function openMpBasketsModal() {
     renderMpBasketsList();
@@ -1464,22 +1595,22 @@ function updateFooterNavbarVisibility() {
     const activePage = document.querySelector('.page.active')?.id;
     const footer = document.querySelector('.footer');
     const navbar = document.querySelector('.navbar');
+    const mobileBottomNav = document.getElementById('mobileBottomNav');
     const pagesToHide = ['commander', 'contact', 'mon-compte', 'mon-panier'];
     const isSmallScreen = window.innerWidth < 950;
-    
+
     const shouldHide = activePage && pagesToHide.includes(activePage) && isSmallScreen;
-    
-    console.log('Page:', activePage, 'Width:', window.innerWidth, 'shouldHide:', shouldHide);
-    console.log('Footer trouvé:', footer, 'Navbar trouvé:', navbar);
-    
+
     if (footer) {
         footer.style.display = shouldHide ? 'none' : '';
-        console.log('Footer display après:', footer.style.display);
     }
     if (navbar) {
         navbar.style.display = shouldHide ? 'none' : '';
-        console.log('Navbar display après:', navbar.style.display);
     }
+    if (mobileBottomNav) {
+        mobileBottomNav.classList.toggle('mp-nav-collapsed', activePage === 'mon-panier');
+    }
+    document.body.classList.toggle('mp-page-active', activePage === 'mon-panier');
 }
 
 
@@ -1496,7 +1627,13 @@ function navigateTo(page) {
     if (page === 'mon-panier') {
         if (!document.querySelector('#mpWheel .mp-wheel-card')) renderMonPanierWheel();
         renderMonPanierGrid();
-        requestAnimationFrame(mpApplyWheelRadialTransforms);
+        requestAnimationFrame(() => {
+            mpApplyWheelRadialTransforms();
+            if (!mpWheelCentered) {
+                mpWheelCentered = true;
+                mpSelectProduct(mpSelectedProductId, true);
+            }
+        });
     }
 }
 
