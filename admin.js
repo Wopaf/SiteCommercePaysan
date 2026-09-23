@@ -334,6 +334,30 @@ async function toggleProductAvailability(productId) {
 }
 
 
+const PRODUCT_COLOR_PALETTE = [
+    '#e74c3c', '#ff8f3c', '#f4c430', '#cddc39',
+    '#4caf50', '#2f9e44', '#16a085', '#0eaaa5',
+    '#3498db', '#5c6bc0', '#8e44ad', '#d81b60',
+    '#c0392b', '#a1887f', '#78909c', '#ff6f91'
+];
+
+function renderProductColorPicker(selectedColor) {
+    const grid = document.getElementById('productColorGrid');
+    if (!grid) return;
+    grid.innerHTML = PRODUCT_COLOR_PALETTE.map(hex => `
+        <button type="button" class="color-swatch ${hex === selectedColor ? 'active' : ''}"
+            data-hex="${hex}" style="background:${hex}" onclick="selectProductColor('${hex}')" aria-label="${hex}"></button>
+    `).join('');
+    document.getElementById('productColor').value = selectedColor || '';
+}
+
+function selectProductColor(hex) {
+    document.getElementById('productColor').value = hex;
+    document.querySelectorAll('#productColorGrid .color-swatch').forEach(sw => {
+        sw.classList.toggle('active', sw.dataset.hex === hex);
+    });
+}
+
 function handleProductImageUrlInput(url) {
     const preview = document.getElementById('productImagePreview');
     if (!url) {
@@ -358,6 +382,7 @@ function openProductModal(productId = null) {
             document.getElementById('productCategory').value = product.category;
             document.getElementById('productPrice').value = product.price;
             document.getElementById('productUnit').value = product.unit || 'kg';
+            renderProductColorPicker(product.color || PRODUCT_COLOR_PALETTE[0]);
             if (product.image) {
                 document.getElementById('productImageUrl').value = product.image;
                 handleProductImageUrlInput(product.image);
@@ -366,6 +391,7 @@ function openProductModal(productId = null) {
     } else {
         document.getElementById('productModalTitle').textContent = 'Ajouter un Produit';
         document.getElementById('productUnit').value = 'kg';
+        renderProductColorPicker(PRODUCT_COLOR_PALETTE[0]);
     }
     modal.classList.add('active');
 }
@@ -380,6 +406,7 @@ async function saveProduct(event) {
         category: document.getElementById('productCategory').value,
         price: parseFloat(document.getElementById('productPrice').value),
         unit: document.getElementById('productUnit').value,
+        color: document.getElementById('productColor').value || null,
         inStock: existingProduct ? (existingProduct.inStock ?? true) : true,
         availableMonths: existingProduct?.availableMonths || [],
         image: document.getElementById('productImageUrl').value || null,
@@ -391,7 +418,6 @@ async function saveProduct(event) {
         await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/products/${productId}`), productData);
         await loadAllAdminData();
         closeProductModal();
-        alert('✅ Produit enregistré !');
     } catch (err) {
         alert('Erreur: ' + err.message);
     }

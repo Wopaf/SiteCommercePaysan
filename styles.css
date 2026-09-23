@@ -173,6 +173,14 @@ body.loaded #pageLoader {
     top: 0;
     z-index: 1000;
     box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    max-height: 200px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, box-shadow 0.3s ease;
+}
+
+.navbar.navbar-collapsed {
+    max-height: 0;
+    box-shadow: none;
 }
 
 .navbar .container {
@@ -5691,29 +5699,57 @@ table tr:hover {
 /* Toast Notifications */
 .toast {
     position: fixed;
-    bottom: -100px;
+    top: -100px;
     left: 50%;
     transform: translateX(-50%);
-    background: #4a7c4e;
+    background: rgba(74, 124, 78, 0.92);
     color: white;
-    padding: 1rem 2rem;
+    padding: 0.55rem 1.2rem;
     border-radius: 50px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
     z-index: 9999;
     transition: 0.3s;
-    font-weight: 600;
+    font-weight: 500;
+    font-size: 0.85rem;
 }
 
 .toast.show {
-    bottom: 30px;
+    top: 16px;
 }
 
 .toast-success {
-    background: #4a7c4e;
+    background: rgba(74, 124, 78, 0.92);
 }
 
 .toast-error {
-    background: #e57373;
+    background: rgba(229, 115, 115, 0.92);
+}
+
+/* Sélecteur de couleur produit (admin) */
+.color-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.color-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.color-swatch:hover {
+    transform: scale(1.12);
+}
+
+.color-swatch.active {
+    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--primary);
 }
 
 /* Récapitulatif commande */
@@ -6889,9 +6925,20 @@ html {
     overflow: hidden;
 }
 
+.mp-background::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: url('medias/BG.png') no-repeat center / cover;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
 .mp-background-layer {
     position: absolute;
     inset: 0;
+    z-index: 0;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -6904,19 +6951,14 @@ html {
 }
 
 .mp-background-icon {
-    position: relative;
-    font-size: 50vw;
-    opacity: 0.16;
-    transform: translateY(-4%);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    user-select: none;
+    display: none;
 }
 
 .mp-overlay {
     position: fixed;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.72) 45%, rgba(255,255,255,0.94) 100%);
+    background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.8) 100%);
     pointer-events: none;
 }
 
@@ -7049,13 +7091,14 @@ html {
     color: var(--text);
     background: rgba(255,255,255,0.9);
     padding: 0.1rem 0.4rem;
-    border-radius: 6px;
+    border-radius: 8px;
     pointer-events: none;
 }
 
 .mp-item-qty {
-    font-size: 0.66rem;
     color: var(--gray);
+    font-weight: 700;
+    font-size: 0.76rem;
     flex-shrink: 0;
     white-space: nowrap;
 }
@@ -7114,9 +7157,33 @@ html {
     left: 50%;
     transform: translate(-50%, calc(-50% - 40px));
     z-index: 0;
-    width: 100px;
+    width: 140px;
     aspect-ratio: 1 / 1;
     background: url('medias/Panier.png') no-repeat center / contain;
+}
+
+@keyframes mpBasketBounce {
+    0% { transform: translate(-50%, calc(-50% - 40px)) scale(1); }
+    30% { transform: translate(-50%, calc(-50% - 58px)) scale(1.1); }
+    50% { transform: translate(-50%, calc(-50% - 28px)) scale(0.95); }
+    70% { transform: translate(-50%, calc(-50% - 46px)) scale(1.04); }
+    100% { transform: translate(-50%, calc(-50% - 40px)) scale(1); }
+}
+
+.mp-total-card-bounce {
+    animation: mpBasketBounce 0.5s ease;
+}
+
+.mp-total-title {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--gray);
 }
 
 .mp-total-content {
@@ -7139,6 +7206,7 @@ html {
 }
 
 .mp-total-value {
+    transform: translate(100px,10px) !important;
     font-size: 1.6rem;
     color: var(--primary);
 }
@@ -7385,7 +7453,8 @@ html {
 
 
 .mp-wheel-card.active .mp-wheel-circle {
-    box-shadow: 0 6px 14px rgba(0,0,0,0.18), 0 0 0 3px var(--primary);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18), 0 0 0 3px var(--wheel-color, var(--primary));
+    transform: scale(1.12);
 }
 
 .mp-wheel-shadow {
@@ -7403,6 +7472,16 @@ html {
 .mp-wheel-card.active .mp-wheel-name {
     font-weight: 800;
     color: var(--primary);
+    transform: scale(1.08);
+    animation: mpWheelNameBounce 0.4s ease;
+}
+
+@keyframes mpWheelNameBounce {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.22); }
+    65% { transform: scale(0.96); }
+    85% { transform: scale(1.1); }
+    100% { transform: scale(1.08); }
 }
 
 .mp-wheel-circle {
@@ -7418,7 +7497,7 @@ html {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .mp-wheel-name {
@@ -7432,7 +7511,8 @@ html {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: color 0.2s ease, font-weight 0.2s ease;
+    transition: color 0.2s ease, font-weight 0.2s ease, transform 0.2s ease;
+    display: inline-block;
 }
 
 .mp-wheel-empty {

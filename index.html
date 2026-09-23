@@ -18,9 +18,9 @@
                 <h1>Paniers <span>du Jardin</span></h1>
             </div>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="#accueil" class="nav-link active">Accueil</a></li>
+                <li><a href="#accueil" class="nav-link">Accueil</a></li>
                 <li><a href="#commander" class="nav-link">Commander</a></li>
-                <li><a href="#mon-panier" class="nav-link">Mon Panier</a></li>
+                <li><a href="#mon-panier" class="nav-link active">Mon Panier</a></li>
                 <li><a href="#apropos" class="nav-link">À Propos</a></li>
                 <li><a href="#contact" class="nav-link">Contact</a></li>
             </ul>
@@ -37,7 +37,7 @@
     </nav>
 
 
-        <section id="accueil" class="page active">
+        <section id="accueil" class="page">
         
         <!-- Hero Section - Carrousel + Texte côte à côte -->
         <div class="container">
@@ -309,7 +309,7 @@
         </div>
     </section>
 
-    <section id="mon-panier" class="page mon-panier-page">
+    <section id="mon-panier" class="page mon-panier-page active">
         <div class="mp-app" id="mpApp">
             <div class="mp-background" id="mpBackground">
                 <div class="mp-background-layer" id="mpBgLayer0"></div>
@@ -337,6 +337,7 @@
                         </div>
 
                         <div class="mp-total-card" id="mpTotalCard">
+                            <span class="mp-total-title">Mon Panier</span>
                             <div class="mp-total-content">
                                 <span class="mp-total-label">TOTAL</span>
                                 <strong class="mp-total-value" id="mpTotalValue">0€</strong>
@@ -373,6 +374,7 @@
                         </div>
 
                         <button class="mp-add-btn" onclick="mpAddToBasket()">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M440-647 244-451q-12 12-28 11.5T188-452q-11-12-11.5-28t11.5-28l264-264q6-6 13-8.5t15-2.5q8 0 15 2.5t13 8.5l264 264q11 11 11 27.5T772-452q-12 12-28.5 12T715-452L520-647v447q0 17-11.5 28.5T480-160q-17 0-28.5-11.5T440-200v-447Z"/></svg>
                             Ajouter au Panier
                         </button>
                     </div>
@@ -666,7 +668,7 @@
 
         <!-- Menu Mobile Fixe -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
-        <button class="mobile-nav-item active" data-page="accueil" onclick="navigateTo('accueil')">
+        <button class="mobile-nav-item" data-page="accueil" onclick="navigateTo('accueil')">
             <svg viewBox="0 -960 960 960"><path d="M240-200h120v-200q0-17 11.5-28.5T400-440h160q17 0 28.5 11.5T600-400v200h120v-360L480-740 240-560v360Zm-80 0v-360q0-19 8.5-36t23.5-28l240-180q21-16 48-16t48 16l240 180q15 11 23.5 28t8.5 36v360q0 33-23.5 56.5T720-120H560q-17 0-28.5-11.5T520-160v-200h-80v200q0 17-11.5 28.5T400-120H240q-33 0-56.5-23.5T160-200Z"/></svg>
             <span>Accueil</span>
         </button>
@@ -678,7 +680,7 @@
             <svg viewBox="0 -960 960 960"><path d="M240-80q-33 0-56.5-23.5T160-160v-480q0-33 23.5-56.5T240-720h80q0-66 47-113t113-47q66 0 113 47t47 113h80q33 0 56.5 23.5T800-640v480q0 33-23.5 56.5T720-80H240Zm0-80h480v-480h-80v80q0 17-11.5 28.5T600-520q-17 0-28.5-11.5T560-560v-80H400v80q0 17-11.5 28.5T360-520q-17 0-28.5-11.5T320-560v-80h-80v480Zm160-560h160q0-33-23.5-56.5T480-800q-33 0-56.5 23.5T400-720Z"/></svg>
             <span>Commander</span>
         </button>
-        <button class="mobile-nav-item" data-page="mon-panier" onclick="navigateTo('mon-panier')">
+        <button class="mobile-nav-item active" data-page="mon-panier" onclick="navigateTo('mon-panier')">
             <span class="mobile-nav-emoji">🧺</span>
             <span>Mon Panier</span>
         </button>

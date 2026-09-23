@@ -40,6 +40,13 @@ setTimeout(async () => {
         if (activePage) {
             navigateTo(activePage);
         }
+
+        // Attendre que tous les éléments aient fini de se redimensionner/positionner avant de révéler la page
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                document.body.classList.add('loaded');
+            });
+        });
     }, 300);
 
 
@@ -479,7 +486,27 @@ let mpPendingQty = 1;
 let mpScrollTimeout = null;
 
 function mpGetProductMeta(product) {
-    return MP_CATEGORY_META[product?.category] || MP_CATEGORY_META.default;
+    const base = MP_CATEGORY_META[product?.category] || MP_CATEGORY_META.default;
+    if (product?.color) {
+        return { icon: base.icon, color1: product.color, color2: lightenColor(product.color, 35) };
+    }
+    return base;
+}
+
+function lightenColor(hex, percent) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = Math.min(255, (num >> 16) + Math.round(255 * percent / 100));
+    const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * percent / 100));
+    const b = Math.min(255, (num & 0xff) + Math.round(255 * percent / 100));
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+function darkenColor(hex, percent) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const r = Math.max(0, (num >> 16) - Math.round(255 * percent / 100));
+    const g = Math.max(0, ((num >> 8) & 0xff) - Math.round(255 * percent / 100));
+    const b = Math.max(0, (num & 0xff) - Math.round(255 * percent / 100));
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
 // Charger les paniers de l'utilisateur depuis Firebase
@@ -808,9 +835,9 @@ function renderMonPanierWheel() {
 
     wheel.innerHTML = shadowItems + available.map(p => {
         const meta = mpGetProductMeta(p);
-        const circleStyle = p.image
+        const circleStyle = (p.image
             ? `background-image:url('${p.image}')`
-            : `background:${meta.color1}`;
+            : `background:${meta.color1}`) + `;--wheel-color:${meta.color1}`;
         return `
             <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true)">
                 <div class="mp-wheel-circle" style="${circleStyle}">${p.image ? '' : meta.icon}</div>
@@ -902,7 +929,7 @@ function mpHandleWheelScroll() {
             if (dist < closestDist) { closestDist = dist; closest = card; }
         });
         if (closest) mpSelectProduct(closest.dataset.id, false);
-    }, 100);
+    }, 30);
 }
 
 let mpWheelRafId = null;
@@ -1023,15 +1050,19 @@ let mpBgActiveLayer = 0;
 let mpBgRequestId = 0;
 
 function mpShowGradientBackground(meta) {
-    const bg = document.getElementById('mpBackground');
     const icon = document.getElementById('mpBackgroundIcon');
     const layer0 = document.getElementById('mpBgLayer0');
     const layer1 = document.getElementById('mpBgLayer1');
-    layer0.classList.remove('active');
-    layer1.classList.remove('active');
     icon.style.opacity = '0.16';
     icon.textContent = meta.icon;
-    bg.style.background = `radial-gradient(circle at 50% 25%, ${meta.color2}, ${meta.color1} 75%)`;
+
+    const gradient = `radial-gradient(circle at 50% 25%, ${darkenColor(meta.color2, 12)}, ${darkenColor(meta.color1, 12)} 75%)`;
+    const nextLayer = mpBgActiveLayer === 0 ? layer1 : layer0;
+    const currentLayer = mpBgActiveLayer === 0 ? layer0 : layer1;
+    nextLayer.style.background = gradient;
+    nextLayer.classList.add('active');
+    currentLayer.classList.remove('active');
+    mpBgActiveLayer = mpBgActiveLayer === 0 ? 1 : 0;
 }
 
 function mpUpdateBackground(product) {
@@ -1039,11 +1070,18 @@ function mpUpdateBackground(product) {
     mpShowGradientBackground(meta);
 }
 
+function playSound(src) {
+    try {
+        new Audio(src).play().catch(() => {});
+    } catch (e) {}
+}
+
 function mpChangeQty(direction) {
     const product = DATA.products.find(p => p.id === mpSelectedProductId);
     const step = getUnitMeta(product?.unit).step;
     mpPendingQty = Math.max(step, Math.round((mpPendingQty + direction * step) * 10) / 10);
     mpRefreshQtyControls(true, direction);
+    playSound('medias/Button.wav');
 }
 
 function mpAddToBasket() {
@@ -1060,6 +1098,7 @@ function mpAddToBasket() {
 
     renderBasketSummary();
     showToast(`${product.name} ajouté au panier`);
+    playSound('medias/Panier.wav');
 
     mpPendingQty = getUnitMeta(product.unit).defaultQty;
     mpRefreshQtyControls();
@@ -1100,6 +1139,25 @@ function renderMonPanierGrid() {
 
     const total = customBasket.reduce((sum, item) => sum + item.price * item.quantity, 0);
     if (totalEl) totalEl.textContent = total.toFixed(2) + '€';
+
+    mpUpdateBasketImage();
+}
+
+let mpLastBasketCount = null;
+
+function mpUpdateBasketImage() {
+    const totalCard = document.getElementById('mpTotalCard');
+    if (!totalCard) return;
+    const step = Math.min(customBasket.length, 5);
+    const fileName = step === 0 ? 'Panier.png' : `Panier${step}.png`;
+    totalCard.style.backgroundImage = `url('medias/${fileName}')`;
+
+    if (mpLastBasketCount !== null && mpLastBasketCount !== customBasket.length) {
+        totalCard.classList.remove('mp-total-card-bounce');
+        void totalCard.offsetWidth;
+        totalCard.classList.add('mp-total-card-bounce');
+    }
+    mpLastBasketCount = customBasket.length;
 }
 
 // Dispose les mp-item-card en cercle(s) autour du panier (mp-total-card), fixe au centre.
@@ -1178,25 +1236,23 @@ function validateCustomBasket() {
         alert('Votre panier est vide');
         return;
     }
-    
+
+    if (STATE.cart.length > 0) {
+        STATE.cart = [];
+    }
+
     customBasket.forEach(item => {
-        const existing = STATE.cart.find(c => c.id === item.id && c.type === 'product');
-        if (existing) {
-            existing.quantity += item.quantity;
-        } else {
-            STATE.cart.push({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                unit: item.unit || 'kg',
-                quantity: item.quantity,
-                type: 'product'
-            });
-        }
+        STATE.cart.push({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            unit: item.unit || 'kg',
+            quantity: item.quantity,
+            type: 'product'
+        });
     });
-    
+
     updateCart();
-    showToast('Panier ajouté à la commande !');
     toggleCart();
 }
 
@@ -1605,7 +1661,7 @@ function updateFooterNavbarVisibility() {
         footer.style.display = shouldHide ? 'none' : '';
     }
     if (navbar) {
-        navbar.style.display = shouldHide ? 'none' : '';
+        navbar.classList.toggle('navbar-collapsed', activePage === 'mon-panier');
     }
     if (mobileBottomNav) {
         mobileBottomNav.classList.toggle('mp-nav-collapsed', activePage === 'mon-panier');
@@ -1641,10 +1697,9 @@ window.addEventListener('resize', updateFooterNavbarVisibility);
 
 // Appeler au chargement
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        setTimeout(updateFooterNavbarVisibility, 500);
-        document.body.classList.add('loaded');
-    }, 600);
+    setTimeout(updateFooterNavbarVisibility, 500);
+    // Filet de sécurité si Firebase ne répond jamais : révèle quand même la page.
+    setTimeout(() => document.body.classList.add('loaded'), 5000);
 });
 
 
