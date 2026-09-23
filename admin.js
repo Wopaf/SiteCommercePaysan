@@ -1,12 +1,12 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyCFeVRcxq_YOc2EuNcMZExtZvyQn919wog",
-    authDomain: "sitecommercejardin-b348e.firebaseapp.com",
-    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "sitecommercejardin-b348e",
-    storageBucket: "sitecommercejardin-b348e.firebasestorage.app",
-    messagingSenderId: "468169255056",
-    appId: "1:468169255056:web:33ba4593dac84b41c6d015"
-    
+    apiKey: "AIzaSyDlG-Y-B5AnnIWCLy9Qy-gehhu5oVESVX0",
+    authDomain: "sitecommercejardin.firebaseapp.com",
+    databaseURL: "https://sitecommercejardin-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "sitecommercejardin",
+    storageBucket: "sitecommercejardin.firebasestorage.app",
+    messagingSenderId: "237086182110",
+    appId: "1:237086182110:web:56f7168f30271c8d53504f",
+    measurementId: "G-T2WJ5T8K1R"
 };
 
 // Variables de tri
@@ -225,6 +225,12 @@ function showOrderDetailsFromDashboard(orderId) {
 }
 
 // ===== PRODUITS =====
+function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 function renderProducts() {
     const container = document.getElementById('productsList');
     if (DATA.products.length === 0) {
@@ -235,40 +241,45 @@ function renderProducts() {
     const available = DATA.products.filter(p => p.inStock);
     const unavailable = DATA.products.filter(p => !p.inStock);
 
+    const renderRow = (product, isAvailable) => {
+        const unit = product.unit || 'kg';
+        return `
+            <div class="admin-product-row" data-id="${product.id}">
+                <div class="apr-image" onclick="editProduct('${product.id}')" title="Modifier l'image">
+                    ${product.image ? `<img src="${escapeHtml(product.image)}" alt="">` : '📦'}
+                </div>
+                <input type="text" class="apr-input apr-name" value="${escapeHtml(product.name)}"
+                    onblur="updateProductField('${product.id}', 'name', this.value.trim())"
+                    onkeydown="if(event.key==='Enter') this.blur()">
+                <select class="apr-select apr-category" onchange="updateProductField('${product.id}', 'category', this.value)">
+                    <option value="fruits" ${product.category === 'fruits' ? 'selected' : ''}>Fruits</option>
+                    <option value="legumes" ${product.category === 'legumes' ? 'selected' : ''}>Légumes</option>
+                    <option value="herbes" ${product.category === 'herbes' ? 'selected' : ''}>Herbes</option>
+                </select>
+                <div class="apr-price-group">
+                    <input type="number" class="apr-input apr-price" step="0.01" min="0" value="${product.price}"
+                        onblur="updateProductField('${product.id}', 'price', parseFloat(this.value) || 0)"
+                        onkeydown="if(event.key==='Enter') this.blur()">
+                    <select class="apr-select apr-unit" onchange="updateProductField('${product.id}', 'unit', this.value)">
+                        <option value="kg" ${unit === 'kg' ? 'selected' : ''}>Au kilo</option>
+                        <option value="lot250g" ${unit === 'lot250g' ? 'selected' : ''}>Lot de 250g</option>
+                        <option value="piece" ${unit === 'piece' ? 'selected' : ''}>À la pièce</option>
+                    </select>
+                </div>
+                <button class="admin-product-toggle ${isAvailable ? 'to-unavailable' : 'to-available'}" onclick="toggleProductAvailability('${product.id}')">
+                    ${isAvailable ? 'Retirer' : 'Rendre disponible'}
+                </button>
+                <button class="apr-delete" onclick="deleteProduct('${product.id}')" title="Supprimer" aria-label="Supprimer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+            </div>
+        `;
+    };
 
     const renderList = (products, emptyMsg, isAvailable) => {
         if (products.length === 0) return `<p class="admin-product-empty">${emptyMsg}</p>`;
-        return products.map(product => `
-            <div class="admin-row">
-                <div class="admin-row-left" onclick="editProduct('${product.id}')">
-                    <span class="admin-row-name">${product.name}</span>
-                </div>
-                <div class="admin-row-right">
-                    <button class="admin-product-toggle ${isAvailable ? 'to-unavailable' : 'to-available'}" onclick="toggleProductAvailability('${product.id}')">
-                        ${isAvailable ? 'Retirer' : 'Rendre disponible'}
-                    </button>
-                </div>
-            </div>
-        `).join('<div class="admin-row-separator"></div>');
+        return products.map(product => renderRow(product, isAvailable)).join('<div class="admin-row-separator"></div>');
     };
-
-
-
-async function toggleProductAvailability(productId) {
-    const product = DATA.products.find(p => p.id === productId);
-    if (!product) return;
-    try {
-        await window.firebase.set(
-            window.firebase.ref(db, `paniers-du-jardin/products/${productId}/inStock`),
-            !product.inStock
-        );
-        product.inStock = !product.inStock;
-        renderProducts();
-    } catch (err) {
-        alert('Erreur: ' + err.message);
-    }
-}
-
 
     container.innerHTML = `
         <div class="admin-product-group">
@@ -294,12 +305,50 @@ async function toggleProductAvailability(productId) {
     `;
 }
 
+async function updateProductField(productId, field, value) {
+    const product = DATA.products.find(p => p.id === productId);
+    if (!product) return;
+    if (product[field] === value) return;
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/products/${productId}/${field}`), value);
+        product[field] = value;
+    } catch (err) {
+        alert('Erreur lors de la mise à jour: ' + err.message);
+        renderProducts();
+    }
+}
+
+async function toggleProductAvailability(productId) {
+    const product = DATA.products.find(p => p.id === productId);
+    if (!product) return;
+    try {
+        await window.firebase.set(
+            window.firebase.ref(db, `paniers-du-jardin/products/${productId}/inStock`),
+            !product.inStock
+        );
+        product.inStock = !product.inStock;
+        renderProducts();
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+
+function handleProductImageUrlInput(url) {
+    const preview = document.getElementById('productImagePreview');
+    if (!url) {
+        preview.innerHTML = '<span class="upload-placeholder">📷 Aucune image</span>';
+        return;
+    }
+    preview.innerHTML = `<img src="${url}" alt="Aperçu du produit" onerror="this.parentElement.innerHTML='<span class=&quot;upload-placeholder&quot;>⚠️ Image introuvable</span>'">`;
+}
 
 function openProductModal(productId = null) {
     const modal = document.getElementById('productModal');
     const form = document.getElementById('productForm');
     form.reset();
-    
+    handleProductImageUrlInput('');
+
     if (productId) {
         const product = DATA.products.find(p => p.id === productId);
         if (product) {
@@ -308,10 +357,15 @@ function openProductModal(productId = null) {
             document.getElementById('productName').value = product.name;
             document.getElementById('productCategory').value = product.category;
             document.getElementById('productPrice').value = product.price;
-            document.querySelectorAll('.months-checkboxes input').forEach(cb => {
-                cb.checked = product.availableMonths?.includes(parseInt(cb.value)) || false;
-            });
+            document.getElementById('productUnit').value = product.unit || 'kg';
+            if (product.image) {
+                document.getElementById('productImageUrl').value = product.image;
+                handleProductImageUrlInput(product.image);
+            }
         }
+    } else {
+        document.getElementById('productModalTitle').textContent = 'Ajouter un Produit';
+        document.getElementById('productUnit').value = 'kg';
     }
     modal.classList.add('active');
 }
@@ -325,12 +379,14 @@ async function saveProduct(event) {
         name: document.getElementById('productName').value,
         category: document.getElementById('productCategory').value,
         price: parseFloat(document.getElementById('productPrice').value),
+        unit: document.getElementById('productUnit').value,
         inStock: existingProduct ? (existingProduct.inStock ?? true) : true,
-        availableMonths: Array.from(document.querySelectorAll('.months-checkboxes input:checked')).map(cb => parseInt(cb.value)),
+        availableMonths: existingProduct?.availableMonths || [],
+        image: document.getElementById('productImageUrl').value || null,
     };
 
 
-    
+
     try {
         await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/products/${productId}`), productData);
         await loadAllAdminData();

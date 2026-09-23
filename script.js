@@ -1,11 +1,12 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyCFeVRcxq_YOc2EuNcMZExtZvyQn919wog",
-    authDomain: "sitecommercejardin-b348e.firebaseapp.com",
-    databaseURL: "https://sitecommercejardin-b348e-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "sitecommercejardin-b348e",
-    storageBucket: "sitecommercejardin-b348e.firebasestorage.app",
-    messagingSenderId: "468169255056",
-    appId: "1:468169255056:web:33ba4593dac84b41c6d015"
+    apiKey: "AIzaSyDlG-Y-B5AnnIWCLy9Qy-gehhu5oVESVX0",
+    authDomain: "sitecommercejardin.firebaseapp.com",
+    databaseURL: "https://sitecommercejardin-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "sitecommercejardin",
+    storageBucket: "sitecommercejardin.firebasestorage.app",
+    messagingSenderId: "237086182110",
+    appId: "1:237086182110:web:56f7168f30271c8d53504f",
+    measurementId: "G-T2WJ5T8K1R"
 };
 
 let app, db, auth, storage, currentUser = null;
@@ -443,7 +444,43 @@ function addBasketToCart(id) {
 // Paniers personnalisés sauvegardés
 let userBaskets = [];
 let currentBasketId = null;
-let customBasket = [];
+
+const CUSTOM_BASKET_STORAGE_KEY = 'bl_customBasket';
+
+function loadCustomBasketFromStorage() {
+    try {
+        const raw = localStorage.getItem(CUSTOM_BASKET_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (err) {
+        console.error('Erreur lecture panier local:', err);
+        return [];
+    }
+}
+
+function saveCustomBasketToStorage() {
+    try {
+        localStorage.setItem(CUSTOM_BASKET_STORAGE_KEY, JSON.stringify(customBasket));
+    } catch (err) {
+        console.error('Erreur sauvegarde panier local:', err);
+    }
+}
+
+let customBasket = loadCustomBasketFromStorage();
+
+// ===== Mon Panier (onglet mobile) =====
+const MP_CATEGORY_META = {
+    fruits:  { icon: '🍎', color1: '#ff8f3c', color2: '#ffd08a' },
+    legumes: { icon: '🥕', color1: '#448548', color2: '#a8d5a2' },
+    herbes:  { icon: '🌿', color1: '#2f9e44', color2: '#b7e4c7' },
+    default: { icon: '🧺', color1: '#0eaaa5', color2: '#8fe3df' }
+};
+let mpSelectedProductId = null;
+let mpPendingQty = 1;
+let mpScrollTimeout = null;
+
+function mpGetProductMeta(product) {
+    return MP_CATEGORY_META[product?.category] || MP_CATEGORY_META.default;
+}
 
 // Charger les paniers de l'utilisateur depuis Firebase
 async function loadUserBaskets() {
@@ -673,25 +710,6 @@ document.getElementById('confirmDeleteBasketModal')?.addEventListener('click', (
 
 
 
-function addToCustomBasket(productId) {
-    const product = DATA.products.find(p => p.id === productId);
-    if (!product) return;
-    
-    const existing = customBasket.find(item => item.id === productId);
-    if (existing) {
-        existing.quantity += 0.5;
-    } else {
-        customBasket.push({
-            id: productId,
-            name: product.name,
-            price: product.price,
-            quantity: 0.5
-        });
-    }
-    
-    renderBasketSummary();
-}
-
 function removeFromCustomBasket(productId) {
     customBasket = customBasket.filter(item => item.id !== productId);
     renderBasketSummary();
@@ -711,57 +729,318 @@ function changeCustomBasketQty(productId, change) {
 }
 
 function renderBasketSummary() {
+    saveCustomBasketToStorage();
+
     const container = document.getElementById('basketSummaryItems');
     const totalEl = document.getElementById('basketSummaryTotal');
     if (!container) return;
-    
+
     if (customBasket.length === 0) {
         container.innerHTML = '<p class="basket-empty">Votre panier est vide</p>';
         totalEl.textContent = '0€';
+        renderMonPanierGrid();
         return;
     }
-    
+
     let total = 0;
     container.innerHTML = customBasket.map(item => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
+        const unit = item.unit || 'kg';
+        const step = getUnitMeta(unit).step;
                 return `
             <div class="basket-summary-row" data-id="${item.id}">
                 <span class="item-name">${item.name}</span>
-                <span class="item-price">${item.price}€/kg</span>
+                <span class="item-price">${formatUnitPrice(item.price, unit)}</span>
                 <div class="item-qty-controls">
-                    <button class="qty-btn-mini" onclick="changeCustomBasketQty('${item.id}', -0.5)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
-                    <span>${item.quantity} kg</span>
-                    <button class="qty-btn-mini" onclick="changeCustomBasketQty('${item.id}', 0.5)"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg></button>
+                    <button class="qty-btn-mini" onclick="changeCustomBasketQty('${item.id}', -${step})"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M240-440q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h480q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H240Z"/></svg></button>
+                    <span>${formatQtyWithUnit(item.quantity, unit)}</span>
+                    <button class="qty-btn-mini" onclick="changeCustomBasketQty('${item.id}', ${step})"><svg height="16px" viewBox="0 -960 960 960" width="16px" fill="#4a7c4e"><path d="M480-120q-17 0-28.5-11.5T440-160v-280H160q-17 0-28.5-11.5T120-480q0-17 11.5-28.5T160-520h280v-280q0-17 11.5-28.5T480-840q17 0 28.5 11.5T520-800v280h280q17 0 28.5 11.5T840-480q0 17-11.5 28.5T800-440H520v280q0 17-11.5 28.5T480-120Z"/></svg></button>
                 </div>
                 <span class="item-total">${itemTotal.toFixed(2)}€</span>
             </div>
         `;
     }).join('');
-    
+
     totalEl.textContent = total.toFixed(2) + '€';
+
+    renderMonPanierGrid();
 }
 
 
 function renderCustomProducts() {
     const container = document.getElementById('productsTable');
     if (!container) return;
-    
+
     container.innerHTML = DATA.products.map(p => `
         <div class="product-row" data-category="${p.category}">
             <span class="product-name">${p.name}</span>
-            <span class="product-price">${p.price}€/kg</span>
+            <span class="product-price">${formatUnitPrice(p.price, p.unit)}</span>
             <button class="btn-secondary" onclick="addToCustomBasket('${p.id}')">Ajouter</button>
         </div>
     `).join('');
-    
+
     // Charger les paniers utilisateur
     loadUserBaskets();
+
+    renderMonPanierWheel();
 }
 
 function scrollToProducts() {
     document.querySelector('.products-list-panel').scrollIntoView({ behavior: 'smooth' });
 }
+
+// ===== Mon Panier (onglet mobile) =====
+
+function renderMonPanierWheel() {
+    const wheel = document.getElementById('mpWheel');
+    if (!wheel) return;
+
+    const available = DATA.products.filter(p => p.inStock !== false);
+
+    if (available.length === 0) {
+        wheel.innerHTML = '<p class="mp-wheel-empty">Aucun produit disponible</p>';
+        return;
+    }
+
+    wheel.innerHTML = available.map(p => {
+        const meta = mpGetProductMeta(p);
+        const circleStyle = p.image
+            ? `background-image:url('${p.image}')`
+            : `background:${meta.color1}`;
+        return `
+            <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true)">
+                <div class="mp-wheel-circle" style="${circleStyle}">${p.image ? '' : meta.icon}</div>
+                <span class="mp-wheel-name">${p.name}</span>
+            </div>
+        `;
+    }).join('');
+
+    if (!mpSelectedProductId || !available.find(p => p.id === mpSelectedProductId)) {
+        mpSelectedProductId = available[0].id;
+    }
+    mpSelectProduct(mpSelectedProductId, false);
+
+    wheel.removeEventListener('scroll', mpHandleWheelScroll);
+    wheel.addEventListener('scroll', mpHandleWheelScroll, { passive: true });
+    wheel.removeEventListener('scroll', mpRequestWheelRadialUpdate);
+    wheel.addEventListener('scroll', mpRequestWheelRadialUpdate, { passive: true });
+
+    mpApplyWheelRadialTransforms();
+
+    window.removeEventListener('resize', mpRequestWheelRadialUpdate);
+    window.addEventListener('resize', mpRequestWheelRadialUpdate);
+}
+
+function mpHandleWheelScroll() {
+    clearTimeout(mpScrollTimeout);
+    mpScrollTimeout = setTimeout(() => {
+        const wheel = document.getElementById('mpWheel');
+        if (!wheel) return;
+        const center = wheel.scrollLeft + wheel.clientWidth / 2;
+        let closest = null, closestDist = Infinity;
+        wheel.querySelectorAll('.mp-wheel-card').forEach(card => {
+            const dist = Math.abs((card.offsetLeft + card.offsetWidth / 2) - center);
+            if (dist < closestDist) { closestDist = dist; closest = card; }
+        });
+        if (closest) mpSelectProduct(closest.dataset.id, false);
+    }, 100);
+}
+
+let mpWheelRafId = null;
+
+function mpRequestWheelRadialUpdate() {
+    if (mpWheelRafId) return;
+    mpWheelRafId = requestAnimationFrame(() => {
+        mpWheelRafId = null;
+        mpApplyWheelRadialTransforms();
+    });
+}
+
+// Courbe chaque carte le long d'un arc, comme si elle glissait sur la jante d'une roue.
+function mpApplyWheelRadialTransforms() {
+    const wheel = document.getElementById('mpWheel');
+    if (!wheel) return;
+    const cards = wheel.querySelectorAll('.mp-wheel-card');
+    if (!cards.length) return;
+
+    const center = wheel.scrollLeft + wheel.clientWidth / 2;
+    const maxAngle = 46;
+    const range = wheel.clientWidth / 2 + 40;
+
+    cards.forEach(card => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const t = Math.max(-1, Math.min(1, (cardCenter - center) / range));
+        const angle = t * maxAngle;
+        const rad = angle * Math.PI / 180;
+        const drop = Math.abs(angle*2);
+        const scale = 0.72 + 0.28 * Math.cos(rad);
+        const opacity = 0.3 + 0.7 * Math.cos(rad);
+        card.style.transform = `translateY(${drop}px) rotate(${angle}deg) scale(${scale})`;
+        card.style.opacity = opacity;
+    });
+}
+
+function mpSelectProduct(productId, scrollIntoView) {
+    if (!productId) return;
+    const product = DATA.products.find(p => p.id === productId);
+    if (!product) return;
+
+    mpSelectedProductId = productId;
+    mpPendingQty = getUnitMeta(product.unit).defaultQty;
+
+    document.querySelectorAll('.mp-wheel-card').forEach(card => {
+        card.classList.toggle('active', card.dataset.id === productId);
+    });
+
+    if (scrollIntoView) {
+        document.querySelector(`.mp-wheel-card[data-id="${productId}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    mpUpdateBackground(product);
+    mpRefreshQtyControls();
+}
+
+function mpRefreshQtyControls() {
+    const product = DATA.products.find(p => p.id === mpSelectedProductId);
+    const unit = getUnitMeta(product?.unit);
+    const labelEl = document.getElementById('mpQtyLabel');
+    const valueEl = document.getElementById('mpQtyValue');
+    if (labelEl) labelEl.textContent = unit.label;
+    if (valueEl) valueEl.textContent = formatQtyWithUnit(mpPendingQty, product?.unit);
+    mpUpdateQtyInfo();
+}
+
+function mpUpdateQtyInfo() {
+    const priceEl = document.getElementById('mpQtyPrice');
+    const subtotalEl = document.getElementById('mpQtySubtotal');
+    if (!priceEl || !subtotalEl) return;
+
+    const product = DATA.products.find(p => p.id === mpSelectedProductId);
+    const price = product?.price || 0;
+    priceEl.textContent = formatUnitPrice(price, product?.unit);
+    subtotalEl.textContent = `${(price * mpPendingQty).toFixed(2)} €`;
+}
+
+let mpBgActiveLayer = 0;
+let mpBgRequestId = 0;
+
+function mpShowGradientBackground(meta) {
+    const bg = document.getElementById('mpBackground');
+    const icon = document.getElementById('mpBackgroundIcon');
+    const layer0 = document.getElementById('mpBgLayer0');
+    const layer1 = document.getElementById('mpBgLayer1');
+    layer0.classList.remove('active');
+    layer1.classList.remove('active');
+    icon.style.opacity = '0.16';
+    icon.textContent = meta.icon;
+    bg.style.background = `radial-gradient(circle at 50% 25%, ${meta.color2}, ${meta.color1} 75%)`;
+}
+
+function mpUpdateBackground(product) {
+    const meta = mpGetProductMeta(product);
+    mpShowGradientBackground(meta);
+}
+
+function mpChangeQty(direction) {
+    const product = DATA.products.find(p => p.id === mpSelectedProductId);
+    const step = getUnitMeta(product?.unit).step;
+    mpPendingQty = Math.max(step, Math.round((mpPendingQty + direction * step) * 10) / 10);
+    mpRefreshQtyControls();
+}
+
+function mpAddToBasket() {
+    if (!mpSelectedProductId) return;
+    const product = DATA.products.find(p => p.id === mpSelectedProductId);
+    if (!product) return;
+
+    const existing = customBasket.find(item => item.id === product.id);
+    if (existing) {
+        existing.quantity += mpPendingQty;
+    } else {
+        customBasket.push({ id: product.id, name: product.name, price: product.price, unit: product.unit || 'kg', quantity: mpPendingQty });
+    }
+
+    renderBasketSummary();
+    showToast(`${product.name} ajouté au panier`);
+
+    mpPendingQty = getUnitMeta(product.unit).defaultQty;
+    mpRefreshQtyControls();
+
+    const card = document.querySelector(`.mp-item-card[data-id="${product.id}"]`);
+    if (card) {
+        card.classList.add(existing ? 'mp-item-updated' : 'mp-item-new');
+        card.addEventListener('animationend', () => card.classList.remove('mp-item-new', 'mp-item-updated'), { once: true });
+    }
+}
+
+function renderMonPanierGrid() {
+    const grid = document.getElementById('mpItemsGrid');
+    const totalEl = document.getElementById('mpTotalValue');
+    if (!grid) return;
+
+    if (customBasket.length === 0) {
+        grid.innerHTML = '<p class="mp-items-empty" id="mpItemsEmpty">Votre panier est vide, choisissez un produit ci-dessous 👇</p>';
+    } else {
+        grid.innerHTML = customBasket.map(item => {
+            const product = DATA.products.find(p => p.id === item.id);
+            const meta = mpGetProductMeta(product);
+            const itemTotal = (item.price * item.quantity).toFixed(2);
+            return `
+                <div class="mp-item-card" data-id="${item.id}">
+                    <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer">×</button>
+                    <span class="mp-item-icon" style="background:${meta.color1}">${meta.icon}</span>
+                    <span class="mp-item-name">${item.name}</span>
+                    <span class="mp-item-qty">${formatQtyWithUnit(item.quantity, item.unit || 'kg')}</span>
+                    <span class="mp-item-price">${itemTotal}€</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    const total = customBasket.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    if (totalEl) totalEl.textContent = total.toFixed(2) + '€';
+}
+
+function openMpBasketsModal() {
+    renderMpBasketsList();
+    document.getElementById('mpBasketsModal').classList.add('active');
+}
+
+function closeMpBasketsModal() {
+    document.getElementById('mpBasketsModal').classList.remove('active');
+}
+
+function renderMpBasketsList() {
+    const container = document.getElementById('mpBasketsList');
+    if (!container) return;
+
+    if (!currentUser) {
+        container.innerHTML = '<p class="dropdown-empty">Connectez-vous pour retrouver vos paniers sauvegardés.</p>';
+        return;
+    }
+    if (userBaskets.length === 0) {
+        container.innerHTML = '<p class="dropdown-empty">Aucun panier sauvegardé</p>';
+        return;
+    }
+
+    container.innerHTML = userBaskets.map(basket => `
+        <div class="mp-basket-list-item ${basket.id === currentBasketId ? 'active' : ''}" onclick="mpLoadBasket('${basket.id}')">
+            <span class="basket-item-name">${basket.name}</span>
+            <span class="basket-item-count">${basket.items?.length || 0} produits</span>
+        </div>
+    `).join('');
+}
+
+function mpLoadBasket(basketId) {
+    selectBasket(basketId);
+    closeMpBasketsModal();
+}
+
+document.getElementById('mpBasketsModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeMpBasketsModal();
+});
 
 function validateCustomBasket() {
     if (customBasket.length === 0) {
@@ -778,6 +1057,7 @@ function validateCustomBasket() {
                 id: item.id,
                 name: item.name,
                 price: item.price,
+                unit: item.unit || 'kg',
                 quantity: item.quantity,
                 type: 'product'
             });
@@ -807,19 +1087,21 @@ function showBasketPanel() {
 function addToCustomBasket(productId) {
     const product = DATA.products.find(p => p.id === productId);
     if (!product) return;
-    
+    const step = getUnitMeta(product.unit).step;
+
     const existing = customBasket.find(item => item.id === productId);
     if (existing) {
-        existing.quantity += 0.5;
+        existing.quantity += step;
     } else {
         customBasket.push({
             id: productId,
             name: product.name,
             price: product.price,
-            quantity: 0.5
+            unit: product.unit || 'kg',
+            quantity: step
         });
     }
-    
+
         renderBasketSummary();
 
     const row = document.querySelector(`.basket-summary-row[data-id="${productId}"]`);
@@ -947,7 +1229,7 @@ function updateCart() {
                 <div class="cart-item">
                     <div class="cart-item-info">
                         <span class="cart-item-name">${item.name}</span>
-                        <span class="cart-item-details">${item.quantity} kg × ${item.price}€/kg</span>
+                        <span class="cart-item-details">${formatQtyWithUnit(item.quantity, item.unit || 'kg')} × ${formatUnitPrice(item.price, item.unit)}</span>
                     </div>
                     <div class="cart-item-total">${itemTotal}€</div>
                     <button onclick="removeFromCart(${i})">×</button>
@@ -1182,7 +1464,7 @@ function updateFooterNavbarVisibility() {
     const activePage = document.querySelector('.page.active')?.id;
     const footer = document.querySelector('.footer');
     const navbar = document.querySelector('.navbar');
-    const pagesToHide = ['commander', 'contact', 'mon-compte'];
+    const pagesToHide = ['commander', 'contact', 'mon-compte', 'mon-panier'];
     const isSmallScreen = window.innerWidth < 950;
     
     const shouldHide = activePage && pagesToHide.includes(activePage) && isSmallScreen;
@@ -1210,6 +1492,12 @@ function navigateTo(page) {
     window.scrollTo(0, 0);
     updateMobileNav(page);
     updateFooterNavbarVisibility();
+
+    if (page === 'mon-panier') {
+        if (!document.querySelector('#mpWheel .mp-wheel-card')) renderMonPanierWheel();
+        renderMonPanierGrid();
+        requestAnimationFrame(mpApplyWheelRadialTransforms);
+    }
 }
 
 window.addEventListener('resize', updateFooterNavbarVisibility);
@@ -1380,7 +1668,7 @@ function showUserOrderDetails(orderId) {
                     ${order.items?.map(item => `
                         <div class="order-item-row">
                             <span class="order-item-name">${item.name}</span>
-                            <span class="order-item-qty">${item.type === 'product' ? item.quantity + ' kg' : '× ' + item.quantity}</span>
+                            <span class="order-item-qty">${item.type === 'product' ? formatQtyWithUnit(item.quantity, item.unit || 'kg') : '× ' + item.quantity}</span>
                             <span class="order-item-price">${(item.price * item.quantity).toFixed(2)}€</span>
                         </div>
                     `).join('') || '<p>Aucun article</p>'}

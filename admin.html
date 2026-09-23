@@ -235,7 +235,7 @@
                                 <span class="link-desc">Code source du projet</span>
                             </div>
                         </a>
-                        <a href="https://console.firebase.google.com/u/1/project/sitecommercejardin-b348e/" target="_blank" class="settings-link-card">
+                        <a href="https://console.firebase.google.com/project/sitecommercejardin/" target="_blank" class="settings-link-card">
                             <div class="link-icon firebase">
                                 <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                                     <path d="M3.89 15.672L6.255.461A.542.542 0 017.27.288l2.543 4.771zm16.794 3.692l-2.25-14a.54.54 0 00-.919-.295L3.316 19.365l7.856 4.427a1.621 1.621 0 001.588 0zM14.3 7.147l-1.82-3.482a.542.542 0 00-.96 0L3.53 17.984z"/>
@@ -284,26 +284,25 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Prix (€/kg) *</label>
+                            <label>Prix *</label>
                             <input type="number" id="productPrice" class="input-field" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Vendu *</label>
+                            <select id="productUnit" class="input-field" required>
+                                <option value="kg">Au kilo</option>
+                                <option value="lot250g">Lot de 250g</option>
+                                <option value="piece">À la pièce</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Disponibilité (Mois de l'année)</label>
-                        <div class="months-checkboxes">
-                            <label><input type="checkbox" value="1"> Janvier</label>
-                            <label><input type="checkbox" value="2"> Février</label>
-                            <label><input type="checkbox" value="3"> Mars</label>
-                            <label><input type="checkbox" value="4"> Avril</label>
-                            <label><input type="checkbox" value="5"> Mai</label>
-                            <label><input type="checkbox" value="6"> Juin</label>
-                            <label><input type="checkbox" value="7"> Juillet</label>
-                            <label><input type="checkbox" value="8"> Août</label>
-                            <label><input type="checkbox" value="9"> Septembre</label>
-                            <label><input type="checkbox" value="10"> Octobre</label>
-                            <label><input type="checkbox" value="11"> Novembre</label>
-                            <label><input type="checkbox" value="12"> Décembre</label>
+                        <label>Image du produit (URL)</label>
+                        <input type="url" id="productImageUrl" class="input-field" placeholder="https://exemple.com/image.jpg" oninput="handleProductImageUrlInput(this.value)">
+                        <div class="image-preview" id="productImagePreview" style="margin-top:0.5rem;">
+                            <span class="upload-placeholder">📷 Aucune image</span>
                         </div>
                     </div>
 
@@ -363,6 +362,7 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="units.js"></script>
     <script src="admin.js"></script>
 
 </body>
