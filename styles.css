@@ -14,7 +14,7 @@
 */
 
 /*Printemp*/
-    --primary: #448548;
+    --primary: #337348;
     --primaryhover: #549359;
     --light: #7cb342;
     --pale: #e8f5e9;
@@ -6917,8 +6917,7 @@ html {
     position: fixed;
     inset: 0;
     z-index: 0;
-    background: radial-gradient(circle at 50% 25%, #8fe3df, #0eaaa5 75%);
-    transition: background 0.6s ease;
+    background: radial-gradient(circle at 50% 25%, var(--light), var(--primary) 75%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -7129,6 +7128,11 @@ html {
     padding: 0;
 }
 
+.mp-item-remove svg {
+    width: 12px;
+    height: 12px;
+}
+
 .mp-items-empty {
     position: absolute;
     top: 0;
@@ -7245,7 +7249,8 @@ html {
 }
 
 #mpQtyFieldQuantity {
-    border-radius: calc(35% + 30px) calc(35% + 30px) 10px 10px;
+    border-radius: calc(35% + 30px) calc(35% + 30px) 14px 14px;
+    border: 2px solid var(--wheel-color);
 }
 
 .mp-qty-field-label {
@@ -7338,10 +7343,11 @@ html {
 .mp-qty-btn {
     min-width: 40px;
     width: 100%;
-    height: 40px;
+    height: 44px;
     border-radius: 10px;
     border: none;
     background: var(--pale);
+    box-shadow: 0px 4px 1px #b9c4b9;;
     color: var(--primary);
     font-size: 1.2rem;
     font-weight: 700;
@@ -7350,11 +7356,14 @@ html {
     align-items: center;
     justify-content: center;
     font-family: inherit;
+    border: solid 2px var(--border);
     transition: transform 0.15s ease;
 }
 
 .mp-qty-btn:active {
-    transform: scale(0.85);
+    transform: scale(0.95, 0.85);
+    box-shadow: 0px 2px 1px #b9c4b9;
+    background: #f4f7f4;
 }
 
 #mpQtyBtnMinus {

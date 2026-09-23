@@ -14,6 +14,41 @@ const DATA = { products: [], baskets: [], orders: [], settings: {} };
 const STATE = { cart: [], firebaseReady: false };
 let currentSlide = 0, carouselImages = [], autoplayInterval, currentMonth = new Date().getMonth() + 1;
 
+let appRevealStarted = false;
+
+function revealAppFromLoader() {
+    if (appRevealStarted) return;
+    appRevealStarted = true;
+
+    const loader = document.getElementById('pageLoader');
+    if (!loader) {
+        document.body.classList.add('loaded');
+        return;
+    }
+
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const maxRadius = (Math.hypot(window.innerWidth, window.innerHeight) / 2) * 1.4;
+    const duration = 700;
+    const start = performance.now();
+
+    function frame(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const radius = eased * maxRadius;
+        const mask = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${radius}px, black ${radius}px)`;
+        loader.style.maskImage = mask;
+        loader.style.webkitMaskImage = mask;
+        if (t < 1) {
+            requestAnimationFrame(frame);
+        } else {
+            document.body.classList.add('loaded');
+            loader.classList.add('hidden');
+        }
+    }
+    requestAnimationFrame(frame);
+}
+
 // Init Firebase
 setTimeout(async () => {
     if (!window.firebase) return;
@@ -44,7 +79,7 @@ setTimeout(async () => {
         // Attendre que tous les éléments aient fini de se redimensionner/positionner avant de révéler la page
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                document.body.classList.add('loaded');
+                revealAppFromLoader();
             });
         });
     }, 300);
@@ -839,7 +874,7 @@ function renderMonPanierWheel() {
             ? `background-image:url('${p.image}')`
             : `background:${meta.color1}`) + `;--wheel-color:${meta.color1}`;
         return `
-            <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true)">
+            <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true, true)">
                 <div class="mp-wheel-circle" style="${circleStyle}">${p.image ? '' : meta.icon}</div>
                 <span class="mp-wheel-name">${p.name}</span>
             </div>
@@ -928,7 +963,7 @@ function mpHandleWheelScroll() {
             const dist = Math.abs((card.offsetLeft + card.offsetWidth / 2) - center);
             if (dist < closestDist) { closestDist = dist; closest = card; }
         });
-        if (closest) mpSelectProduct(closest.dataset.id, false);
+        if (closest) mpSelectProduct(closest.dataset.id, false, true);
     }, 30);
 }
 
@@ -984,10 +1019,12 @@ function mpApplyWheelRadialTransforms() {
     });
 }
 
-function mpSelectProduct(productId, scrollIntoView) {
+function mpSelectProduct(productId, scrollIntoView, userInitiated = false) {
     if (!productId) return;
     const product = DATA.products.find(p => p.id === productId);
     if (!product) return;
+
+    if (userInitiated && mpSelectedProductId !== productId) playSound('medias/Pop.wav', 0.5);
 
     mpSelectedProductId = productId;
     mpPendingQty = getUnitMeta(product.unit).defaultQty;
@@ -1046,33 +1083,15 @@ function mpUpdateQtyInfo(animate = true) {
     }
 }
 
-let mpBgActiveLayer = 0;
-let mpBgRequestId = 0;
-
-function mpShowGradientBackground(meta) {
-    const icon = document.getElementById('mpBackgroundIcon');
-    const layer0 = document.getElementById('mpBgLayer0');
-    const layer1 = document.getElementById('mpBgLayer1');
-    icon.style.opacity = '0.16';
-    icon.textContent = meta.icon;
-
-    const gradient = `radial-gradient(circle at 50% 25%, ${darkenColor(meta.color2, 12)}, ${darkenColor(meta.color1, 12)} 75%)`;
-    const nextLayer = mpBgActiveLayer === 0 ? layer1 : layer0;
-    const currentLayer = mpBgActiveLayer === 0 ? layer0 : layer1;
-    nextLayer.style.background = gradient;
-    nextLayer.classList.add('active');
-    currentLayer.classList.remove('active');
-    mpBgActiveLayer = mpBgActiveLayer === 0 ? 1 : 0;
-}
-
 function mpUpdateBackground(product) {
-    const meta = mpGetProductMeta(product);
-    mpShowGradientBackground(meta);
+    // Le fond reste fixe (vert), il ne suit plus la couleur du produit sélectionné.
 }
 
-function playSound(src) {
+function playSound(src, volume = 1) {
     try {
-        new Audio(src).play().catch(() => {});
+        const audio = new Audio(src);
+        audio.volume = volume;
+        audio.play().catch(() => {});
     } catch (e) {}
 }
 
@@ -1127,7 +1146,7 @@ function renderMonPanierGrid() {
             const itemTotal = (item.price * item.quantity).toFixed(2);
             return `
                 <div class="mp-item-card" data-id="${item.id}">
-                    <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer">×</button>
+                    <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-416.35 287.83-224.17Q275.15-211.5 256-211.5t-31.83-12.67Q211.5-236.85 211.5-256t12.67-31.83L416.35-480 224.17-672.17Q211.5-684.85 211.5-704t12.67-31.83Q236.85-748.5 256-748.5t31.83 12.67L480-543.65l192.17-192.18Q684.85-748.5 704-748.5t31.83 12.67Q748.5-723.15 748.5-704t-12.67 31.83L543.65-480l192.18 192.17Q748.5-275.15 748.5-256t-12.67 31.83Q723.15-211.5 704-211.5t-31.83-12.67L480-416.35Z"/></svg></button>
                     <span class="mp-item-name">${item.name}</span>
                     <span class="mp-item-qty">${mpFormatItemQty(item.quantity, item.unit || 'kg')}</span>
                     <span class="mp-item-price">${itemTotal}€</span>
@@ -1148,8 +1167,14 @@ let mpLastBasketCount = null;
 function mpUpdateBasketImage() {
     const totalCard = document.getElementById('mpTotalCard');
     if (!totalCard) return;
-    const step = Math.min(customBasket.length, 5);
-    const fileName = step === 0 ? 'Panier.png' : `Panier${step}.png`;
+    const count = customBasket.length;
+    let fileName;
+    if (count === 0) fileName = 'Panier.png';
+    else if (count <= 2) fileName = 'Panier1.png';
+    else if (count <= 4) fileName = 'Panier2.png';
+    else if (count === 5) fileName = 'Panier3.png';
+    else if (count === 6) fileName = 'Panier4.png';
+    else fileName = 'Panier5.png';
     totalCard.style.backgroundImage = `url('medias/${fileName}')`;
 
     if (mpLastBasketCount !== null && mpLastBasketCount !== customBasket.length) {
@@ -1167,21 +1192,14 @@ function mpArrangeItemsInCircle() {
     const cards = zone.querySelectorAll('.mp-item-card');
     if (!cards.length) return;
 
-    const perRing = 8;
-    const ringGap = 92;
     const centerY = zone.clientHeight * 0.30;
     const verticalLimit = Math.min(centerY, zone.clientHeight - centerY) - 60;
     const horizontalLimit = zone.clientWidth / 2 - 60;
     const maxRadius = Math.max(130, Math.min(horizontalLimit, verticalLimit));
-    const baseRadius = Math.min(270, maxRadius);
+    const radius = Math.min(270, maxRadius);
 
     cards.forEach((card, i) => {
-        const ring = Math.floor(i / perRing);
-        const ringStart = ring * perRing;
-        const ringCount = Math.min(perRing, cards.length - ringStart);
-        const indexInRing = i - ringStart;
-        const radius = Math.min(baseRadius + ring * ringGap, maxRadius + ring * ringGap);
-        const angle = (indexInRing / ringCount) * Math.PI * 2 - Math.PI / 2;
+        const angle = (i / cards.length) * Math.PI * 2 - Math.PI / 2;
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;
         card.style.setProperty('--ox', `${x}px`);
@@ -1699,7 +1717,7 @@ window.addEventListener('resize', updateFooterNavbarVisibility);
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(updateFooterNavbarVisibility, 500);
     // Filet de sécurité si Firebase ne répond jamais : révèle quand même la page.
-    setTimeout(() => document.body.classList.add('loaded'), 5000);
+    setTimeout(() => revealAppFromLoader(), 5000);
 });
 
 
