@@ -14,6 +14,7 @@ let usersSortField = 'created';
 let usersSortOrder = 'desc';
 let ordersSortField = 'date';
 let ordersSortOrder = 'desc';
+let ordersStatusFilter = 'all';
 
 let app, db, auth, storage, currentAdmin = null;
 const DATA = { products: [], baskets: [], orders: [], users: [], settings: {}, carouselImages: [] };
@@ -172,6 +173,10 @@ function showAdminSection(section) {
         settings: 'Paramètres'
     };
     document.getElementById('adminSectionTitle').textContent = titles[section] || section;
+
+    if (section === 'dashboard') {
+        renderDashboard();
+    }
 }
 
 // ===== DASHBOARD =====
@@ -181,7 +186,7 @@ function renderDashboard() {
     const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
     
     // Commandes non traitées (nouvelles)
-    const pendingOrders = DATA.orders.filter(o => !o.treated);
+    const pendingOrders = DATA.orders.filter(o => orderStatusOf(o) === 'pending');
     const newOrdersAlert = document.getElementById('newOrdersAlert');
     const newOrdersCount = document.getElementById('newOrdersCount');
     
@@ -216,6 +221,241 @@ function renderDashboard() {
     
     // Total commandes
     document.getElementById('totalOrdersCount').textContent = DATA.orders.length;
+
+    renderRevenueChart();
+    renderMonthlyStats();
+}
+
+function renderMonthlyStats() {
+    const container = document.getElementById('monthlyStatsList');
+    if (!container) return;
+
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const months = {};
+
+    DATA.orders.forEach(o => {
+        if (!o.date) return;
+        const d = new Date(o.date);
+        if (isNaN(d)) return;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!months[key]) {
+            months[key] = { year: d.getFullYear(), month: d.getMonth(), count: 0, revenue: 0 };
+        }
+        months[key].count++;
+        if (orderStatusOf(o) === 'delivered') months[key].revenue += o.total || 0;
+    });
+
+    const sortedKeys = Object.keys(months).sort().reverse();
+
+    if (sortedKeys.length === 0) {
+        container.innerHTML = '<p class="admin-product-empty">Aucune commande</p>';
+        return;
+    }
+
+    container.innerHTML = sortedKeys.map(key => {
+        const m = months[key];
+        return `
+            <div class="admin-row">
+                <div class="admin-row-left">
+                    <span class="admin-row-name">${monthNames[m.month]} ${m.year}</span>
+                </div>
+                <div class="admin-row-right">
+                    <span class="admin-row-meta">${m.count} commande${m.count > 1 ? 's' : ''}</span>
+                    <span class="admin-row-value">${m.revenue.toFixed(2)}€</span>
+                </div>
+            </div>
+        `;
+    }).join('<div class="admin-row-separator"></div>');
+}
+
+// ===== Graphiques dashboard (revenus + commandes par jour) =====
+let revenueChartRange = 30;
+
+function setRevenueChartRange(range) {
+    revenueChartRange = range;
+    document.querySelectorAll('.admin-chart-range-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.range === String(range));
+    });
+    renderRevenueChart();
+}
+
+function niceMaxValue(value) {
+    if (value <= 0) return 10;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
+    const residual = value / magnitude;
+    let niceResidual;
+    if (residual <= 1) niceResidual = 1;
+    else if (residual <= 2) niceResidual = 2;
+    else if (residual <= 5) niceResidual = 5;
+    else niceResidual = 10;
+    return niceResidual * magnitude;
+}
+
+function localDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// Regroupe les commandes par jour sur la plage sélectionnée, une fois pour les deux graphiques.
+function getDailyOrderGroups() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let days = revenueChartRange;
+    if (revenueChartRange === 'all') {
+        const dates = DATA.orders.map(o => new Date(o.date)).filter(d => !isNaN(d));
+        if (dates.length === 0) {
+            days = 1;
+        } else {
+            const earliest = new Date(Math.min(...dates));
+            earliest.setHours(0, 0, 0, 0);
+            days = Math.round((today - earliest) / 86400000) + 1;
+        }
+    }
+
+    const groups = [];
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const key = localDateKey(d);
+        const dayOrders = DATA.orders.filter(o => o.date && localDateKey(new Date(o.date)) === key);
+        groups.push({ date: d, orders: dayOrders });
+    }
+    return groups;
+}
+
+function renderRevenueChart() {
+    const dailyGroups = getDailyOrderGroups();
+
+    const revenuePoints = dailyGroups.map(g => ({
+        date: g.date,
+        value: g.orders.filter(o => orderStatusOf(o) === 'delivered').reduce((sum, o) => sum + (o.total || 0), 0)
+    }));
+    renderTimeSeriesChart('revenueChartWrap', revenuePoints, {
+        formatAxisValue: v => Math.round(v) + '€',
+        formatTooltip: v => v.toFixed(2) + '€',
+        formatTotal: v => v.toFixed(2) + '€'
+    });
+
+    const ordersCountPoints = dailyGroups.map(g => ({ date: g.date, value: g.orders.length }));
+    renderTimeSeriesChart('ordersChartWrap', ordersCountPoints, {
+        formatAxisValue: v => Math.round(v),
+        formatTooltip: v => v + (v > 1 ? ' commandes' : ' commande'),
+        formatTotal: v => v + (v > 1 ? ' commandes' : ' commande')
+    });
+}
+
+const timeSeriesCharts = {};
+
+function renderTimeSeriesChart(containerId, points, opts) {
+    const wrap = document.getElementById(containerId);
+    if (!wrap) return;
+
+    const total = points.reduce((s, p) => s + p.value, 0);
+    if (total === 0) {
+        wrap.innerHTML = '<p class="admin-chart-empty">Aucune donnée sur cette période</p>';
+        delete timeSeriesCharts[containerId];
+        return;
+    }
+
+    const W = 1000, H = 280;
+    const padLeft = 55, padRight = 15, padTop = 20, padBottom = 30;
+    const plotW = W - padLeft - padRight;
+    const plotH = H - padTop - padBottom;
+
+    const maxValue = niceMaxValue(Math.max(...points.map(p => p.value)));
+    const xFor = (i) => padLeft + (i / (points.length - 1 || 1)) * plotW;
+    const yFor = (v) => padTop + plotH - (v / maxValue) * plotH;
+
+    const linePoints = points.map((p, i) => `${xFor(i)},${yFor(p.value)}`).join(' ');
+    const areaPoints = `${padLeft},${padTop + plotH} ${linePoints} ${xFor(points.length - 1)},${padTop + plotH}`;
+
+    const gridSteps = 4;
+    let gridLines = '';
+    for (let s = 0; s <= gridSteps; s++) {
+        const v = (maxValue / gridSteps) * s;
+        const y = yFor(v);
+        gridLines += `<line class="rc-grid-line" x1="${padLeft}" y1="${y}" x2="${W - padRight}" y2="${y}"/>`;
+        gridLines += `<text class="rc-axis-label" x="${padLeft - 8}" y="${y + 4}" text-anchor="end">${opts.formatAxisValue(v)}</text>`;
+    }
+
+    const tickCount = Math.min(5, points.length);
+    let xLabels = '';
+    for (let t = 0; t < tickCount; t++) {
+        const idx = Math.round((t / (tickCount - 1 || 1)) * (points.length - 1));
+        const label = points[idx].date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        xLabels += `<text class="rc-axis-label" x="${xFor(idx)}" y="${H - 8}" text-anchor="middle">${label}</text>`;
+    }
+
+    const last = points[points.length - 1];
+
+    wrap.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" id="${containerId}Svg">
+            ${gridLines}
+            <line class="rc-baseline" x1="${padLeft}" y1="${padTop + plotH}" x2="${W - padRight}" y2="${padTop + plotH}"/>
+            <polygon class="rc-area" points="${areaPoints}"/>
+            <polyline class="rc-line" points="${linePoints}"/>
+            <circle class="rc-end-dot" cx="${xFor(points.length - 1)}" cy="${yFor(last.value)}" r="4"/>
+            ${xLabels}
+            <line class="rc-crosshair" id="${containerId}Crosshair" x1="0" y1="${padTop}" x2="0" y2="${padTop + plotH}"/>
+            <circle class="rc-hover-dot" id="${containerId}HoverDot" r="5"/>
+            <rect class="rc-hit-area" x="${padLeft}" y="${padTop}" width="${plotW}" height="${plotH}"
+                onpointermove="handleTimeSeriesHover(event, '${containerId}')" onpointerleave="handleTimeSeriesLeave('${containerId}')"></rect>
+        </svg>
+        <div class="admin-chart-tooltip" id="${containerId}Tooltip">
+            <div class="rc-tooltip-date"></div>
+            <div class="rc-tooltip-value"></div>
+        </div>
+        <div class="admin-chart-total">Total sur la période : <strong>${opts.formatTotal(total)}</strong></div>
+    `;
+
+    timeSeriesCharts[containerId] = { points, W, H, padLeft, padRight, padTop, padBottom, plotW, plotH, maxValue, formatTooltip: opts.formatTooltip };
+}
+
+function handleTimeSeriesHover(evt, containerId) {
+    const state = timeSeriesCharts[containerId];
+    if (!state) return;
+    const { points } = state;
+
+    const svg = document.getElementById(containerId + 'Svg');
+    const rect = svg.getBoundingClientRect();
+    const scaleX = state.W / rect.width;
+    const svgX = (evt.clientX - rect.left) * scaleX;
+
+    const relX = (svgX - state.padLeft) / state.plotW;
+    let idx = Math.round(relX * (points.length - 1));
+    idx = Math.max(0, Math.min(points.length - 1, idx));
+
+    const p = points[idx];
+    const x = state.padLeft + (idx / (points.length - 1 || 1)) * state.plotW;
+    const y = state.padTop + state.plotH - (p.value / state.maxValue) * state.plotH;
+
+    const crosshair = document.getElementById(containerId + 'Crosshair');
+    crosshair.setAttribute('x1', x);
+    crosshair.setAttribute('x2', x);
+    crosshair.style.opacity = 1;
+
+    const dot = document.getElementById(containerId + 'HoverDot');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.style.opacity = 1;
+
+    const scaleBackX = rect.width / state.W;
+    const scaleBackY = rect.height / state.H;
+    const tooltip = document.getElementById(containerId + 'Tooltip');
+    tooltip.style.left = (x * scaleBackX) + 'px';
+    tooltip.style.top = (y * scaleBackY) + 'px';
+    tooltip.querySelector('.rc-tooltip-date').textContent = p.date.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' });
+    tooltip.querySelector('.rc-tooltip-value').textContent = state.formatTooltip(p.value);
+    tooltip.classList.add('visible');
+}
+
+function handleTimeSeriesLeave(containerId) {
+    const crosshair = document.getElementById(containerId + 'Crosshair');
+    const dot = document.getElementById(containerId + 'HoverDot');
+    const tooltip = document.getElementById(containerId + 'Tooltip');
+    if (crosshair) crosshair.style.opacity = 0;
+    if (dot) dot.style.opacity = 0;
+    if (tooltip) tooltip.classList.remove('visible');
 }
 
 
@@ -241,8 +481,13 @@ function renderProducts() {
     const available = DATA.products.filter(p => p.inStock);
     const unavailable = DATA.products.filter(p => !p.inStock);
 
+    const unitBadgeLabel = (unit) => {
+        if (unit === 'lot250g') return 'Par lot de 250g';
+        if (unit === 'piece') return 'Par lot';
+        return 'Au kilo';
+    };
+
     const renderRow = (product, isAvailable) => {
-        const unit = product.unit || 'kg';
         return `
             <div class="admin-product-row" data-id="${product.id}">
                 <div class="apr-image" onclick="editProduct('${product.id}')" title="Modifier l'image">
@@ -251,27 +496,21 @@ function renderProducts() {
                 <input type="text" class="apr-input apr-name" value="${escapeHtml(product.name)}"
                     onblur="updateProductField('${product.id}', 'name', this.value.trim())"
                     onkeydown="if(event.key==='Enter') this.blur()">
-                <select class="apr-select apr-category" onchange="updateProductField('${product.id}', 'category', this.value)">
-                    <option value="fruits" ${product.category === 'fruits' ? 'selected' : ''}>Fruits</option>
-                    <option value="legumes" ${product.category === 'legumes' ? 'selected' : ''}>Légumes</option>
-                    <option value="herbes" ${product.category === 'herbes' ? 'selected' : ''}>Herbes</option>
-                </select>
-                <div class="apr-price-group">
-                    <input type="number" class="apr-input apr-price" step="0.01" min="0" value="${product.price}"
-                        onblur="updateProductField('${product.id}', 'price', parseFloat(this.value) || 0)"
-                        onkeydown="if(event.key==='Enter') this.blur()">
-                    <select class="apr-select apr-unit" onchange="updateProductField('${product.id}', 'unit', this.value)">
-                        <option value="kg" ${unit === 'kg' ? 'selected' : ''}>Au kilo</option>
-                        <option value="lot250g" ${unit === 'lot250g' ? 'selected' : ''}>Lot de 250g</option>
-                        <option value="piece" ${unit === 'piece' ? 'selected' : ''}>À la pièce</option>
-                    </select>
+                <div class="apr-actions-row">
+                    <div class="apr-price-group">
+                        <span class="apr-price-label">Prix</span>
+                        <input type="number" class="apr-input apr-price" step="0.01" min="0" value="${product.price}"
+                            onblur="updateProductField('${product.id}', 'price', parseFloat(this.value) || 0)"
+                            onkeydown="if(event.key==='Enter') this.blur()">
+                    </div>
+                    <span class="apr-unit-badge">${unitBadgeLabel(product.unit)}</span>
+                    <button class="admin-product-toggle ${isAvailable ? 'to-unavailable' : 'to-available'}" onclick="toggleProductAvailability('${product.id}')">
+                        ${isAvailable ? 'Retirer' : 'Ajouter'}
+                    </button>
+                    <button class="apr-delete" onclick="deleteProduct('${product.id}')" title="Supprimer" aria-label="Supprimer">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
                 </div>
-                <button class="admin-product-toggle ${isAvailable ? 'to-unavailable' : 'to-available'}" onclick="toggleProductAvailability('${product.id}')">
-                    ${isAvailable ? 'Retirer' : 'Rendre disponible'}
-                </button>
-                <button class="apr-delete" onclick="deleteProduct('${product.id}')" title="Supprimer" aria-label="Supprimer">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
             </div>
         `;
     };
@@ -528,15 +767,31 @@ async function saveBasketData(basketId) {
 
 
 // ===== COMMANDES =====
+const ORDER_STATUS_META = {
+    pending: { label: 'En attente', class: 'status-pending' },
+    treated: { label: 'Traitée', class: 'status-treated' },
+    delivered: { label: 'Livrée', class: 'status-delivered' }
+};
+
+function orderStatusOf(order) {
+    return order.status && ORDER_STATUS_META[order.status] ? order.status : 'pending';
+}
+
+function filterOrdersByStatus(status) {
+    ordersStatusFilter = status;
+    renderOrders();
+}
+
 function renderOrders() {
     const container = document.getElementById('ordersTable');
     if (DATA.orders.length === 0) {
         container.innerHTML = '<p class="admin-product-empty">Aucune commande</p>';
         return;
     }
-    
-    const pendingOrders = DATA.orders.filter(o => !o.treated);
-    const treatedOrders = DATA.orders.filter(o => o.treated);
+
+    const filteredOrders = ordersStatusFilter === 'all'
+        ? DATA.orders
+        : DATA.orders.filter(o => orderStatusOf(o) === ordersStatusFilter);
 
     const sortOrders = (orders) => {
         return [...orders].sort((a, b) => {
@@ -547,8 +802,8 @@ function renderOrders() {
                 case 'client':
                     const userA = DATA.users.find(u => u.id === a.userId);
                     const userB = DATA.users.find(u => u.id === b.userId);
-                    valA = userA ? `${userA.firstName} ${userA.lastName}`.toLowerCase() : '';
-                    valB = userB ? `${userB.firstName} ${userB.lastName}`.toLowerCase() : '';
+                    valA = (userA ? `${userA.firstName} ${userA.lastName}` : a.customerName || '').toLowerCase();
+                    valB = (userB ? `${userB.firstName} ${userB.lastName}` : b.customerName || '').toLowerCase();
                     break;
                 case 'total':
                     valA = a.total || 0; valB = b.total || 0; break;
@@ -565,16 +820,28 @@ function renderOrders() {
         if (orders.length === 0) return `<p class="admin-product-empty">${emptyMsg}</p>`;
         return sortOrders(orders).map(order => {
             const user = DATA.users.find(u => u.id === order.userId);
+            const status = orderStatusOf(order);
             return `
-                <div class="admin-row" onclick="showOrderDetails('${order.id}')">
-                    <div class="admin-row-left">
+                <div class="admin-row admin-row-order">
+                    <div class="admin-row-left" onclick="showOrderDetails('${order.id}')">
+                        <select class="admin-row-status-select ${ORDER_STATUS_META[status].class}"
+                            onclick="event.stopPropagation()"
+                            onchange="updateOrderStatus('${order.id}', this.value)">
+                            <option value="pending" ${status === 'pending' ? 'selected' : ''}>En attente</option>
+                            <option value="treated" ${status === 'treated' ? 'selected' : ''}>Traitée</option>
+                            <option value="delivered" ${status === 'delivered' ? 'selected' : ''}>Livrée</option>
+                        </select>
                         <span class="admin-row-id">#${order.id}</span>
-                        <span class="admin-row-name">${user ? `${user.firstName} ${user.lastName}` : 'Inconnu'}</span>
+                        <span class="admin-row-name">${user ? `${user.firstName} ${user.lastName}` : (order.customerName || 'Inconnu')}</span>
                     </div>
                     <div class="admin-row-right">
                         <span class="admin-row-meta">${order.items?.length || 0} article(s)</span>
                         <span class="admin-row-value">${order.total?.toFixed(2)}€</span>
                     </div>
+                    <input type="text" class="admin-row-note" value="${escapeHtml(order.note || '')}" placeholder="Ajouter une note..."
+                        onclick="event.stopPropagation()"
+                        onblur="updateOrderNote('${order.id}', this.value.trim())"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}">
                 </div>
             `;
         }).join('<div class="admin-row-separator"></div>');
@@ -584,30 +851,28 @@ function renderOrders() {
     const sortIcon = (field) => ordersSortField === field ? (ordersSortOrder === 'asc' ? '↑' : '↓') : '↕';
 
     container.innerHTML = `
-        <div class="admin-list-sort">
-            <span>Trier par :</span>
-            <button class="admin-sort-btn ${ordersSortField === 'date' ? 'active' : ''}" onclick="sortOrdersBy('date')">Date ${sortIcon('date')}</button>
-            <button class="admin-sort-btn ${ordersSortField === 'client' ? 'active' : ''}" onclick="sortOrdersBy('client')">Client ${sortIcon('client')}</button>
-            <button class="admin-sort-btn ${ordersSortField === 'total' ? 'active' : ''}" onclick="sortOrdersBy('total')">Total ${sortIcon('total')}</button>
+        <div class="admin-list-controls">
+            <div class="admin-list-sort">
+                <span>Trier par :</span>
+                <button class="admin-sort-btn ${ordersSortField === 'date' ? 'active' : ''}" onclick="sortOrdersBy('date')">Date ${sortIcon('date')}</button>
+                <button class="admin-sort-btn ${ordersSortField === 'client' ? 'active' : ''}" onclick="sortOrdersBy('client')">Client ${sortIcon('client')}</button>
+                <button class="admin-sort-btn ${ordersSortField === 'total' ? 'active' : ''}" onclick="sortOrdersBy('total')">Total ${sortIcon('total')}</button>
+            </div>
+            <div class="admin-list-sort">
+                <span>Filtrer :</span>
+                <button class="admin-sort-btn ${ordersStatusFilter === 'all' ? 'active' : ''}" onclick="filterOrdersByStatus('all')">Toutes</button>
+                <button class="admin-sort-btn status-pending ${ordersStatusFilter === 'pending' ? 'active' : ''}" onclick="filterOrdersByStatus('pending')">En attente</button>
+                <button class="admin-sort-btn status-treated ${ordersStatusFilter === 'treated' ? 'active' : ''}" onclick="filterOrdersByStatus('treated')">Traitée</button>
+                <button class="admin-sort-btn status-delivered ${ordersStatusFilter === 'delivered' ? 'active' : ''}" onclick="filterOrdersByStatus('delivered')">Livrée</button>
+            </div>
         </div>
         <div class="admin-product-group">
             <div class="admin-product-group-header">
-                <span class="admin-product-group-dot unavailable"></span>
-                <h3>Commandes à traiter</h3>
-                <span class="admin-product-group-count">${pendingOrders.length}</span>
+                <h3>Commandes</h3>
+                <span class="admin-product-group-count">${filteredOrders.length}</span>
             </div>
             <div class="admin-product-group-list">
-                ${renderOrderList(pendingOrders, 'Aucune commande en attente')}
-            </div>
-        </div>
-        <div class="admin-product-group">
-            <div class="admin-product-group-header">
-                <span class="admin-product-group-dot available"></span>
-                <h3>Commandes traitées</h3>
-                <span class="admin-product-group-count">${treatedOrders.length}</span>
-            </div>
-            <div class="admin-product-group-list">
-                ${renderOrderList(treatedOrders, 'Aucune commande traitée')}
+                ${renderOrderList(filteredOrders, 'Aucune commande')}
             </div>
         </div>
     `;
@@ -632,34 +897,33 @@ function showOrderDetails(orderId) {
     const user = DATA.users.find(u => u.id === order.userId);
     const modal = document.getElementById('orderDetailsModal') || createOrderDetailsModal();
     
-    const isTreated = order.treated || false;
-    
+    const status = orderStatusOf(order);
+    const meta = ORDER_STATUS_META[status];
+
     document.getElementById('orderDetailsContent').innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
             <h3 style="margin:0;">Commande #${order.id}</h3>
-            <span style="padding:0.5rem 1rem;border-radius:20px;font-size:0.85rem;font-weight:600;${isTreated ? 'background:#e8f5e9;color:#4a7c4e;' : 'background:#ffebee;color:#e57373;'}">
-                ${isTreated ? '✓ Traitée' : '⏳ En attente'}
-            </span>
+            <span class="order-status-badge ${meta.class}">${meta.label}</span>
         </div>
-        
+
         <p><strong>Date:</strong> ${new Date(order.date).toLocaleString('fr-FR')}</p>
         <p><strong>Total:</strong> ${order.total?.toFixed(2)}€</p>
-        
-        <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fa;border-radius:10px;">
-            <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;">
-                <input type="checkbox" id="orderTreatedCheckbox" ${isTreated ? 'checked' : ''} 
-                       onchange="toggleOrderTreated('${order.id}', this.checked)"
-                       style="width:20px;height:20px;cursor:pointer;">
-                <span style="font-weight:500;">Marquer comme ${isTreated ? 'non traitée' : 'traitée'}</span>
-            </label>
+
+        <div class="order-status-picker">
+            ${Object.entries(ORDER_STATUS_META).map(([key, m]) => `
+                <button class="order-status-option ${m.class} ${status === key ? 'active' : ''}" onclick="updateOrderStatus('${order.id}', '${key}')">${m.label}</button>
+            `).join('')}
         </div>
-        
+
         <h4 style="margin-top:1.5rem;">Articles:</h4>
         <div style="background:#f5f5f5;padding:1rem;border-radius:10px;">
             ${order.items.map(item => `
-                <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #ddd;">
-                    <span>${item.icon || ''} ${item.name}</span>
-                    <span>${item.quantity} × ${item.price}€ = ${(item.quantity * item.price).toFixed(2)}€</span>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #ddd;">
+                    <span style="font-weight:700;font-size:0.85rem;">${item.icon || ''} ${item.name}</span>
+                    <div style="display:flex;align-items:center;gap:0.6rem;">
+                        <span class="order-item-qty-badge">${formatQtyWithUnit(item.quantity, item.unit)}</span>
+                        <span style="width:60px;text-align:right;flex-shrink:0;font-size:0.85rem;">${(item.quantity * item.price).toFixed(2)}€</span>
+                    </div>
                 </div>
             `).join('')}
         </div>
@@ -675,10 +939,16 @@ function showOrderDetails(orderId) {
                 ${user.phone ? `<p>📞 ${user.phone}</p>` : ''}
                 <p style="font-size:0.85rem;color:var(--primary);margin-top:0.5rem;">Cliquez pour voir le profil →</p>
             </div>
+                ` : order.customerName ? `
+            <div style="background:#f5f5f5;padding:1rem;border-radius:10px;">
+                <p><strong>${escapeHtml(order.customerName)}</strong></p>
+                ${order.customerPhone ? `<p>📞 ${escapeHtml(order.customerPhone)}</p>` : ''}
+                <p style="font-size:0.8rem;color:var(--gray);margin-top:0.5rem;">Réservation sans compte</p>
+            </div>
                 ` : '<div style="background:#f5f5f5;padding:1rem;border-radius:10px;"><p>Utilisateur non trouvé</p></div>'}
         
-        <div style="margin-top:1.5rem;">
-            <button class="btn-primary btn-block" onclick="generateInvoicePDF('${order.id}')" style="display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+        <div style="margin-top:1.5rem;display:flex;gap:0.75rem;">
+            <button class="btn-primary btn-block" onclick="generateInvoicePDF('${order.id}')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.5rem;font-size:0.85rem;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
@@ -687,6 +957,10 @@ function showOrderDetails(orderId) {
                     <polyline points="10 9 9 9 8 9"/>
                 </svg>
                 Éditer la facture
+            </button>
+            <button class="btn-danger btn-block" onclick="deleteOrder('${order.id}')" style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.5rem;font-size:0.85rem;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Supprimer définitivement
             </button>
         </div>
     `;
@@ -701,22 +975,49 @@ function goToUserFromOrder(userId) {
     setTimeout(() => showUserDetails(userId), 300);
 }
 
-async function toggleOrderTreated(orderId, treated) {
+async function updateOrderStatus(orderId, status) {
     try {
-        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}/treated`), treated);
-        
-        // Mettre à jour localement
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}/status`), status);
+
         const order = DATA.orders.find(o => o.id === orderId);
-        if (order) order.treated = treated;
-        
-        // Rafraîchir l'affichage
+        if (order) order.status = status;
+
         renderOrders();
-        showOrderDetails(orderId);
-        
-        showToast(treated ? 'Commande marquée comme traitée' : 'Commande marquée comme non traitée', 'success');
+        if (document.getElementById('orderDetailsModal')?.classList.contains('active')) {
+            showOrderDetails(orderId);
+        }
+
+        showToast('Statut mis à jour : ' + ORDER_STATUS_META[status].label, 'success');
     } catch (err) {
         console.error(err);
         showToast('Erreur lors de la mise à jour', 'error');
+    }
+}
+
+async function updateOrderNote(orderId, note) {
+    const order = DATA.orders.find(o => o.id === orderId);
+    if (!order) return;
+    if ((order.note || '') === note) return;
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}/note`), note);
+        order.note = note;
+    } catch (err) {
+        console.error(err);
+        showToast('Erreur lors de la sauvegarde de la note', 'error');
+    }
+}
+
+async function deleteOrder(orderId) {
+    if (!confirm('Supprimer définitivement cette commande ? Cette action est irréversible.')) return;
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}`), null);
+        DATA.orders = DATA.orders.filter(o => o.id !== orderId);
+        closeOrderDetails();
+        renderOrders();
+        showToast('Commande supprimée', 'success');
+    } catch (err) {
+        console.error(err);
+        showToast('Erreur lors de la suppression', 'error');
     }
 }
 
@@ -737,13 +1038,54 @@ function createOrderDetailsModal() {
 
 
 // ===== UTILISATEURS =====
+function getGuestCustomersFromOrders() {
+    const map = {};
+    DATA.orders.forEach(o => {
+        if (!o.customerName) return;
+        const key = o.customerName.trim().toLowerCase();
+        if (!map[key]) {
+            map[key] = { name: o.customerName.trim(), phone: o.customerPhone || '', count: 0 };
+        }
+        if (!map[key].phone && o.customerPhone) map[key].phone = o.customerPhone;
+        map[key].count++;
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
+}
+
+function renderGuestCustomersList() {
+    const guests = getGuestCustomersFromOrders();
+    if (guests.length === 0) return '';
+
+    return `
+        <div class="admin-product-group">
+            <div class="admin-product-group-header">
+                <h3>Clients (via commandes)</h3>
+                <span class="admin-product-group-count">${guests.length}</span>
+            </div>
+            <div class="admin-product-group-list">
+                ${guests.map(g => `
+                    <div class="admin-row">
+                        <div class="admin-row-left">
+                            <span class="admin-row-name">${escapeHtml(g.name)}</span>
+                            ${g.phone ? `<span class="admin-row-id">📞 ${escapeHtml(g.phone)}</span>` : ''}
+                        </div>
+                        <div class="admin-row-right">
+                            <span class="admin-row-badge ${g.count > 0 ? 'active' : ''}">${g.count} commande${g.count > 1 ? 's' : ''}</span>
+                        </div>
+                    </div>
+                `).join('<div class="admin-row-separator"></div>')}
+            </div>
+        </div>
+    `;
+}
+
 function renderUsers() {
     const container = document.getElementById('usersTable');
     if (DATA.users.length === 0) {
-        container.innerHTML = '<p class="admin-product-empty">Aucun utilisateur inscrit</p>';
+        container.innerHTML = renderGuestCustomersList() || '<p class="admin-product-empty">Aucun utilisateur inscrit</p>';
         return;
     }
-    
+
     const getOrdersCount = (userId) => DATA.orders.filter(o => o.userId === userId).length;
     
     let sortedUsers = [...DATA.users].sort((a, b) => {
@@ -794,6 +1136,7 @@ function renderUsers() {
                 }).join('<div class="admin-row-separator"></div>')}
             </div>
         </div>
+        ${renderGuestCustomersList()}
     `;
 }
 
@@ -1080,6 +1423,9 @@ function generateInvoicePDF(orderId) {
         doc.text(`${user.firstName || ''} ${user.lastName || ''}`, 20, clientY); clientY += 6;
         doc.text(user.email || '', 20, clientY); clientY += 6;
         if (user.phone) { doc.text(user.phone, 20, clientY); clientY += 6; }
+    } else if (order.customerName) {
+        doc.text(order.customerName, 20, clientY); clientY += 6;
+        if (order.customerPhone) { doc.text(order.customerPhone, 20, clientY); clientY += 6; }
     } else {
         doc.text('Client inconnu', 20, clientY); clientY += 6;
     }

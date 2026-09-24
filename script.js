@@ -68,6 +68,7 @@ setTimeout(async () => {
     loadCart();  // Ajouter cette ligne
     initCarousel();
     checkShopStatus();
+    mpResumeOrderWatch();
 
     // Vérifier l'affichage footer/navbar au chargement
     setTimeout(() => {
@@ -874,7 +875,7 @@ function renderMonPanierWheel() {
             ? `background-image:url('${p.image}')`
             : `background:${meta.color1}`) + `;--wheel-color:${meta.color1}`;
         return `
-            <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true, true)">
+            <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true)">
                 <div class="mp-wheel-circle" style="${circleStyle}">${p.image ? '' : meta.icon}</div>
                 <span class="mp-wheel-name">${p.name}</span>
             </div>
@@ -957,14 +958,15 @@ function mpHandleWheelScroll() {
     mpScrollTimeout = setTimeout(() => {
         const wheel = document.getElementById('mpWheel');
         if (!wheel) return;
+        mpClampWheelScroll(wheel);
         const center = wheel.scrollLeft + wheel.clientWidth / 2;
         let closest = null, closestDist = Infinity;
         wheel.querySelectorAll('.mp-wheel-card').forEach(card => {
             const dist = Math.abs((card.offsetLeft + card.offsetWidth / 2) - center);
             if (dist < closestDist) { closestDist = dist; closest = card; }
         });
-        if (closest) mpSelectProduct(closest.dataset.id, false, true);
-    }, 30);
+        if (closest) mpSelectProduct(closest.dataset.id, false);
+    }, 100);
 }
 
 let mpWheelRafId = null;
@@ -1000,8 +1002,6 @@ function mpApplyWheelRadialTransforms() {
     const cards = wheel.querySelectorAll('.mp-wheel-card');
     if (!cards.length) return;
 
-    mpClampWheelScroll(wheel);
-
     const center = wheel.scrollLeft + wheel.clientWidth / 2;
     const maxAngle = 30;
     const range = wheel.clientWidth / 2 + 40;
@@ -1019,12 +1019,10 @@ function mpApplyWheelRadialTransforms() {
     });
 }
 
-function mpSelectProduct(productId, scrollIntoView, userInitiated = false) {
+function mpSelectProduct(productId, scrollIntoView) {
     if (!productId) return;
     const product = DATA.products.find(p => p.id === productId);
     if (!product) return;
-
-    if (userInitiated && mpSelectedProductId !== productId) playSound('medias/Pop.wav', 0.5);
 
     mpSelectedProductId = productId;
     mpPendingQty = getUnitMeta(product.unit).defaultQty;
@@ -1116,7 +1114,8 @@ function mpAddToBasket() {
     }
 
     renderBasketSummary();
-    showToast(`${product.name} ajouté au panier`);
+    const label = mpFormatItemLabel({ name: product.name, quantity: mpPendingQty, unit: product.unit }, true);
+    showToast(`${label} ajouté au panier`);
     playSound('medias/Panier.wav');
 
     mpPendingQty = getUnitMeta(product.unit).defaultQty;
@@ -1129,9 +1128,32 @@ function mpAddToBasket() {
     }
 }
 
-function mpFormatItemQty(qty, unit) {
-    if (unit === 'lot250g') return `${qty}x 250g`;
-    return formatQtyWithUnit(qty, unit);
+function orderStatusMeta(status) {
+    const meta = {
+        pending: { className: 'pending', label: '⏳ En attente', longLabel: '⏳ Commande en attente' },
+        treated: { className: 'treated', label: '🧺 Traitée', longLabel: '🧺 Commande traitée' },
+        delivered: { className: 'delivered', label: '✓ Livrée', longLabel: '✓ Commande livrée' }
+    };
+    return meta[status] || meta.pending;
+}
+
+function mpFormatItemLabel(item, plain = false) {
+    const unit = item.unit || 'kg';
+    const qty = item.quantity;
+    const name = plain ? item.name : `<span class="mp-item-card-productname">${item.name}</span>`;
+    if (unit === 'kg') {
+        const qtyLabel = qty < 1 ? `${Math.round(qty * 1000)}g` : `${qty}kg`;
+        return `${qtyLabel} de ${name}`;
+    }
+    if (unit === 'lot250g') {
+        const grams = qty * 250;
+        const qtyLabel = grams < 1000 ? `${grams}g` : `${grams / 1000}kg`;
+        return `${qtyLabel} de ${name}`;
+    }
+    if (unit === 'piece') {
+        return `${qty} ${qty > 1 ? 'lots' : 'lot'} de ${name}`;
+    }
+    return name;
 }
 
 function renderMonPanierGrid() {
@@ -1143,13 +1165,10 @@ function renderMonPanierGrid() {
         grid.innerHTML = '<p class="mp-items-empty" id="mpItemsEmpty">Votre panier est vide, choisissez un produit ci-dessous 👇</p>';
     } else {
         grid.innerHTML = customBasket.map(item => {
-            const itemTotal = (item.price * item.quantity).toFixed(2);
             return `
                 <div class="mp-item-card" data-id="${item.id}">
                     <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-416.35 287.83-224.17Q275.15-211.5 256-211.5t-31.83-12.67Q211.5-236.85 211.5-256t12.67-31.83L416.35-480 224.17-672.17Q211.5-684.85 211.5-704t12.67-31.83Q236.85-748.5 256-748.5t31.83 12.67L480-543.65l192.17-192.18Q684.85-748.5 704-748.5t31.83 12.67Q748.5-723.15 748.5-704t-12.67 31.83L543.65-480l192.18 192.17Q748.5-275.15 748.5-256t-12.67 31.83Q723.15-211.5 704-211.5t-31.83-12.67L480-416.35Z"/></svg></button>
-                    <span class="mp-item-name">${item.name}</span>
-                    <span class="mp-item-qty">${mpFormatItemQty(item.quantity, item.unit || 'kg')}</span>
-                    <span class="mp-item-price">${itemTotal}€</span>
+                    <span class="mp-item-card-label">${mpFormatItemLabel(item)}</span>
                 </div>
             `;
         }).join('');
@@ -1160,6 +1179,7 @@ function renderMonPanierGrid() {
     if (totalEl) totalEl.textContent = total.toFixed(2) + '€';
 
     mpUpdateBasketImage();
+    mpUpdateOrderedBadge();
 }
 
 let mpLastBasketCount = null;
@@ -1167,7 +1187,8 @@ let mpLastBasketCount = null;
 function mpUpdateBasketImage() {
     const totalCard = document.getElementById('mpTotalCard');
     if (!totalCard) return;
-    const count = customBasket.length;
+    const lastOrder = mpLoadLastOrder();
+    const count = lastOrder ? lastOrder.items.length : customBasket.length;
     let fileName;
     if (count === 0) fileName = 'Panier.png';
     else if (count <= 2) fileName = 'Panier1.png';
@@ -1185,25 +1206,234 @@ function mpUpdateBasketImage() {
     mpLastBasketCount = customBasket.length;
 }
 
-// Dispose les mp-item-card en cercle(s) autour du panier (mp-total-card), fixe au centre.
+// ===== Panier déjà commandé (badge + détails) =====
+const MP_LAST_ORDER_STORAGE_KEY = 'bl_lastOrder';
+
+function mpSaveLastOrder(order) {
+    try {
+        localStorage.setItem(MP_LAST_ORDER_STORAGE_KEY, JSON.stringify(order));
+    } catch (err) {
+        console.error('Erreur sauvegarde dernière commande:', err);
+    }
+}
+
+function mpLoadLastOrder() {
+    try {
+        return JSON.parse(localStorage.getItem(MP_LAST_ORDER_STORAGE_KEY));
+    } catch (err) {
+        return null;
+    }
+}
+
+function mpClearLastOrder() {
+    localStorage.removeItem(MP_LAST_ORDER_STORAGE_KEY);
+}
+
+function mpUpdateOrderedBadge() {
+    const badge = document.getElementById('mpOrderedBadge');
+    if (!badge) return;
+    const ordered = !!mpLoadLastOrder();
+    badge.classList.toggle('active', ordered);
+    document.getElementById('mpApp')?.classList.toggle('mp-ordered', ordered);
+}
+
+let mpOrderTreatedUnsub = null;
+
+function mpStopWatchingOrder() {
+    if (mpOrderTreatedUnsub) {
+        mpOrderTreatedUnsub();
+        mpOrderTreatedUnsub = null;
+    }
+}
+
+function mpWatchOrderTreated(orderId) {
+    mpStopWatchingOrder();
+    if (!orderId || !db) return;
+    const statusRef = window.firebase.ref(db, `paniers-du-jardin/orders/${orderId}/status`);
+    mpOrderTreatedUnsub = window.firebase.onValue(statusRef, (snapshot) => {
+        if (snapshot.val() === 'delivered') {
+            mpStopWatchingOrder();
+            mpClearLastOrder();
+            mpUpdateOrderedBadge();
+            mpUpdateBasketImage();
+        }
+    });
+}
+
+function mpResumeOrderWatch() {
+    const order = mpLoadLastOrder();
+    if (order) mpWatchOrderTreated(order.id);
+}
+
+// ===== Historique des commandes traitées (téléchargées depuis Firebase vers le local storage) =====
+const MP_ORDER_HISTORY_STORAGE_KEY = 'bl_orderHistory';
+
+function mpLoadOrderHistory() {
+    try {
+        return JSON.parse(localStorage.getItem(MP_ORDER_HISTORY_STORAGE_KEY)) || [];
+    } catch (err) {
+        return [];
+    }
+}
+
+function mpAddToOrderHistory(order) {
+    try {
+        const history = mpLoadOrderHistory().filter(o => o.id !== order.id);
+        history.unshift(order);
+        localStorage.setItem(MP_ORDER_HISTORY_STORAGE_KEY, JSON.stringify(history));
+    } catch (err) {
+        console.error('Erreur sauvegarde historique commandes:', err);
+    }
+}
+
+function mpGetOrderHistoryById(orderId) {
+    return mpLoadOrderHistory().find(o => o.id === orderId) || null;
+}
+
+function mpRemoveFromOrderHistory(orderId) {
+    try {
+        const history = mpLoadOrderHistory().filter(o => o.id !== orderId);
+        localStorage.setItem(MP_ORDER_HISTORY_STORAGE_KEY, JSON.stringify(history));
+    } catch (err) {
+        console.error('Erreur suppression historique commandes:', err);
+    }
+}
+
+function mpShowHistoryOrderDetails(orderId) {
+    const order = mpGetOrderHistoryById(orderId);
+    if (order) openMpOrderDetailsModal(order, false);
+}
+
+let mpViewedOrder = null;
+
+function openMpOrderDetailsModal(order, cancellable = true) {
+    order = order || mpLoadLastOrder();
+    const content = document.getElementById('mpOrderDetailsContent');
+    if (!order || !content) return;
+    mpViewedOrder = order;
+
+    content.innerHTML = `
+        <p><strong>Commande #${order.id}</strong></p>
+        <p style="color:var(--gray);font-size:0.85rem;">${new Date(order.date).toLocaleDateString('fr-FR')}</p>
+        <div style="background:#f5f5f5;padding:1rem;border-radius:10px;margin:1rem 0;">
+            ${order.items.map(item => `
+                <div style="display:flex;justify-content:space-between;padding:0.4rem 0;">
+                    <span>${mpFormatItemLabel(item, true)}</span>
+                    <strong>${(item.quantity * item.price).toFixed(2)}€</strong>
+                </div>
+            `).join('')}
+        </div>
+        <p><strong>Total :</strong> ${order.total.toFixed(2)}€</p>
+    `;
+
+    const cancelBtn = document.getElementById('mpOrderDetailsCancelBtn');
+    if (cancelBtn) cancelBtn.style.display = cancellable ? '' : 'none';
+
+    document.getElementById('mpOrderDetailsModal').classList.add('active');
+}
+
+function closeMpOrderDetailsModal() {
+    document.getElementById('mpOrderDetailsModal').classList.remove('active');
+}
+
+function mpCopyOrderToBasket() {
+    if (!mpViewedOrder) return;
+    const availableItems = mpViewedOrder.items.filter(item =>
+        DATA.products.some(p => p.id === item.id && p.inStock !== false)
+    );
+    customBasket = availableItems.map(item => ({ ...item }));
+    renderBasketSummary();
+    closeMpOrderDetailsModal();
+
+    if (availableItems.length < mpViewedOrder.items.length) {
+        showToast('Panier copié, certains produits ne sont plus disponibles', 'success');
+    } else {
+        showToast('Panier copié !', 'success');
+    }
+}
+
+document.getElementById('mpOrderDetailsModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeMpOrderDetailsModal();
+});
+
+function openConfirmCancelOrderModal() {
+    document.getElementById('confirmCancelOrderModal').classList.add('active');
+}
+
+function closeConfirmCancelOrderModal() {
+    document.getElementById('confirmCancelOrderModal').classList.remove('active');
+}
+
+document.getElementById('confirmCancelOrderModal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeConfirmCancelOrderModal();
+});
+
+async function mpCancelOrder() {
+    const order = mpLoadLastOrder();
+    if (!order) return;
+
+    try {
+        await window.firebase.set(window.firebase.ref(db, `paniers-du-jardin/orders/${order.id}`), null);
+        mpStopWatchingOrder();
+        mpClearLastOrder();
+        mpRemoveFromOrderHistory(order.id);
+        closeConfirmCancelOrderModal();
+        closeMpOrderDetailsModal();
+        mpUpdateOrderedBadge();
+        mpUpdateBasketImage();
+        showToast('Commande annulée', 'success');
+    } catch (err) {
+        alert('Erreur: ' + err.message);
+    }
+}
+
+// Dispose les mp-item-card en demi-cercle au-dessus du panier (mp-total-card), fixe au centre.
+// Au-delà de 7 items, bascule sur deux colonnes empilées de part et d'autre du panier.
 function mpArrangeItemsInCircle() {
     const zone = document.getElementById('mpOrbitZone');
     if (!zone) return;
     const cards = zone.querySelectorAll('.mp-item-card');
     if (!cards.length) return;
 
+    if (cards.length >= 5) {
+        mpArrangeItemsInColumns(cards, zone);
+        return;
+    }
+
     const centerY = zone.clientHeight * 0.30;
     const verticalLimit = Math.min(centerY, zone.clientHeight - centerY) - 60;
     const horizontalLimit = zone.clientWidth / 2 - 60;
-    const maxRadius = Math.max(130, Math.min(horizontalLimit, verticalLimit));
-    const radius = Math.min(270, maxRadius);
+    const safeLimit = Math.max(20, Math.min(horizontalLimit, verticalLimit));
+    const radius = Math.min(270, safeLimit);
+
+    const arcSpan = Math.PI * (190 / 180);
+    const arcStart = -Math.PI / 2 - arcSpan / 2;
 
     cards.forEach((card, i) => {
-        const angle = (i / cards.length) * Math.PI * 2 - Math.PI / 2;
+        const t = cards.length > 1 ? i / (cards.length - 1) : 0.5;
+        const angle = arcStart + t * arcSpan;
         const x = Math.cos(angle) * radius;
         const y = Math.sin(angle) * radius;
         card.style.setProperty('--ox', `${x}px`);
         card.style.setProperty('--oy', `${y}px`);
+    });
+}
+
+function mpArrangeItemsInColumns(cards, zone) {
+    const spacing = 46;
+    const columnOffset = Math.max(20, Math.min(150, zone.clientWidth / 2 - 65));
+
+    const left = [];
+    const right = [];
+    cards.forEach((card, i) => (i % 2 === 0 ? left : right).push(card));
+
+    [[left, -columnOffset], [right, columnOffset]].forEach(([column, x]) => {
+        const totalHeight = (column.length - 1) * spacing;
+        column.forEach((card, i) => {
+            const y = -totalHeight / 2 + i * spacing;
+            card.style.setProperty('--ox', `${x}px`);
+            card.style.setProperty('--oy', `${y}px`);
+        });
     });
 }
 
@@ -1223,21 +1453,15 @@ function renderMpBasketsList() {
     const container = document.getElementById('mpBasketsList');
     if (!container) return;
 
-    if (!currentUser) {
-        container.innerHTML = '<p class="dropdown-empty">Connectez-vous pour retrouver vos paniers sauvegardés.</p>';
-        return;
-    }
-    if (userBaskets.length === 0) {
-        container.innerHTML = '<p class="dropdown-empty">Aucun panier sauvegardé</p>';
-        return;
-    }
-
-    container.innerHTML = userBaskets.map(basket => `
-        <div class="mp-basket-list-item ${basket.id === currentBasketId ? 'active' : ''}" onclick="mpLoadBasket('${basket.id}')">
-            <span class="basket-item-name">${basket.name}</span>
-            <span class="basket-item-count">${basket.items?.length || 0} produits</span>
-        </div>
-    `).join('');
+    const history = mpLoadOrderHistory();
+    container.innerHTML = history.length === 0
+        ? '<p class="dropdown-empty">Aucune commande passée</p>'
+        : history.map(order => `
+            <div class="mp-basket-list-item" onclick="mpShowHistoryOrderDetails('${order.id}')">
+                <span class="basket-item-name">Commande du ${new Date(order.date).toLocaleDateString('fr-FR')}</span>
+                <span class="basket-item-count">${order.items?.length || 0} produits</span>
+            </div>
+        `).join('');
 }
 
 function mpLoadBasket(basketId) {
@@ -1437,7 +1661,7 @@ function updateCart() {
                         <span class="cart-item-details">${formatQtyWithUnit(item.quantity, item.unit || 'kg')} × ${formatUnitPrice(item.price, item.unit)}</span>
                     </div>
                     <div class="cart-item-total">${itemTotal}€</div>
-                    <button onclick="removeFromCart(${i})">×</button>
+                    <button onclick="removeFromCart(${i})"><svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M480-416.35 287.83-224.17Q275.15-211.5 256-211.5t-31.83-12.67Q211.5-236.85 211.5-256t12.67-31.83L416.35-480 224.17-672.17Q211.5-684.85 211.5-704t12.67-31.83Q236.85-748.5 256-748.5t31.83 12.67L480-543.65l192.17-192.18Q684.85-748.5 704-748.5t31.83 12.67Q748.5-723.15 748.5-704t-12.67 31.83L543.65-480l192.18 192.17Q748.5-275.15 748.5-256t-12.67 31.83Q723.15-211.5 704-211.5t-31.83-12.67L480-416.35Z"/></svg></button>
                 </div>
             `;
         } else {
@@ -1448,7 +1672,7 @@ function updateCart() {
                         <span class="cart-item-details">× ${item.quantity}</span>
                     </div>
                     <div class="cart-item-total">${itemTotal}€</div>
-                    <button onclick="removeFromCart(${i})">×</button>
+                    <button onclick="removeFromCart(${i})"><svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor"><path d="M480-416.35 287.83-224.17Q275.15-211.5 256-211.5t-31.83-12.67Q211.5-236.85 211.5-256t12.67-31.83L416.35-480 224.17-672.17Q211.5-684.85 211.5-704t12.67-31.83Q236.85-748.5 256-748.5t31.83 12.67L480-543.65l192.17-192.18Q684.85-748.5 704-748.5t31.83 12.67Q748.5-723.15 748.5-704t-12.67 31.83L543.65-480l192.18 192.17Q748.5-275.15 748.5-256t-12.67 31.83Q723.15-211.5 704-211.5t-31.83-12.67L480-416.35Z"/></svg></button>
                 </div>
             `;
         }
@@ -1467,25 +1691,40 @@ function toggleCart() {
     document.getElementById('cartOverlay').classList.toggle('active');
 }
 
+const GUEST_INFO_STORAGE_KEY = 'bl_guestInfo';
+
+function loadGuestInfo() {
+    try {
+        return JSON.parse(localStorage.getItem(GUEST_INFO_STORAGE_KEY)) || {};
+    } catch (err) {
+        return {};
+    }
+}
+
+function saveGuestInfo(name, phone) {
+    try {
+        localStorage.setItem(GUEST_INFO_STORAGE_KEY, JSON.stringify({ name, phone }));
+    } catch (err) {
+        console.error('Erreur sauvegarde infos client:', err);
+    }
+}
+
 function checkout() {
     if (STATE.cart.length === 0) return alert('Votre panier est vide');
-    
-    if (!currentUser) {
-        toggleCart();
-        document.getElementById('loginRequiredModal').classList.add('active');
-        return;
-    }
 
-    
     document.getElementById('paymentModal').classList.add('active');
-    
+
+    const guestInfo = loadGuestInfo();
+    document.getElementById('guestName').value = guestInfo.name || '';
+    document.getElementById('guestPhone').value = guestInfo.phone || '';
+
     const totalPrice = STATE.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     document.getElementById('finalTotal').textContent = totalPrice.toFixed(2) + ' €';
     
     document.getElementById('orderSummary').innerHTML = STATE.cart.map(item => `
         <div class="order-item">
             <div class="order-item-info">
-                <span class="order-item-icon">${item.icon}</span>
+                <span class="order-item-icon">${item.icon || ''}</span>
                 <span class="order-item-name">${item.name}</span>
             </div>
             <div class="order-item-details">
@@ -1502,27 +1741,40 @@ function closePaymentModal() {
 
 document.getElementById('paymentForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-        alert('⚠️ Vous devez être connecté');
+
+    const customerName = document.getElementById('guestName').value.trim();
+    const customerPhone = document.getElementById('guestPhone').value.trim();
+    if (!customerName || !customerPhone) {
+        alert('⚠️ Merci de renseigner votre nom et votre numéro de téléphone');
         return;
     }
-    
+
     const order = {
-        id: `CMD-${Date.now()}`,
-        userId: currentUser.uid,
+        id: `CMD-${Math.floor(10000 + Math.random() * 90000)}`,
+        customerName,
+        customerPhone,
+        userId: currentUser ? currentUser.uid : null,
         items: STATE.cart,
         total: STATE.cart.reduce((s, i) => s + (i.price * i.quantity), 0),
         date: new Date().toISOString(),
-        status: 'reserved'
+        status: 'pending'
     };
-    
+
     try {
         const ordersRef = window.firebase.ref(db, `paniers-du-jardin/orders/${order.id}`);
         await window.firebase.set(ordersRef, order);
+        saveGuestInfo(customerName, customerPhone);
+        mpSaveLastOrder(order);
+        mpAddToOrderHistory(order);
+        mpWatchOrderTreated(order.id);
         STATE.cart = [];
+        customBasket = [];
         updateCart();
+        renderBasketSummary();
         closePaymentModal();
-        showToast('✅ Commande réservée avec succès ! Vous recevrez une confirmation par email.', 'success');
+        document.getElementById('cartSidebar').classList.remove('open');
+        document.getElementById('cartOverlay').classList.remove('active');
+        showToast('✅ Commande réservée avec succès !', 'success');
     } catch (err) {
         alert('Erreur: ' + err.message);
     }
@@ -1541,14 +1793,6 @@ function closeAuthModal() {
 function closeAuthModal() {
     closeModal('authModal');
 }
-
-function closeLoginRequiredModal() {
-    closeModal('loginRequiredModal');
-}
-
-document.getElementById('loginRequiredModal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeLoginRequiredModal();
-});
 
 
 document.getElementById('authModal').addEventListener('click', (e) => {
@@ -1798,8 +2042,8 @@ async function loadUserOrders() {
                         <div class="user-order-card" onclick="showUserOrderDetails('${order.id}')">
                             <div class="user-order-header">
                                 <span class="user-order-id">#${order.id}</span>
-                                <span class="user-order-status ${order.treated ? 'treated' : 'pending'}">
-                                    ${order.treated ? '✓ Traitée' : '⏳ En cours'}
+                                <span class="user-order-status ${orderStatusMeta(order.status).className}">
+                                    ${orderStatusMeta(order.status).label}
                                 </span>
                             </div>
                             <div class="user-order-info">
@@ -1860,8 +2104,8 @@ function showUserOrderDetails(orderId) {
                 <h3>Commande #${orderId}</h3>
                 <button class="close-btn" onclick="document.getElementById('userOrderModal').classList.remove('active')">×</button>
             </div>
-            <div class="order-detail-status ${order.treated ? 'treated' : 'pending'}">
-                ${order.treated ? '✓ Commande traitée' : '⏳ Commande en cours de traitement'}
+            <div class="order-detail-status ${orderStatusMeta(order.status).className}">
+                ${orderStatusMeta(order.status).longLabel}
             </div>
             <div class="order-detail-date">
                 📅 Commandé le ${new Date(order.date).toLocaleDateString('fr-FR', { 
@@ -1965,5 +2209,5 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
-    }, 2000);
+    }, 3500);
 }
