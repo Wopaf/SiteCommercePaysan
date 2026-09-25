@@ -49,18 +49,10 @@
                 </button>
             </nav>
 
-            <div class="admin-sidebar-footer">                
-                <button href="index.html" class="btn-secondary btn-block">
-                    <svg class="icon-admin3" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="m313-560 116 116q12 12 11.5 28T429-388q-12 12-28 12.5T373-387L188-572q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l183-183q12-12 28.5-12t28.5 12q12 12 12 28t-12 28L313-640h367q33 0 56.5 23.5T760-560v360q0 17-11.5 28.5T720-160q-17 0-28.5-11.5T680-200v-360H313Z"/></svg> Retour au site
-                </button>
-            </div>
         </aside>
 
         <!-- Contenu Principal -->
         <main class="admin-content">
-            <div class="admin-header">
-                <h1 id="adminSectionTitle">Tableau de bord</h1>
-            </div>
 
         <!-- Section Tableau de Bord -->
         <div class="admin-section active" id="admin-dashboard">
@@ -68,9 +60,9 @@
             <div id="shopStatusToggle"></div>
             
             <!-- Nouvelles commandes Alert -->
-            <div class="new-orders-alert" id="newOrdersAlert" style="display:none;" onclick="showAdminSection('orders')">
-                <div class="alert-icon">🔔</div>
-                <div class="alert-content">
+            <div class="new-orders-alert" id="newOrdersAlert" onclick="showAdminSection('orders')">
+                <div class="alert-icon" id="newOrdersIcon">🔔</div>
+                <div class="alert-content" id="newOrdersContent">
                     <span id="newOrdersCount">0</span>
                     <p>nouvelle(s) commande(s) à traiter</p>
                 </div>
@@ -78,6 +70,26 @@
 
 
             
+            <div class="admin-chart-header">
+                <h3>Statistiques</h3>
+                <div class="admin-chart-range">
+                    <button class="admin-chart-range-btn" data-range="7" onclick="setRevenueChartRange(7)">7 jours</button>
+                    <button class="admin-chart-range-btn active" data-range="30" onclick="setRevenueChartRange(30)">30 jours</button>
+                    <button class="admin-chart-range-btn" data-range="90" onclick="setRevenueChartRange(90)">90 jours</button>
+                    <button class="admin-chart-range-btn" data-range="all" onclick="setRevenueChartRange('all')">Depuis toujours</button>
+                </div>
+            </div>
+            <div class="admin-charts-row">
+                <div class="admin-chart-card">
+                    <h4>Commandes par jour</h4>
+                    <div class="admin-chart-wrap" id="ordersChartWrap"></div>
+                </div>
+                <div class="admin-chart-card">
+                    <h4>Revenus dans le temps</h4>
+                    <div class="admin-chart-wrap" id="revenueChartWrap"></div>
+                </div>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-card stat-card-hidden">
                     <div class="stat-icon">
@@ -132,26 +144,6 @@
                         <p>Commandes totales</p>
                         <h3 id="totalOrdersCount">0</h3>
                     </div>
-                </div>
-            </div>
-
-            <div class="admin-chart-header">
-                <h3>Statistiques</h3>
-                <div class="admin-chart-range">
-                    <button class="admin-chart-range-btn" data-range="7" onclick="setRevenueChartRange(7)">7 jours</button>
-                    <button class="admin-chart-range-btn active" data-range="30" onclick="setRevenueChartRange(30)">30 jours</button>
-                    <button class="admin-chart-range-btn" data-range="90" onclick="setRevenueChartRange(90)">90 jours</button>
-                    <button class="admin-chart-range-btn" data-range="all" onclick="setRevenueChartRange('all')">Depuis toujours</button>
-                </div>
-            </div>
-            <div class="admin-charts-row">
-                <div class="admin-chart-card">
-                    <h4>Commandes par jour</h4>
-                    <div class="admin-chart-wrap" id="ordersChartWrap"></div>
-                </div>
-                <div class="admin-chart-card">
-                    <h4>Revenus dans le temps</h4>
-                    <div class="admin-chart-wrap" id="revenueChartWrap"></div>
                 </div>
             </div>
 

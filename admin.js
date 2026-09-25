@@ -15,6 +15,8 @@ let usersSortOrder = 'desc';
 let ordersSortField = 'date';
 let ordersSortOrder = 'desc';
 let ordersStatusFilter = 'all';
+let ordersSearchQuery = '';
+let usersSearchQuery = '';
 
 let app, db, auth, storage, currentAdmin = null;
 const DATA = { products: [], baskets: [], orders: [], users: [], settings: {}, carouselImages: [] };
@@ -162,17 +164,6 @@ function showAdminSection(section) {
     
     document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
-    const titles = {
-        dashboard: 'Tableau de bord',
-        products: 'Gestion des Produits',
-        baskets: 'Gestion des Paniers',
-        orders: 'Commandes',
-        users: 'Utilisateurs',
-        media: 'Gestion des Médias',
-        settings: 'Paramètres'
-    };
-    document.getElementById('adminSectionTitle').textContent = titles[section] || section;
 
     if (section === 'dashboard') {
         renderDashboard();
@@ -188,15 +179,19 @@ function renderDashboard() {
     // Commandes non traitées (nouvelles)
     const pendingOrders = DATA.orders.filter(o => orderStatusOf(o) === 'pending');
     const newOrdersAlert = document.getElementById('newOrdersAlert');
-    const newOrdersCount = document.getElementById('newOrdersCount');
-    
+    const newOrdersIcon = document.getElementById('newOrdersIcon');
+    const newOrdersContent = document.getElementById('newOrdersContent');
+
     if (pendingOrders.length > 0) {
-        newOrdersAlert.style.display = 'flex';
-        newOrdersCount.textContent = pendingOrders.length;
+        newOrdersAlert.classList.remove('no-pending');
+        newOrdersIcon.textContent = '🔔';
+        newOrdersContent.innerHTML = `<span id="newOrdersCount">${pendingOrders.length}</span><p>nouvelle(s) commande(s) à traiter</p>`;
     } else {
-        newOrdersAlert.style.display = 'none';
+        newOrdersAlert.classList.add('no-pending');
+        newOrdersIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4a7c4e"><path d="m438-513-29-29q-12-11-28-11t-28 12q-12 12-12 28t12 28l56 57q12 12 28.5 12t28.5-12l141-142q12-12 12-28t-12-28q-12-12-28-12t-28 12L438-513Zm42 273-168 72q-40 17-76-6.5T200-241v-519q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v519q0 43-36 66.5t-76 6.5l-168-72Zm0-88 200 86v-518H280v518l200-86Zm0-432H280h400-200Z"/></svg>`;
+        newOrdersContent.innerHTML = `<p>Aucune commande à traiter</p>`;
     }
-    
+
     // Stats de base
     document.getElementById('todayOrders').textContent = todayOrders.length;
     document.getElementById('todayRevenue').textContent = todayRevenue.toFixed(2) + '€';
@@ -782,6 +777,22 @@ function filterOrdersByStatus(status) {
     renderOrders();
 }
 
+function searchOrders(query) {
+    ordersSearchQuery = query;
+    renderOrders();
+    const input = document.getElementById('ordersSearchInput');
+    if (input) {
+        input.focus();
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+    }
+}
+
+function orderDisplayName(order) {
+    const user = DATA.users.find(u => u.id === order.userId);
+    return user ? `${user.firstName} ${user.lastName}` : (order.customerName || '');
+}
+
 function renderOrders() {
     const container = document.getElementById('ordersTable');
     if (DATA.orders.length === 0) {
@@ -789,9 +800,17 @@ function renderOrders() {
         return;
     }
 
-    const filteredOrders = ordersStatusFilter === 'all'
+    let filteredOrders = ordersStatusFilter === 'all'
         ? DATA.orders
         : DATA.orders.filter(o => orderStatusOf(o) === ordersStatusFilter);
+
+    const query = ordersSearchQuery.trim().toLowerCase();
+    if (query) {
+        filteredOrders = filteredOrders.filter(o =>
+            orderDisplayName(o).toLowerCase().includes(query) ||
+            o.id.toLowerCase().includes(query)
+        );
+    }
 
     const sortOrders = (orders) => {
         return [...orders].sort((a, b) => {
@@ -835,6 +854,7 @@ function renderOrders() {
                         <span class="admin-row-name">${user ? `${user.firstName} ${user.lastName}` : (order.customerName || 'Inconnu')}</span>
                     </div>
                     <div class="admin-row-right">
+                        <span class="admin-row-date">${new Date(order.date).toLocaleDateString('fr-FR')}${order.date ? ' à ' + new Date(order.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                         <span class="admin-row-meta">${order.items?.length || 0} article(s)</span>
                         <span class="admin-row-value">${order.total?.toFixed(2)}€</span>
                     </div>
@@ -851,6 +871,15 @@ function renderOrders() {
     const sortIcon = (field) => ordersSortField === field ? (ordersSortOrder === 'asc' ? '↑' : '↓') : '↕';
 
     container.innerHTML = `
+        <div class="admin-search-bar ${ordersSearchQuery ? 'has-value' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="ordersSearchInput" placeholder="Rechercher par nom ou numéro de commande..."
+                value="${escapeHtml(ordersSearchQuery)}"
+                oninput="searchOrders(this.value)">
+            <button type="button" class="admin-search-clear" onclick="searchOrders('')" aria-label="Effacer la recherche">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
         <div class="admin-list-controls">
             <div class="admin-list-sort">
                 <span>Trier par :</span>
@@ -1053,21 +1082,30 @@ function getGuestCustomersFromOrders() {
 }
 
 function renderGuestCustomersList() {
-    const guests = getGuestCustomersFromOrders();
+    let guests = getGuestCustomersFromOrders();
+
+    const query = usersSearchQuery.trim().toLowerCase();
+    if (query) {
+        guests = guests.filter(g =>
+            g.name.toLowerCase().includes(query) ||
+            (g.phone || '').toLowerCase().includes(query)
+        );
+    }
+
     if (guests.length === 0) return '';
 
     return `
         <div class="admin-product-group">
             <div class="admin-product-group-header">
-                <h3>Clients (via commandes)</h3>
+                <h3>Clients</h3>
                 <span class="admin-product-group-count">${guests.length}</span>
             </div>
             <div class="admin-product-group-list">
                 ${guests.map(g => `
                     <div class="admin-row">
                         <div class="admin-row-left">
-                            <span class="admin-row-name">${escapeHtml(g.name)}</span>
-                            ${g.phone ? `<span class="admin-row-id">📞 ${escapeHtml(g.phone)}</span>` : ''}
+                            <span class="admin-row-name"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-240v-32q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v32q0 33-23.5 56.5T720-160H240q-33 0-56.5-23.5T160-240Zm80 0h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Zm0 400Z"/></svg> ${escapeHtml(g.name)}</span>
+                            ${g.phone ? `<span class="admin-row-id"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M798-120q-125 0-247-54.5T329-329Q229-429 174.5-551T120-798q0-18 12-30t30-12h162q14 0 25 9.5t13 22.5l26 140q2 16-1 27t-11 19l-97 98q20 37 47.5 71.5T387-386q31 31 65 57.5t72 48.5l94-94q9-9 23.5-13.5T670-390l138 28q14 4 23 14.5t9 23.5v162q0 18-12 30t-30 12ZM241-600l66-66-17-94h-89q5 41 14 81t26 79Zm358 358q39 17 79.5 27t81.5 13v-88l-94-19-67 67ZM241-600Zm358 358Z"/></svg> ${escapeHtml(g.phone)}</span>` : ''}
                         </div>
                         <div class="admin-row-right">
                             <span class="admin-row-badge ${g.count > 0 ? 'active' : ''}">${g.count} commande${g.count > 1 ? 's' : ''}</span>
@@ -1079,16 +1117,43 @@ function renderGuestCustomersList() {
     `;
 }
 
+function searchUsers(query) {
+    usersSearchQuery = query;
+    renderUsers();
+    const input = document.getElementById('usersSearchInput');
+    if (input) {
+        input.focus();
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+    }
+}
+
 function renderUsers() {
     const container = document.getElementById('usersTable');
+
+    const searchBar = `
+        <div class="admin-search-bar ${usersSearchQuery ? 'has-value' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="usersSearchInput" placeholder="Rechercher par nom ou téléphone..."
+                value="${escapeHtml(usersSearchQuery)}"
+                oninput="searchUsers(this.value)">
+            <button type="button" class="admin-search-clear" onclick="searchUsers('')" aria-label="Effacer la recherche">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+    `;
+
     if (DATA.users.length === 0) {
-        container.innerHTML = renderGuestCustomersList() || '<p class="admin-product-empty">Aucun utilisateur inscrit</p>';
+        container.innerHTML = searchBar + (renderGuestCustomersList() || '<p class="admin-product-empty">Aucun utilisateur inscrit</p>');
         return;
     }
 
     const getOrdersCount = (userId) => DATA.orders.filter(o => o.userId === userId).length;
-    
-    let sortedUsers = [...DATA.users].sort((a, b) => {
+
+    const query = usersSearchQuery.trim().toLowerCase();
+    let sortedUsers = DATA.users.filter(u =>
+        !query || `${u.firstName} ${u.lastName}`.toLowerCase().includes(query)
+    ).sort((a, b) => {
         let valA, valB;
         switch (usersSortField) {
             case 'name':
@@ -1108,6 +1173,7 @@ function renderUsers() {
     const sortIcon = (field) => usersSortField === field ? (usersSortOrder === 'asc' ? '↑' : '↓') : '↕';
 
     container.innerHTML = `
+        ${searchBar}
         <div class="admin-list-sort">
             <span>Trier par :</span>
             <button class="admin-sort-btn ${usersSortField === 'name' ? 'active' : ''}" onclick="sortUsers('name')">Nom ${sortIcon('name')}</button>
@@ -1118,15 +1184,15 @@ function renderUsers() {
             <div class="admin-product-group-header">
                 <span class="admin-product-group-dot available"></span>
                 <h3>Utilisateurs</h3>
-                <span class="admin-product-group-count">${DATA.users.length}</span>
+                <span class="admin-product-group-count">${sortedUsers.length}</span>
             </div>
             <div class="admin-product-group-list">
-                ${sortedUsers.map(user => {
+                ${sortedUsers.length === 0 ? '<p class="admin-product-empty">Aucun résultat</p>' : sortedUsers.map(user => {
                     const count = getOrdersCount(user.id);
                     return `
                         <div class="admin-row" onclick="showUserDetails('${user.id}')">
                             <div class="admin-row-left">
-                                <span class="admin-row-name">${user.firstName} ${user.lastName}</span>
+                                <span class="admin-row-name"><svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-240v-32q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v32q0 33-23.5 56.5T720-160H240q-33 0-56.5-23.5T160-240Zm80 0h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Zm0 400Z"/></svg> ${user.firstName} ${user.lastName}</span>
                             </div>
                             <div class="admin-row-right">
                                 <span class="admin-row-badge ${count > 0 ? 'active' : ''}">${count} commande${count > 1 ? 's' : ''}</span>

@@ -24,7 +24,8 @@
     --gray2: #869b86;
     --gray3: #c7d6c7;
     --gray4: #e7efe7;
-    --border: #d4e5d4;
+    --gray5: #f3f4f6;
+    --border: #d6e2db;
     --shadow: rgba(74,124,78,0.1);
     --orange: #ff8f3c;
 
@@ -4643,10 +4644,6 @@ body.admin-body {
     font-size: 1.3rem;
 }
 
-.admin-sidebar-footer {
-    padding: 1.5rem;
-}
-
 .btn-link {
     display: block;
     text-align: center;
@@ -4665,22 +4662,6 @@ body.admin-body {
     padding: 2rem;
     width: calc(100% - 280px);
 }
-
-.admin-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    background: none;
-    padding-left: 10px;
-    border-radius: 15px;
-}
-
-.admin-header h1 {
-    color: var(--primary);
-    font-size: 1.8rem;
-}
-
 
 .admin-avatar {
     width: 45px;
@@ -4702,6 +4683,7 @@ body.admin-body {
 .admin-section.active {
     display: block;
     animation: fadeIn 0.3s;
+    padding-bottom: 100px;
 }
 
 @keyframes fadeIn {
@@ -4930,7 +4912,7 @@ body.admin-body {
 }
 
 .admin-chart-total {
-    text-align: center;
+    text-align: left;
     margin-top: 0.8rem;
     padding-top: 0.8rem;
     border-top: 1px solid var(--border);
@@ -5019,12 +5001,16 @@ body.admin-body {
     align-items: center;
     gap: 1rem;
     background: white;
-    border: solid 2px var(--border);
-    border-radius: 15px;
+    border: solid 2px #e57373;
+    border-radius: 15px 15px 15px 0px;
     padding: 1.2rem 1.5rem;
     margin-bottom: 1.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+.new-orders-alert.no-pending {
+    border-color: var(--border);
 }
 
 .alert-content span{ margin-right: 5px; color: var(--gray) !important}
@@ -5039,7 +5025,6 @@ body.admin-body {
 .new-orders-alert .alert-icon {
     width: 46px;
     height: 46px;
-    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
     border-radius: 12px;
     display: flex;
     align-items: center;
@@ -5154,23 +5139,20 @@ body.admin-body {
     padding: 0.8rem;
     background: rgb(250, 250, 250);
     border: 2px solid var(--border);
-    border-radius: 5px 15px 15px 15px;
+    border-radius: 5px;
+    padding: 4px;
     font-size: 1rem;
+    height: 30px;
     font-family: inherit;
     margin-bottom: 1rem;
-    transition: all 0.2s ease;
 }
 
 .input-field:hover {
-    border: 2px solid var(--light);
-    transition: all 0.15s ease;
+    background: rgb(247, 247, 247);
 }
 
 .input-field:focus {
-    outline: none;
     background: rgb(247, 247, 247);
-    border-color: var(--light);
-    transition: all 0.15s ease;
 }
 
 textarea.input-field {
@@ -5335,7 +5317,7 @@ select.input-field {
     border-radius: 20px;
     width: 100%;
     max-width: 600px;
-    max-height: 95vh;
+    max-height: 100vh;
     overflow-y: auto;
     padding: 2rem;
 }
@@ -5401,7 +5383,7 @@ select.input-field {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    max-height: 90vh;
+    max-height: 100vh;
 }
 
 #orderDetailsModal .modal-header {
@@ -6165,6 +6147,7 @@ table tr:hover {
 
 .btn-add-product-admin {
     border: solid 2px var(--border);
+    background: white;
     font-size: 0.9rem;
     font-weight: 500;
     border-radius: 15px;
@@ -6221,6 +6204,7 @@ table tr:hover {
 }
 
 .admin-product-group-list {
+    background-color: var(--gray5);
     padding: 1rem;
 }
 
@@ -6229,7 +6213,7 @@ table tr:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgb(245, 245, 245);
+    background: white;
     gap: 1rem;
     border-radius: 15px;
     border: 1px solid var(--gray3);
@@ -6238,9 +6222,6 @@ table tr:hover {
     transition: background 0.2s ease;
 }
 
-.admin-row:hover {
-    background: rgb(245, 245, 245);
-}
 
 .admin-row-order {
     display: grid;
@@ -6289,6 +6270,11 @@ table tr:hover {
     transition: all 0.15s ease;
 }
 
+.admin-row-note::placeholder {
+    color: var(--gray3, #ccc);
+    opacity: 0.6;
+}
+
 .admin-row-note:hover {
     border-color: var(--border);
     background: white;
@@ -6305,7 +6291,7 @@ table tr:hover {
     height: 1px;
     background: var(--border);
     opacity: 0;
-    margin: 0.4rem 1.2rem;
+    margin: 0.2rem 0.6rem;
 }
 
 /* ===== Statut de commande ===== */
@@ -6326,23 +6312,32 @@ table tr:hover {
 
 .admin-row-status-select {
     border-radius: 20px;
-    padding: 0.25rem 0.6rem;
+    padding: 0.25rem 0.6rem 0.25rem 1.7rem;
     font-size: 0.75rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
+    background-repeat: no-repeat;
+    background-position: 0.5rem center;
+    background-size: 15px 15px;
 }
 
 .admin-row-status-select.status-pending {
     border: 2px solid #e57373;
+    background-color: #ffcdd2;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23e57373'%3E%3Cpath d='M520-496v-144q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v159q0 8 3 15.5t9 13.5l132 132q11 11 28 11t28-11q11-11 11-28t-11-28L520-496ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z'/%3E%3C/svg%3E");
 }
 
 .admin-row-status-select.status-treated {
     border: 2px solid #f57c00;
+    background-color: #ffe0b2;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23f57c00'%3E%3Cpath d='m557-631 199-198q11-11 27.5-11.5T812-829q11 11 11 28t-11 28L585-546q-12 12-28 12t-28-12L415-660q-12-12-11.5-28t12.5-28q12-11 28-11.5t28 11.5l85 85Zm41 487 238-74q-5-9-14.5-15.5T800-240H598q-27 0-43-2t-33-8l-57-19q-16-5-23-20t-2-31q5-16 19.5-23.5T490-346l42 14q17 5 38.5 8t58.5 4h11q0-11-6.5-21T618-354l-234-86h-64v220l278 76Zm-21 78-257-72q-8 26-31.5 42T240-80h-80q-33 0-56.5-23.5T80-160v-280q0-33 23.5-56.5T160-520h224q7 0 14 1.5t13 3.5l235 87q33 12 53.5 42t20.5 66h80q50 0 85 33t35 87q0 22-11.5 34.5T873-145L623-67q-11 4-23 4t-23-3Zm-417-94h80v-280h-80v280Z'/%3E%3C/svg%3E");
 }
 
 .admin-row-status-select.status-delivered {
     border: 2px solid #4a7c4e;
+    background-color: #c8e6c9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%234a7c4e'%3E%3Cpath d='m438-513-29-29q-12-11-28-11t-28 12q-12 12-12 28t12 28l56 57q12 12 28.5 12t28.5-12l141-142q12-12 12-28t-12-28q-12-12-28-12t-28 12L438-513Zm42 273-168 72q-40 17-76-6.5T200-241v-519q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v519q0 43-36 66.5t-76 6.5l-168-72Zm0-88 200 86v-518H280v518l200-86Zm0-432H280h400-200Z'/%3E%3C/svg%3E");
 }
 
 .order-status-badge {
@@ -6408,6 +6403,13 @@ table tr:hover {
     white-space: nowrap;
 }
 
+.admin-row-id svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: -4px;
+    margin-right: 2px;
+}
+
 .admin-row-name {
     font-weight: 700;
     font-size: 0.95rem;
@@ -6415,6 +6417,15 @@ table tr:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    width: 100px;
+    flex-shrink: 0;
+}
+
+.admin-row-name svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: -4px;
+    margin-right: 2px;
 }
 
 .admin-row-right {
@@ -6429,6 +6440,12 @@ table tr:hover {
     color: var(--gray);
 }
 
+.admin-row-date {
+    font-size: 0.8rem;
+    color: var(--gray);
+    white-space: nowrap;
+}
+
 .admin-row-value {
     font-weight: 700;
     font-size: 0.95rem;
@@ -6440,10 +6457,12 @@ table tr:hover {
 .admin-row-badge {
     font-size: 0.8rem;
     font-weight: 600;
+    width: 110px;
     padding: 0.2rem 0.75rem;
     border-radius: 20px;
     background: #f5f5f5;
     color: var(--gray);
+    text-align: center;
 }
 
 .admin-row-badge.active {
@@ -6487,7 +6506,7 @@ table tr:hover {
 
 /* ===== Ligne produit éditable en ligne ===== */
 .admin-product-row {
-    background: rgb(245, 245, 245);
+    background: white;
     display: grid;
     grid-template-columns: 44px 1fr auto;
     align-items: center;
@@ -6504,9 +6523,6 @@ table tr:hover {
     gap: 0.6rem;
 }
 
-.admin-product-row:hover {
-    background: rgb(245, 245, 245);
-}
 
 .apr-image {
     width: 40px;
@@ -6580,9 +6596,9 @@ table tr:hover {
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--gray);
-    background: var(--gray3);
-    padding: 0.3rem 0.6rem;
-    border-radius: 20px;
+    border: solid 1px var(--gray4);
+    padding: 0.45rem 0.5rem;
+    border-radius: 8px;
     white-space: nowrap;
     width: 100px;
     text-align: center;
@@ -6642,6 +6658,78 @@ table tr:hover {
     }
 }
 
+/* Barre de recherche (commandes / utilisateurs) */
+.admin-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 50px;
+    padding: 0.75rem 1.2rem;
+    margin-bottom: 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.admin-search-bar svg:first-child {
+    flex-shrink: 0;
+    color: var(--gray);
+    transition: color 0.2s ease;
+}
+
+.admin-search-bar:focus-within {
+    background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(74, 124, 78, 0.12);
+}
+
+.admin-search-bar:focus-within svg:first-child {
+    color: var(--primary);
+}
+
+.admin-search-bar input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: none;
+    font-size: 0.92rem;
+    font-family: inherit;
+    color: var(--text);
+    padding: 0;
+    margin: 0;
+}
+
+.admin-search-bar input::placeholder {
+    color: var(--gray);
+    opacity: 0.75;
+}
+
+.admin-search-clear {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--gray);
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s ease;
+}
+
+.admin-search-clear:hover {
+    background: #e57373;
+    color: white;
+}
+
+.admin-search-bar.has-value .admin-search-clear {
+    display: flex;
+}
+
 /* Admin sort buttons */
 .admin-list-controls {
     display: flex;
@@ -6681,7 +6769,7 @@ table tr:hover {
     background: white;
     border: 2px solid var(--border);
     padding: 0.35rem 0.75rem;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--gray);
@@ -6700,22 +6788,46 @@ table tr:hover {
     color: white;
 }
 
+.admin-sort-btn.status-pending,
+.admin-sort-btn.status-treated,
+.admin-sort-btn.status-delivered {
+    padding-left: 1.9rem;
+    background-repeat: no-repeat;
+    background-position: 0.6rem center;
+    background-size: 15px 15px;
+}
+
+.admin-sort-btn.status-pending {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23e57373'%3E%3Cpath d='M520-496v-144q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v159q0 8 3 15.5t9 13.5l132 132q11 11 28 11t28-11q11-11 11-28t-11-28L520-496ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z'/%3E%3C/svg%3E");
+}
+
+.admin-sort-btn.status-treated {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23f57c00'%3E%3Cpath d='m557-631 199-198q11-11 27.5-11.5T812-829q11 11 11 28t-11 28L585-546q-12 12-28 12t-28-12L415-660q-12-12-11.5-28t12.5-28q12-11 28-11.5t28 11.5l85 85Zm41 487 238-74q-5-9-14.5-15.5T800-240H598q-27 0-43-2t-33-8l-57-19q-16-5-23-20t-2-31q5-16 19.5-23.5T490-346l42 14q17 5 38.5 8t58.5 4h11q0-11-6.5-21T618-354l-234-86h-64v220l278 76Zm-21 78-257-72q-8 26-31.5 42T240-80h-80q-33 0-56.5-23.5T80-160v-280q0-33 23.5-56.5T160-520h224q7 0 14 1.5t13 3.5l235 87q33 12 53.5 42t20.5 66h80q50 0 85 33t35 87q0 22-11.5 34.5T873-145L623-67q-11 4-23 4t-23-3Zm-417-94h80v-280h-80v280Z'/%3E%3C/svg%3E");
+}
+
+.admin-sort-btn.status-delivered {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%234a7c4e'%3E%3Cpath d='m438-513-29-29q-12-11-28-11t-28 12q-12 12-12 28t12 28l56 57q12 12 28.5 12t28.5-12l141-142q12-12 12-28t-12-28q-12-12-28-12t-28 12L438-513Zm42 273-168 72q-40 17-76-6.5T200-241v-519q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v519q0 43-36 66.5t-76 6.5l-168-72Zm0-88 200 86v-518H280v518l200-86Zm0-432H280h400-200Z'/%3E%3C/svg%3E");
+}
+
 .admin-sort-btn.status-pending.active {
-    background: #e57373;
+    background-color: #e57373;
     border-color: #e57373;
     color: white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23ffffff'%3E%3Cpath d='M520-496v-144q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v159q0 8 3 15.5t9 13.5l132 132q11 11 28 11t28-11q11-11 11-28t-11-28L520-496ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-400Zm0 320q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Z'/%3E%3C/svg%3E");
 }
 
 .admin-sort-btn.status-treated.active {
-    background: #f57c00;
+    background-color: #f57c00;
     border-color: #f57c00;
     color: white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23ffffff'%3E%3Cpath d='m557-631 199-198q11-11 27.5-11.5T812-829q11 11 11 28t-11 28L585-546q-12 12-28 12t-28-12L415-660q-12-12-11.5-28t12.5-28q12-11 28-11.5t28 11.5l85 85Zm41 487 238-74q-5-9-14.5-15.5T800-240H598q-27 0-43-2t-33-8l-57-19q-16-5-23-20t-2-31q5-16 19.5-23.5T490-346l42 14q17 5 38.5 8t58.5 4h11q0-11-6.5-21T618-354l-234-86h-64v220l278 76Zm-21 78-257-72q-8 26-31.5 42T240-80h-80q-33 0-56.5-23.5T80-160v-280q0-33 23.5-56.5T160-520h224q7 0 14 1.5t13 3.5l235 87q33 12 53.5 42t20.5 66h80q50 0 85 33t35 87q0 22-11.5 34.5T873-145L623-67q-11 4-23 4t-23-3Zm-417-94h80v-280h-80v280Z'/%3E%3C/svg%3E");
 }
 
 .admin-sort-btn.status-delivered.active {
-    background: #4a7c4e;
+    background-color: #4a7c4e;
     border-color: #4a7c4e;
     color: white;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='%23ffffff'%3E%3Cpath d='m438-513-29-29q-12-11-28-11t-28 12q-12 12-12 28t12 28l56 57q12 12 28.5 12t28.5-12l141-142q12-12 12-28t-12-28q-12-12-28-12t-28 12L438-513Zm42 273-168 72q-40 17-76-6.5T200-241v-519q0-33 23.5-56.5T280-840h400q33 0 56.5 23.5T760-760v519q0 43-36 66.5t-76 6.5l-168-72Zm0-88 200 86v-518H280v518l200-86Zm0-432H280h400-200Z'/%3E%3C/svg%3E");
 }
 
 
@@ -7080,6 +7192,7 @@ input[type=number] {
 
     .admin-sidebar {
         width: 200px;
+        height: 100%;
     }
     
     .admin-content {
@@ -7202,7 +7315,7 @@ html {
         flex-direction: row;
         align-items: center;
         justify-content: center;
-        box-shadow: 1px 0 0px var(--shadow);
+        box-shadow: 0 -4px 16px rgba(0,0,0,0.12);
         background: white;
         border: solid 1px var(--border);
         padding: 0 0.5rem;
@@ -7231,44 +7344,22 @@ html {
         padding: 6px;
     }
 
-    .admin-sidebar-footer {
-        display: none;
-    }
-
-    .admin-sidebar-footer .btn-secondary {
-        margin-left: -10px;
-        font-size: 0;
-        width: 50px !important;
-        height: 50px !important;
-        padding: 6px;
-    }
-
-    .admin-sidebar-footer .btn-link {
-        width: 100%;
-        margin-left: -10px;
-        font-size: 0;
-        width: 50px !important;
-        height: 50px !important;
-        padding: 6px;
-    }
-
     .admin-content {
         width: 100%;
         padding: 1rem;
     }
 
-    .admin-header, .stats-grid {
+    .stats-grid {
         margin-bottom: 12px;
         gap: 12px;
-    }
-
-    .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .modal-content {
         width: 95%;
         padding: 1rem;
+        height: 92vh;
+        margin-bottom: 100px;
     }
 
 
