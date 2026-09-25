@@ -21,6 +21,31 @@ let usersSearchQuery = '';
 let app, db, auth, storage, currentAdmin = null;
 const DATA = { products: [], baskets: [], orders: [], users: [], settings: {}, carouselImages: [] };
 
+function getToastContainer() {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = 'success') {
+    const container = getToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 20);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
 // Init Firebase (Logique identique à script.js)
 setTimeout(async () => {
     if (!window.firebase) return console.error('Firebase non chargé');

@@ -1191,10 +1191,10 @@ function mpUpdateBasketImage() {
     const count = lastOrder ? lastOrder.items.length : customBasket.length;
     let fileName;
     if (count === 0) fileName = 'Panier.png';
-    else if (count <= 2) fileName = 'Panier1.png';
-    else if (count <= 4) fileName = 'Panier2.png';
-    else if (count === 5) fileName = 'Panier3.png';
-    else if (count === 6) fileName = 'Panier4.png';
+    else if (count <= 1) fileName = 'Panier1.png';
+    else if (count <= 2) fileName = 'Panier2.png';
+    else if (count <= 3) fileName = 'Panier3.png';
+    else if (count === 4) fileName = 'Panier4.png';
     else fileName = 'Panier5.png';
     totalCard.style.backgroundImage = `url('medias/${fileName}')`;
 
@@ -2199,13 +2199,25 @@ async function checkShopStatus() {
 }
 
 // ===== NOTIFICATION TOAST =====
+function getToastContainer() {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
 function showToast(message, type = 'success') {
+    const container = getToastContainer();
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.classList.add('show'), 100);
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 20);
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);

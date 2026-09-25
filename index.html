@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paniers du Jardin - Fruits & Légumes Locaux</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="preload" as="image" href="medias/Panier.png">
+    <link rel="preload" as="image" href="medias/Panier1.png">
+    <link rel="preload" as="image" href="medias/Panier2.png">
+    <link rel="preload" as="image" href="medias/Panier3.png">
+    <link rel="preload" as="image" href="medias/Panier4.png">
 </head>
 <body>
     <div id="pageLoader">
@@ -343,7 +348,7 @@
                                 <button type="button" class="mp-ordered-badge-btn" onclick="openMpOrderDetailsModal()">Voir les détails de mon panier</button>
                             </div>
                             <div class="mp-total-content">
-                                <span class="mp-total-label">TOTAL</span>
+                                <span class="mp-total-label">MON PANIER</span>
                                 <strong class="mp-total-value" id="mpTotalValue">0€</strong>
                             </div>
                         </div>
@@ -368,12 +373,12 @@
                         </div>
                         <div class="mp-qty-info">
                             <div class="mp-qty-field">
-                                <span class="mp-qty-field-label">Prix</span>
-                                <span class="mp-qty-price" id="mpQtyPrice">0.00 €/kg</span>
-                            </div>
-                            <div class="mp-qty-field">
                                 <span class="mp-qty-field-label">Total</span>
                                 <span class="mp-qty-subtotal" id="mpQtySubtotal">0.00 €</span>
+                            </div>
+                            <div class="mp-qty-field">
+                                <span class="mp-qty-field-label">Prix</span>
+                                <span class="mp-qty-price" id="mpQtyPrice">0.00 €/kg</span>
                             </div>
                         </div>
 
