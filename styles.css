@@ -3972,10 +3972,10 @@ body.loaded #pageLoader {
 .cart-sidebar {
     position: fixed;
     right: -450px;
-    top: 0;
+    top: 50%;
+    transform: translateY(-50%);
     width: 400px;
-    height: calc(100vh - 40px);
-    margin: 20px;
+    max-height: 90vh;
     background: white;
     border: 2px solid var(--border);
     border-radius: 20px;
@@ -3988,7 +3988,7 @@ body.loaded #pageLoader {
 }
 
 .cart-sidebar.open {
-    right: 0;
+    right: 20px;
 }
 
 
@@ -5383,7 +5383,7 @@ select.input-field {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    max-height: 100vh;
+    max-height: 90vh;
 }
 
 #orderDetailsModal .modal-header {
@@ -5419,6 +5419,50 @@ select.input-field {
 }
 
 #orderDetailsModal #orderDetailsContent::-webkit-scrollbar-thumb:hover {
+    background: var(--gray2, var(--gray));
+}
+
+#productModal .modal-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 90vh;
+}
+
+#productModal .modal-header {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 1.5rem 2rem;
+    border-radius: 20px 20px 0 0;
+}
+
+#productModal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 2rem 2rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+#productModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+#productModal .modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#productModal .modal-body::-webkit-scrollbar-button {
+    display: none;
+}
+
+#productModal .modal-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+}
+
+#productModal .modal-body::-webkit-scrollbar-thumb:hover {
     background: var(--gray2, var(--gray));
 }
 
@@ -7270,7 +7314,8 @@ input[type=number] {
     /* Ajuster le cart sidebar pour mobile */
     .cart-sidebar {
         right: -1000px;
-        height: 100vh;
+        height: 90vh;
+        max-height: none;
         width: 100vw;
     }
 
