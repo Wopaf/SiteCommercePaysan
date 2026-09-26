@@ -520,6 +520,20 @@ const MP_CATEGORY_META = {
 let mpSelectedProductId = null;
 let mpPendingQty = 1;
 let mpScrollTimeout = null;
+let mpCategoryFilter = 'all';
+
+function mpFilterByCategory(category) {
+    mpCategoryFilter = category;
+    document.querySelectorAll('.mp-category-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === category);
+    });
+    renderMonPanierWheel(true);
+}
+
+function mpFormatWheelPrice(price, unit) {
+    const suffix = unit === 'lot250g' ? '€/250g' : getUnitMeta(unit).priceSuffix;
+    return `${Number(price || 0).toFixed(2)} ${suffix}`;
+}
 
 function mpGetProductMeta(product) {
     const base = MP_CATEGORY_META[product?.category] || MP_CATEGORY_META.default;
@@ -855,11 +869,12 @@ function scrollToProducts() {
 
 // ===== Mon Panier (onglet mobile) =====
 
-function renderMonPanierWheel() {
+function renderMonPanierWheel(selectFirst = false) {
     const wheel = document.getElementById('mpWheel');
     if (!wheel) return;
 
-    const available = DATA.products.filter(p => p.inStock !== false);
+    const available = DATA.products.filter(p => p.inStock !== false
+        && (mpCategoryFilter === 'all' || p.category === mpCategoryFilter));
 
     if (available.length === 0) {
         wheel.innerHTML = '<p class="mp-wheel-empty">Aucun produit disponible</p>';
@@ -877,29 +892,25 @@ function renderMonPanierWheel() {
         return `
             <div class="mp-wheel-card" data-id="${p.id}" onclick="mpSelectProduct('${p.id}', true)">
                 <div class="mp-wheel-circle" style="${circleStyle}">${p.image ? '' : meta.icon}</div>
-                <span class="mp-wheel-name">${p.name}</span>
+                <div class="mp-wheel-name">
+                    <span class="mp-wheel-name-text">${p.name}</span>
+                    <span class="mp-wheel-price">${mpFormatWheelPrice(p.price, p.unit)}</span>
+                </div>
             </div>
         `;
     }).join('') + shadowItems;
 
-    mpSelectedProductId = available[Math.min(3, available.length - 1)].id;
-    mpSelectProduct(mpSelectedProductId, false);
+    mpSelectedProductId = selectFirst ? available[0].id : available[Math.min(3, available.length - 1)].id;
+    mpSelectProduct(mpSelectedProductId, selectFirst);
 
     wheel.removeEventListener('scroll', mpHandleWheelScroll);
     wheel.addEventListener('scroll', mpHandleWheelScroll, { passive: true });
-    wheel.removeEventListener('scroll', mpRequestWheelRadialUpdate);
-    wheel.addEventListener('scroll', mpRequestWheelRadialUpdate, { passive: true });
     wheel.removeEventListener('wheel', mpHandleMouseWheel);
     wheel.addEventListener('wheel', mpHandleMouseWheel, { passive: false });
     wheel.removeEventListener('pointerdown', mpWheelDragStart);
     wheel.addEventListener('pointerdown', mpWheelDragStart);
     wheel.removeEventListener('click', mpWheelClickGuard);
     wheel.addEventListener('click', mpWheelClickGuard, { capture: true });
-
-    mpApplyWheelRadialTransforms();
-
-    window.removeEventListener('resize', mpRequestWheelRadialUpdate);
-    window.addEventListener('resize', mpRequestWheelRadialUpdate);
 }
 
 const mpWheelDrag = { active: false, moved: false, startX: 0, startScrollLeft: 0 };
@@ -969,16 +980,7 @@ function mpHandleWheelScroll() {
     }, 100);
 }
 
-let mpWheelRafId = null;
 let mpWheelCentered = false;
-
-function mpRequestWheelRadialUpdate() {
-    if (mpWheelRafId) return;
-    mpWheelRafId = requestAnimationFrame(() => {
-        mpWheelRafId = null;
-        mpApplyWheelRadialTransforms();
-    });
-}
 
 // Empêche de faire défiler la roue jusqu'aux items shadow (décoratifs, en début/fin de liste).
 function mpClampWheelScroll(wheel) {
@@ -995,28 +997,14 @@ function mpClampWheelScroll(wheel) {
     else if (wheel.scrollLeft > max) wheel.scrollLeft = max;
 }
 
-// Courbe chaque carte le long d'un arc, comme si elle glissait sur la jante d'une roue.
-function mpApplyWheelRadialTransforms() {
-    const wheel = document.getElementById('mpWheel');
-    if (!wheel) return;
-    const cards = wheel.querySelectorAll('.mp-wheel-card');
+function mpStepProduct(direction) {
+    const cards = Array.from(document.querySelectorAll('#mpWheel .mp-wheel-card:not(.mp-wheel-shadow)'));
     if (!cards.length) return;
 
-    const center = wheel.scrollLeft + wheel.clientWidth / 2;
-    const maxAngle = 30;
-    const range = wheel.clientWidth / 2 + 40;
-
-    cards.forEach(card => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-        const t = Math.max(-1, Math.min(1, (cardCenter - center) / range));
-        const angle = t * maxAngle;
-        const rad = angle * Math.PI / 180;
-        const drop = Math.abs(angle*angle)/15;
-        const scale = 1 - 0 * Math.abs(t);
-        const opacity = 0.3 + 0.7 * Math.cos(rad);
-        card.style.transform = `translateY(${drop}px) rotate(${angle}deg) scale(${scale})`;
-        card.style.opacity = opacity;
-    });
+    const currentIndex = cards.findIndex(c => c.dataset.id === mpSelectedProductId);
+    const nextIndex = Math.max(0, Math.min(cards.length - 1, currentIndex + direction));
+    const nextCard = cards[nextIndex];
+    if (nextCard) mpSelectProduct(nextCard.dataset.id, true);
 }
 
 function mpSelectProduct(productId, scrollIntoView) {
@@ -1061,14 +1049,11 @@ function mpRefreshQtyControls(animate = true, direction = 0) {
 }
 
 function mpUpdateQtyInfo(animate = true) {
-    const priceEl = document.getElementById('mpQtyPrice');
     const subtotalEl = document.getElementById('mpQtySubtotal');
-    if (!priceEl || !subtotalEl) return;
+    if (!subtotalEl) return;
 
     const product = DATA.products.find(p => p.id === mpSelectedProductId);
     const price = product?.price || 0;
-    const [currency, unitSuffix] = getUnitMeta(product?.unit).priceSuffix.split('/');
-    priceEl.innerHTML = `<span class="mp-qty-price-amount">${price.toFixed(2)} ${currency}</span><span class="mp-qty-price-unit">/${unitSuffix}</span>`;
 
     const newSubtotal = `${(price * mpPendingQty).toFixed(2)} €`;
     if (subtotalEl.textContent !== newSubtotal) {
@@ -1161,17 +1146,18 @@ function renderMonPanierGrid() {
     const totalEl = document.getElementById('mpTotalValue');
     if (!grid) return;
 
+    grid.querySelectorAll('.mp-item-card, #mpItemsEmpty').forEach(el => el.remove());
+
     if (customBasket.length === 0) {
-        grid.innerHTML = '<p class="mp-items-empty" id="mpItemsEmpty">Votre panier est vide, choisissez un produit ci-dessous 👇</p>';
+        grid.insertAdjacentHTML('afterbegin', '<p class="mp-items-empty" id="mpItemsEmpty">Votre panier est vide, choisissez un produit ci-dessous 👇</p>');
     } else {
-        grid.innerHTML = customBasket.map(item => {
-            return `
-                <div class="mp-item-card" data-id="${item.id}">
-                    <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-416.35 287.83-224.17Q275.15-211.5 256-211.5t-31.83-12.67Q211.5-236.85 211.5-256t12.67-31.83L416.35-480 224.17-672.17Q211.5-684.85 211.5-704t12.67-31.83Q236.85-748.5 256-748.5t31.83 12.67L480-543.65l192.17-192.18Q684.85-748.5 704-748.5t31.83 12.67Q748.5-723.15 748.5-704t-12.67 31.83L543.65-480l192.18 192.17Q748.5-275.15 748.5-256t-12.67 31.83Q723.15-211.5 704-211.5t-31.83-12.67L480-416.35Z"/></svg></button>
-                    <span class="mp-item-card-label">${mpFormatItemLabel(item)}</span>
-                </div>
-            `;
-        }).join('');
+        const itemsHtml = customBasket.map(item => `
+            <div class="mp-item-card" data-id="${item.id}">
+                <button class="mp-item-remove" onclick="removeFromCustomBasket('${item.id}')" aria-label="Retirer"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M480-416.35 287.83-224.17Q275.15-211.5 256-211.5t-31.83-12.67Q211.5-236.85 211.5-256t12.67-31.83L416.35-480 224.17-672.17Q211.5-684.85 211.5-704t12.67-31.83Q236.85-748.5 256-748.5t31.83 12.67L480-543.65l192.17-192.18Q684.85-748.5 704-748.5t31.83 12.67Q748.5-723.15 748.5-704t-12.67 31.83L543.65-480l192.18 192.17Q748.5-275.15 748.5-256t-12.67 31.83Q723.15-211.5 704-211.5t-31.83-12.67L480-416.35Z"/></svg></button>
+                <span class="mp-item-card-label">${mpFormatItemLabel(item)}</span>
+            </div>
+        `).join('');
+        grid.insertAdjacentHTML('afterbegin', itemsHtml);
         mpArrangeItemsInCircle();
     }
 
@@ -1390,38 +1376,38 @@ async function mpCancelOrder() {
 // Dispose les mp-item-card en demi-cercle au-dessus du panier (mp-total-card), fixe au centre.
 // Au-delà de 7 items, bascule sur deux colonnes empilées de part et d'autre du panier.
 function mpArrangeItemsInCircle() {
-    const zone = document.getElementById('mpOrbitZone');
+    const zone = document.getElementById('mpItemsGrid');
     if (!zone) return;
     const cards = zone.querySelectorAll('.mp-item-card');
     if (!cards.length) return;
 
-    if (cards.length >= 5) {
+    if (cards.length >= 7) {
         mpArrangeItemsInColumns(cards, zone);
         return;
     }
 
     const centerY = zone.clientHeight * 0.30;
-    const verticalLimit = Math.min(centerY, zone.clientHeight - centerY) - 60;
-    const horizontalLimit = zone.clientWidth / 2 - 60;
-    const safeLimit = Math.max(20, Math.min(horizontalLimit, verticalLimit));
-    const radius = Math.min(270, safeLimit);
+    const verticalLimit = Math.max(20, Math.min(centerY, zone.clientHeight - centerY) + 35);
+    const horizontalLimit = Math.max(20, zone.clientWidth / 2 - 60);
+    const radiusX = Math.min(270, horizontalLimit);
+    const radiusY = Math.min(250, verticalLimit);
 
-    const arcSpan = Math.PI * (190 / 180);
+    const arcSpan = Math.PI * (290 / 180);
     const arcStart = -Math.PI / 2 - arcSpan / 2;
 
     cards.forEach((card, i) => {
         const t = cards.length > 1 ? i / (cards.length - 1) : 0.5;
         const angle = arcStart + t * arcSpan;
-        const x = Math.cos(angle) * radius;
-        const y = Math.sin(angle) * radius;
+        const x = Math.cos(angle) * radiusX;
+        const y = Math.sin(angle) * radiusY;
         card.style.setProperty('--ox', `${x}px`);
         card.style.setProperty('--oy', `${y}px`);
     });
 }
 
 function mpArrangeItemsInColumns(cards, zone) {
-    const spacing = 46;
-    const columnOffset = Math.max(20, Math.min(150, zone.clientWidth / 2 - 65));
+    const spacing = 50;
+    const columnOffset = Math.max(20, Math.min(200, zone.clientWidth / 2 - 75));
 
     const left = [];
     const right = [];
@@ -1431,6 +1417,7 @@ function mpArrangeItemsInColumns(cards, zone) {
         const totalHeight = (column.length - 1) * spacing;
         column.forEach((card, i) => {
             const y = -totalHeight / 2 + i * spacing;
+            card.style.setProperty('--anchor-y', '45%');
             card.style.setProperty('--ox', `${x}px`);
             card.style.setProperty('--oy', `${y}px`);
         });
@@ -1946,7 +1933,6 @@ function navigateTo(page) {
         if (!document.querySelector('#mpWheel .mp-wheel-card')) renderMonPanierWheel();
         renderMonPanierGrid();
         requestAnimationFrame(() => {
-            mpApplyWheelRadialTransforms();
             if (!mpWheelCentered) {
                 mpWheelCentered = true;
                 mpSelectProduct(mpSelectedProductId, true);
