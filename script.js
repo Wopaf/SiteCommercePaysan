@@ -80,7 +80,7 @@ setTimeout(async () => {
         // Attendre que tous les éléments aient fini de se redimensionner/positionner avant de révéler la page
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                revealAppFromLoader();
+                setTimeout(() => revealAppFromLoader(), 1000);
             });
         });
     }, 300);
@@ -528,6 +528,13 @@ function mpFilterByCategory(category) {
         btn.classList.toggle('active', btn.dataset.category === category);
     });
     renderMonPanierWheel(true);
+
+    const clickedBtn = document.querySelector(`.mp-category-filter-btn[data-category="${category}"]`);
+    if (clickedBtn) {
+        clickedBtn.classList.remove('mp-category-filter-btn-bounce');
+        void clickedBtn.offsetWidth;
+        clickedBtn.classList.add('mp-category-filter-btn-bounce');
+    }
 }
 
 function mpFormatWheelPrice(price, unit) {
@@ -1081,20 +1088,11 @@ function mpUpdateBackground(product) {
     // Le fond reste fixe (vert), il ne suit plus la couleur du produit sélectionné.
 }
 
-function playSound(src, volume = 1) {
-    try {
-        const audio = new Audio(src);
-        audio.volume = volume;
-        audio.play().catch(() => {});
-    } catch (e) {}
-}
-
 function mpChangeQty(direction) {
     const product = DATA.products.find(p => p.id === mpSelectedProductId);
     const step = getUnitMeta(product?.unit).step;
     mpPendingQty = Math.max(step, Math.round((mpPendingQty + direction * step) * 10) / 10);
     mpRefreshQtyControls(true, direction);
-    playSound('medias/Button.wav');
 }
 
 function mpAddToBasket() {
@@ -1112,7 +1110,6 @@ function mpAddToBasket() {
     renderBasketSummary();
     const label = mpFormatItemLabel({ name: product.name, quantity: mpPendingQty, unit: product.unit }, true);
     showToast(`${label} ajouté au panier`);
-    playSound('medias/Panier.wav');
 
     mpPendingQty = getUnitMeta(product.unit).defaultQty;
     mpRefreshQtyControls();
@@ -1222,7 +1219,7 @@ function mpUpdateBasketImage() {
     else if (count <= 3) fileName = 'Panier3.png';
     else if (count === 4) fileName = 'Panier4.png';
     else fileName = 'Panier5.png';
-    totalCard.style.backgroundImage = `url('medias/${fileName}')`;
+    totalCard.style.setProperty('--basket-bg', `url('medias/${fileName}')`);
 
     if (mpLastBasketCount !== null && mpLastBasketCount !== customBasket.length) {
         totalCard.classList.remove('mp-total-card-bounce');
@@ -1427,7 +1424,7 @@ function mpArrangeItemsInCircle() {
     }
 
     const centerY = zone.clientHeight * 0.30;
-    const verticalLimit = Math.max(20, Math.min(centerY, zone.clientHeight - centerY) + 35);
+    const verticalLimit = Math.max(20, Math.min(centerY, zone.clientHeight - centerY) + 50);
     const horizontalLimit = Math.max(20, zone.clientWidth / 2 - 60);
     const radiusX = Math.min(270, horizontalLimit);
     const radiusY = Math.min(250, verticalLimit);
@@ -1736,16 +1733,8 @@ function saveGuestInfo(name, phone) {
     }
 }
 
-let pendingCheckoutAfterLogin = false;
-
 function checkout() {
     if (STATE.cart.length === 0) return alert('Votre panier est vide');
-
-    if (!currentUser) {
-        pendingCheckoutAfterLogin = true;
-        openAuthModal();
-        return;
-    }
 
     document.getElementById('paymentModal').classList.add('active');
 
@@ -1863,12 +1852,7 @@ async function handleLogin(e) {
         const cred = await window.firebase.signInWithEmailAndPassword(auth, e.target[0].value, e.target[1].value);
         currentUser = cred.user;
         closeAuthModal();
-        if (pendingCheckoutAfterLogin) {
-            pendingCheckoutAfterLogin = false;
-            checkout();
-        } else {
-            alert('Connecté !');
-        }
+        alert('Connecté !');
     } catch (err) {
         alert('Erreur: ' + err.message);
     }
@@ -1899,12 +1883,7 @@ async function handleRegister(e) {
         );
 
         closeAuthModal();
-        if (pendingCheckoutAfterLogin) {
-            pendingCheckoutAfterLogin = false;
-            checkout();
-        } else {
-            alert('✅ Compte créé avec succès !');
-        }
+        alert('✅ Compte créé avec succès !');
     } catch (error) {
         alert('Erreur d\'inscription : ' + error.message);
     }
@@ -2219,12 +2198,7 @@ async function signInWithGoogle() {
         }
         
         closeAuthModal();
-        if (pendingCheckoutAfterLogin) {
-            pendingCheckoutAfterLogin = false;
-            checkout();
-        } else {
-            alert('✅ Connecté avec Google !');
-        }
+        alert('✅ Connecté avec Google !');
     } catch (error) {
         alert('Erreur: ' + error.message);
     }
@@ -2253,12 +2227,7 @@ async function signInWithFacebook() {
         }
 
         closeAuthModal();
-        if (pendingCheckoutAfterLogin) {
-            pendingCheckoutAfterLogin = false;
-            checkout();
-        } else {
-            alert('✅ Connecté avec Facebook !');
-        }
+        alert('✅ Connecté avec Facebook !');
     } catch (error) {
         alert('Erreur: ' + error.message);
     }
