@@ -1173,10 +1173,39 @@ function renderMonPanierGrid() {
     }
 
     const total = customBasket.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    if (totalEl) totalEl.textContent = total.toFixed(2) + '€';
+    if (totalEl) mpAnimateTotalValue(totalEl, total);
 
     mpUpdateBasketImage();
     mpUpdateOrderedBadge();
+}
+
+let mpTotalValueRaf = null;
+
+function mpAnimateTotalValue(el, to) {
+    const from = parseFloat((el.textContent || '0').replace('€', '').replace(',', '.')) || 0;
+    if (from === to) {
+        el.textContent = to.toFixed(2) + '€';
+        return;
+    }
+
+    cancelAnimationFrame(mpTotalValueRaf);
+    const duration = 100;
+    const start = performance.now();
+
+    function step(now) {
+        const progress = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = from + (to - from) * eased;
+        el.textContent = value.toFixed(2) + '€';
+
+        if (progress < 1) {
+            mpTotalValueRaf = requestAnimationFrame(step);
+        } else {
+            el.textContent = to.toFixed(2) + '€';
+        }
+    }
+
+    mpTotalValueRaf = requestAnimationFrame(step);
 }
 
 let mpLastBasketCount = null;
